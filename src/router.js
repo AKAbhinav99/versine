@@ -8,7 +8,7 @@ let active = null;
 
 /* Which bottom tab lights up for each screen — the scan flow keeps "Scan" lit. */
 const TAB_OF = {
-  intro: 'capture', capture: 'capture', analyze: 'capture', result: 'capture',
+  intro: 'capture', capture: 'capture', adjust: 'capture', analyze: 'capture', result: 'capture',
   doctors: 'doctors', resources: 'resources', history: 'history',
 };
 

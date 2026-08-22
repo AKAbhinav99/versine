@@ -247,3 +247,92 @@
   color: var(--ink-300);
   min-height: 1.2em;
 }
+
+/* ---------- Adjust: line the photo up with the guide -------------------- */
+
+.screen[data-active].adjust { display: flex; }
+.adjust { flex-direction: column; background: var(--ink-900); }
+
+.adjust__stage {
+  display: flex;
+  justify-content: center;
+  background: #060D14;
+  touch-action: none;      /* dragging pans the photo, not the page */
+  padding: var(--space-2) 0;
+}
+/* Sized to the canvas so the guide and level rules land exactly on the photo. */
+.adjust__frame { position: relative; line-height: 0; }
+.adjust__frame canvas { display: block; cursor: grab; }
+.adjust__frame canvas:active { cursor: grabbing; }
+
+.adjust__guide { position: absolute; inset: 0; pointer-events: none; }
+.adjust__guide svg { width: 100%; height: 100%; }
+
+/* Horizontal rules to line a door frame or skirting board up against — the
+   thing you should be levelling, rather than your own shoulders. */
+.adjust__level {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(237,240,241,0.20) 0 1px,
+    transparent 1px 44px
+  );
+}
+
+.adjust__panel {
+  padding: var(--space-4) var(--gutter) calc(var(--nav-h) + var(--space-5));
+  background: var(--ink-900);
+  color: var(--ink-300);
+}
+.adjust__panel .step-label { color: var(--ink-300); }
+.adjust__panel .step-label__rule { background: rgba(237,240,241,0.18); }
+.adjust__panel .muted { color: var(--ink-300); }
+
+.adjust__warn {
+  border-left: 3px solid var(--ink-500);
+  padding: var(--space-3);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--ink-300);
+  background: rgba(237,240,241,0.05);
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.adjust__warn b { color: var(--paper); }
+/* Once the photo is actually rotated, the caveat stops being background advice. */
+.adjust__warn--active { border-left-color: var(--marker); color: var(--paper); }
+
+.adjust__row {
+  display: grid;
+  grid-template-columns: 72px 1fr 60px;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.adjust__row .label { color: var(--ink-300); }
+.adjust__row output { color: var(--paper); font-size: var(--text-sm); text-align: right; }
+
+.adjust__row input[type='range'] {
+  appearance: none;
+  width: 100%;
+  height: 34px;
+  background: transparent;
+}
+.adjust__row input[type='range']::-webkit-slider-runnable-track {
+  height: 2px;
+  background: rgba(237,240,241,0.3);
+}
+.adjust__row input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 26px; height: 26px;
+  margin-top: -12px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--scrub);
+}
+.adjust__row input[type='range']::-moz-range-track { height: 2px; background: rgba(237,240,241,0.3); }
+.adjust__row input[type='range']::-moz-range-thumb {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--paper); border: 2px solid var(--scrub);
+}

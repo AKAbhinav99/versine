@@ -4,10 +4,12 @@ import { $ } from './lib/dom.js';
 import { INTRO_KEY } from './config.js';
 import { showScreen, initTabs, onEnter } from './router.js';
 import { initCapture } from './screens/capture.js';
+import { initAdjust } from './screens/adjust.js';
 import { initDoctors } from './screens/doctors.js';
 import { renderHistory } from './screens/history.js';
 
 initCapture();
+initAdjust();
 initDoctors();
 onEnter('history', renderHistory);
 

@@ -4,7 +4,7 @@
 
 import { $ } from '../lib/dom.js';
 import { onEnter, onLeave } from '../router.js';
-import { runAnalysis } from './analyze.js';
+import { openAdjust } from './adjust.js';
 
 const TIMER_SECONDS = 8;
 const MAX_ANALYSIS_EDGE = 1440; // downscale huge uploads before pose detection
@@ -182,7 +182,7 @@ function captureFrame() {
   canvas.height = source.videoHeight;
   canvas.getContext('2d').drawImage(source, 0, 0);
   stopCamera();
-  runAnalysis(canvas);
+  openAdjust(canvas);
 }
 
 function onFileChosen(event) {
@@ -193,7 +193,7 @@ function onFileChosen(event) {
   image.onload = () => {
     URL.revokeObjectURL(url);
     stopCamera();
-    runAnalysis(canvasFromImage(image));
+    openAdjust(canvasFromImage(image));
   };
   image.onerror = () => {
     URL.revokeObjectURL(url);

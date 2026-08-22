@@ -42,6 +42,14 @@ landmarks always produce the same numbers.
 | `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent — a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
 | `measureWithConsensus` | Runs the above at five framings of the same photo and reduces them to a median, a spread, and a usable/withheld verdict. |
 
+**The photo can be lined up first.** Capture hands off to an adjust step where
+the shot can be panned, zoomed and rotated onto the framing guide. Pan and zoom
+are free — neither changes an angle. Rotation is not: it moves the measured
+shoulder tilt one degree for one degree, which the benchmark confirmed directly
+(a 6° image roll shifted the reading by ~6.5°). So it is capped at 20°, the screen
+draws horizontal rules and tells you to level the room rather than your shoulders,
+the applied angle is stored with the scan, and the result screen repeats it.
+
 **Every reading is measured five times.** Landmark positions shift when a photo is
 re-cropped, by about as much as the asymmetry being measured, so
 [`src/lib/consensus.js`](src/lib/consensus.js) measures each photo at two crops,
@@ -112,7 +120,8 @@ src/
     storage.js          scan history in localStorage
     dom.js              small DOM helpers
   screens/
-    capture.js          camera, framing guide, self-timer, upload
+    capture.js          camera, framing guide, self-timer, camera switch, upload
+    adjust.js           pan/zoom/rotate the photo onto the guide before measuring
     analyze.js          the analysis pipeline and its progress log
     overlay.js          landmark/measurement drawing on the photo
     result.js           verdict, readouts, threshold ruler

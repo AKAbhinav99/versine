@@ -13,7 +13,7 @@ import { prepareCanvas, drawOverlay } from './overlay.js';
 
 const REVEAL_MS = 1200;
 
-export function renderResult({ reading, verdict, entry }) {
+export function renderResult({ reading, verdict, entry, adjustments = null }) {
   const body = $('#result-body');
   body.replaceChildren();
 
@@ -25,6 +25,7 @@ export function renderResult({ reading, verdict, entry }) {
     reading.usable ? tiltReadout(reading) : null,
     reading.usable ? metricGrid(reading) : null,
     reliabilityPanel(reading),
+    ...(adjustments?.rotationDeg ? [rotationNote(adjustments.rotationDeg)] : []),
     methodPanel(),
     ...(reading.warnings?.length ? [qualityNote(reading.warnings)] : []),
     nextStepsBlock(verdict.level),
@@ -138,6 +139,14 @@ function reliabilityPanel(reading) {
     good
       ? `The same photo was measured ${reading.totalFramings} times at slightly different crops. ${reading.passes} produced a usable pose and they agreed within ${reading.shoulderSpreadDeg.toFixed(1)}°. Anything wider than ${RELIABILITY.maxShoulderSpreadDeg}° is withheld rather than reported.`
       : `Only ${reading.passes} of ${reading.totalFramings} framings produced a usable pose${reading.shoulderSpreadDeg !== undefined ? `, and they disagreed by ${reading.shoulderSpreadDeg.toFixed(1)}°` : ''}. A number from that would be guesswork, so none is shown.`);
+}
+
+/* A hand-applied rotation shifts the reading one-for-one, so it is never left
+   implicit — the number below was measured on a photo that was turned. */
+function rotationNote(rotationDeg) {
+  return el('div', { class: 'quality-note' },
+    el('b', {}, `This photo was rotated ${rotationDeg.toFixed(1)}° before measuring. `),
+    `Shoulder tilt moves with the photo, degree for degree, so this reading is ${Math.abs(rotationDeg).toFixed(1)}° away from what the untouched photo would have given. That is the right thing to do if you were correcting a tilted camera, and the wrong thing if you were levelling your shoulders by eye. It is recorded with the scan so the trend stays comparable.`);
 }
 
 function methodPanel() {

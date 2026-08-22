@@ -29,7 +29,7 @@ export function getScan(id) {
   return readAll().find((entry) => entry.id === id) || null;
 }
 
-export function saveScan({ reading, verdict, thumbnail }) {
+export function saveScan({ reading, verdict, thumbnail, adjustments = null }) {
   const entry = {
     id: `scan-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     timestamp: Date.now(),
@@ -41,6 +41,10 @@ export function saveScan({ reading, verdict, thumbnail }) {
     higherShoulder: reading.higherShoulder,
     passes: reading.passes,
     landmarkConfidence: round(reading.landmarkConfidence, 2),
+    /* Rotation applied by hand before measuring. Kept because it shifts the
+       reading one-for-one, so a trend built from differently-rotated photos is
+       not comparing like with like. */
+    rotationDeg: adjustments?.rotationDeg ? round(adjustments.rotationDeg) : 0,
   };
 
   const entries = [entry, ...readAll()].slice(0, HISTORY_LIMIT);

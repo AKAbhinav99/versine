@@ -13,7 +13,7 @@ import { renderResult, renderFailure } from './result.js';
    load looks like progress rather than a hang. */
 const MIN_STEP_MS = 380;
 
-export async function runAnalysis(photoCanvas) {
+export async function runAnalysis(photoCanvas, adjustments = null) {
   showScreen('analyze');
   $('#analyze-preview').src = photoCanvas.toDataURL('image/jpeg', 0.55);
   resetLog();
@@ -34,11 +34,11 @@ export async function runAnalysis(photoCanvas) {
     const verdict = await runStep('compare', () => classifyReading(reading));
 
     const entry = reading.usable
-      ? saveScan({ reading, verdict, thumbnail: makeThumbnail(photoCanvas) })
+      ? saveScan({ reading, verdict, adjustments, thumbnail: makeThumbnail(photoCanvas) })
       : null;
 
     showScreen('result');
-    renderResult({ reading, verdict, entry });
+    renderResult({ reading, verdict, entry, adjustments });
   } catch (error) {
     reportFailure(error, photoCanvas);
   }

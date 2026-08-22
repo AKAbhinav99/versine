@@ -137,6 +137,49 @@
     </div>
   </section>
 
+  <!-- ============================ 01b · ADJUST =========================== -->
+  <section class="screen adjust" id="screen-adjust" aria-labelledby="adjust-title">
+    <div class="adjust__stage" id="adjust-stage">
+      <div class="adjust__frame" id="adjust-frame">
+        <canvas id="adjust-canvas"></canvas>
+        <div class="adjust__level" aria-hidden="true"></div>
+        <div class="adjust__guide" id="adjust-guide"></div>
+      </div>
+    </div>
+
+    <div class="adjust__panel">
+      <div class="step-label"><span class="step-label__num">01b</span> Line it up <span class="step-label__rule"></span></div>
+      <h2 id="adjust-title" class="visually-hidden">Adjust your photo</h2>
+
+      <p class="adjust__warn" id="adjust-warn">
+        <b>Rotate to level the room, not your body.</b> Turning the photo turns the
+        measurement with it, degree for degree — line up a door frame, a skirting
+        board, or the horizon. Straightening your shoulders by hand just erases
+        the thing this is trying to measure.
+      </p>
+
+      <label class="adjust__row">
+        <span class="label">Rotate</span>
+        <input type="range" id="adjust-rotate" min="-20" max="20" step="0.5" value="0" />
+        <output class="mono" id="adjust-rotate-out">0.0°</output>
+      </label>
+
+      <label class="adjust__row">
+        <span class="label">Zoom</span>
+        <input type="range" id="adjust-zoom" min="100" max="250" step="1" value="100" />
+        <output class="mono" id="adjust-zoom-out">1.00×</output>
+      </label>
+
+      <p class="small muted">Drag the photo to move it. Match your hips to the lower marker and your shoulders to the upper one.</p>
+
+      <div class="stack-sm" style="margin-top:var(--space-4)">
+        <button class="btn btn--block" id="adjust-accept">Use this photo</button>
+        <button class="btn btn--ghost btn--block" id="adjust-reset">Reset adjustments</button>
+        <button class="btn btn--quiet btn--block" id="adjust-retake">Retake instead</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ============================ 02 · ANALYZE =========================== -->
   <section class="screen analyze" id="screen-analyze" aria-labelledby="analyze-title" aria-live="polite">
     <div class="step-label"><span class="step-label__num">02</span> Analyze <span class="step-label__rule"></span></div>
