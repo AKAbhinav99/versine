@@ -1,0 +1,71 @@
+/* SpineCheck design tokens
+   Visual language: technical drawing / anatomical blueprint.
+   Base = deep slate ink, surface = cool off-white paper, one measurement blue,
+   one X-ray marker red-orange reserved for signals only. */
+
+:root {
+  /* --- Palette ------------------------------------------------------- */
+  --ink-900: #0B1622;   /* deepest slate — headers, capture chrome */
+  --ink-700: #17293C;   /* body text on paper */
+  --ink-500: #35566F;   /* secondary text, diagram strokes */
+  --ink-300: #7E97A9;   /* tertiary text, disabled */
+  --paper:   #EDF0F1;   /* cool off-white page (deliberately not cream) */
+  --paper-raised: #F7F9F9;
+  --rule:    #C6D0D4;   /* hairline borders / drawing rules */
+  --rule-soft: #DCE3E5;
+
+  --scrub:   #1F6E8C;   /* medical scrub blue — measurement + primary action */
+  --scrub-dim: #12506A;
+  --scrub-wash: #E1EDF2;
+  --marker:  #D6402A;   /* X-ray highlight marker — signal only, used sparingly */
+  --marker-wash: #FAE6E2;
+  --amber:   #B87514;   /* monitor state */
+  --amber-wash: #F7EEDC;
+  --clear:   #2C7A5B;   /* within-range state */
+  --clear-wash: #E2EFE9;
+
+  /* --- Type ---------------------------------------------------------- */
+  --font-ui: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-num: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-xs:   0.6875rem;                                  /* 11px labels */
+  --text-sm:   0.8125rem;
+  --text-base: 0.9375rem;
+  --text-lg:   1.0625rem;
+  --text-xl:   clamp(1.25rem, 1.05rem + 1vw, 1.5rem);
+  --text-2xl:  clamp(1.6rem, 1.2rem + 2.2vw, 2.25rem);
+  --text-readout: clamp(2.5rem, 1.6rem + 4.6vw, 3.5rem);   /* angle numbers */
+
+  --track-label: 0.14em;   /* uppercase mono label tracking */
+
+  /* --- Space --------------------------------------------------------- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-8: 3rem;
+  --gutter: 1.125rem;
+
+  --tap: 52px;            /* one-handed minimum tap target */
+  --nav-h: 62px;
+
+  /* --- Drawing ------------------------------------------------------- */
+  --radius: 2px;          /* technical, not soft */
+  --hair: 1px solid var(--rule);
+  --grid-size: 22px;
+
+  /* --- Motion (minimal, purposeful) ---------------------------------- */
+  --dur-fast: 130ms;
+  --dur: 260ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

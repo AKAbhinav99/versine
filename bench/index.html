@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>SpineCheck — detector bench</title>
+<style>
+  body { font: 13px ui-monospace, Menlo, monospace; padding: 16px; background: #EDF0F1; color: #17293C; }
+  table { border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+  th, td { border: 1px solid #C6D0D4; padding: 3px 7px; text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  tr[data-label="pos"] { background: #FAE6E2; }
+  tr[data-label="ctl"] { background: #E2EFE9; }
+</style>
+</head>
+<body>
+<h1>Detector bench</h1>
+<p>Runs the live pipeline over the labelled image set on :4322. Open the console or
+call <code>__bench.runBench()</code>.</p>
+<div id="out">loading model…</div>
+<script type="module">
+import './bench.js';
+const out = document.querySelector('#out');
+window.__render = (rows) => {
+  const cols = Object.keys(rows[0]);
+  out.innerHTML = '<table><tr>' + cols.map((c) => `<th>${c}</th>`).join('') + '</tr>' +
+    rows.map((r) => `<tr data-label="${r.label}">` + cols.map((c) => `<td>${r[c] ?? ''}</td>`).join('') + '</tr>').join('') +
+    '</table>';
+};
+out.textContent = 'ready — call __bench.runBench()';
+</script>
+</body>
+</html>

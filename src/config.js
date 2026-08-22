@@ -1,0 +1,58 @@
+/* Tunables and thresholds in one place. */
+
+export const POSE_MODEL = {
+  /* MediaPipe Tasks Vision, loaded from CDN as an ES module. */
+  visionBundle: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs',
+  wasmRoot: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm',
+  /* "full" is the accuracy/size middle ground; "heavy" is more accurate and ~4x larger. */
+  asset: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
+};
+
+/* Screening bands.
+ *
+ * These are calibrated on the labelled image set in bench/ — a small set of
+ * clinical photographs of confirmed scoliosis alongside ordinary posterior
+ * photographs. They are provisional, not clinically validated, and the UI says so.
+ *
+ * scoliometerReferenceDeg is a different thing: the real 7 degree angle-of-trunk-
+ * rotation referral cutoff used with a scoliometer in the forward bend. It is
+ * shown for context only. This app cannot measure that angle from a photograph —
+ * see bench/README.md.
+ */
+export const THRESHOLDS = {
+  shoulderMonitorDeg: 2.0,
+  shoulderReferDeg: 3.5,
+  rulerMaxDeg: 8,
+  hipNotableDeg: 3,
+  scoliometerReferenceDeg: 7,
+  minLandmarkVisibility: 0.6,
+};
+
+/* How much disagreement between framings is tolerable before a reading is
+   withheld. Derived from the same benchmark: readings whose spread across
+   framings exceeded ~3.5 degrees came from detections that had gone wrong. */
+export const RELIABILITY = {
+  minPasses: 3,
+  maxShoulderSpreadDeg: 3.5,
+  implausibleTiltDeg: 25,
+};
+
+/* Google Places API (New). Leave blank and the app falls back to OpenStreetMap,
+   which needs no key. A key entered in the UI is stored under PLACES_KEY_STORAGE. */
+export const PLACES = {
+  googleApiKey: '',
+  keyStorage: 'spinecheck.placesKey',
+  textSearchUrl: 'https://places.googleapis.com/v1/places:searchText',
+  overpassUrl: 'https://overpass-api.de/api/interpreter',
+  nominatimUrl: 'https://nominatim.openstreetmap.org/search',
+  defaultRadiusM: 15000,
+  queries: [
+    { label: 'Orthopedic', spec: 'ortho', text: 'orthopedic surgeon scoliosis' },
+    { label: 'Pediatric', spec: 'pediatric', text: 'pediatric orthopedic doctor' },
+    { label: 'Physical therapy', spec: 'pt', text: 'physical therapist scoliosis' },
+  ],
+};
+
+export const STORAGE_KEY = 'spinecheck.history.v1';
+export const INTRO_KEY = 'spinecheck.introAccepted.v1';
+export const HISTORY_LIMIT = 60;

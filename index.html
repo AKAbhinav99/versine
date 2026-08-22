@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0B1622" />
+<title>SpineCheck — a scoliosis screening aid</title>
+<meta name="description" content="A guided forward-bend screening aid that measures trunk asymmetry from a phone photo and points you toward real clinical care. Not a diagnosis." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="styles/tokens.css" />
+<link rel="stylesheet" href="styles/base.css" />
+<link rel="stylesheet" href="styles/capture.css" />
+<link rel="stylesheet" href="styles/result.css" />
+<link rel="stylesheet" href="styles/care.css" />
+</head>
+<body>
+<div class="app">
+
+  <header class="masthead">
+    <!-- Wordmark glyph: a plumb line and bob — the reference this whole test measures against -->
+    <svg class="masthead__mark" viewBox="0 0 16 26" aria-hidden="true">
+      <line x1="8" y1="0" x2="8" y2="17" stroke="#EDF0F1" stroke-width="1.2" />
+      <path d="M8 17 L12 21 L8 25 L4 21 Z" fill="#D6402A" />
+      <line x1="0" y1="4" x2="4" y2="4" stroke="#7E97A9" stroke-width="1" />
+      <line x1="12" y1="4" x2="16" y2="4" stroke="#7E97A9" stroke-width="1" />
+    </svg>
+    <span class="masthead__name">SpineCheck</span>
+    <span class="masthead__tag">Screening aid</span>
+  </header>
+
+  <main>
+
+  <!-- ============================ 00 · DISCLAIMER GATE ==================== -->
+  <section class="screen intro" id="screen-intro" aria-labelledby="intro-title">
+    <svg class="intro__plumb" viewBox="0 0 40 96" aria-hidden="true">
+      <line x1="20" y1="0" x2="20" y2="70" stroke="#35566F" stroke-width="1" stroke-dasharray="3 3" />
+      <path d="M20 70 L27 80 L20 92 L13 80 Z" fill="#D6402A" />
+      <line x1="4" y1="30" x2="12" y2="30" stroke="#C6D0D4" stroke-width="1" />
+      <line x1="28" y1="30" x2="36" y2="30" stroke="#C6D0D4" stroke-width="1" />
+      <line x1="6" y1="52" x2="12" y2="52" stroke="#C6D0D4" stroke-width="1" />
+      <line x1="28" y1="52" x2="34" y2="52" stroke="#C6D0D4" stroke-width="1" />
+    </svg>
+
+    <h1 class="intro__title" id="intro-title">A screening check,<br />not a diagnosis.</h1>
+    <p class="intro__lede small">SpineCheck measures how symmetric your back looks in a forward-bend photo, and tells you whether it's worth having a clinician take a look.</p>
+
+    <ul class="claim-list">
+      <li>
+        <span class="claim-list__key">DOES</span>
+        <span><b>Measure geometry.</b> It finds body landmarks in your photo and calculates shoulder tilt, hip tilt, and an estimated trunk rotation angle.</span>
+      </li>
+      <li>
+        <span class="claim-list__key">DOES</span>
+        <span><b>Show its work.</b> Every number, and the points it measured from, are shown on your own photo.</span>
+      </li>
+      <li>
+        <span class="claim-list__key">DOES</span>
+        <span><b>Point you onward.</b> If something looks asymmetric, it helps you find clinicians nearby who treat scoliosis.</span>
+      </li>
+      <li>
+        <span class="claim-list__key claim-list__key--no">NO</span>
+        <span><b>It cannot diagnose scoliosis.</b> Scoliosis is confirmed by a licensed physician, using a standing spine X-ray and a Cobb angle measurement. A photo cannot do that.</span>
+      </li>
+      <li>
+        <span class="claim-list__key claim-list__key--no">NO</span>
+        <span><b>A clear result is not an all-clear.</b> Curves can be present without much surface asymmetry, and photo angle affects the numbers. If you have symptoms or concerns, see a clinician regardless of what this says.</span>
+      </li>
+    </ul>
+
+    <button class="btn btn--block" id="intro-accept">I understand — start a scan</button>
+    <p class="small muted" style="margin-top:var(--space-3);text-align:center">Photos and results stay on this device. Nothing is uploaded.</p>
+  </section>
+
+  <!-- ============================ 01 · CAPTURE =========================== -->
+  <section class="screen capture" id="screen-capture" aria-labelledby="capture-title">
+    <h2 class="visually-hidden" id="capture-title">Guided photo capture</h2>
+
+    <div class="capture__stage">
+      <video class="capture__video" id="capture-video" playsinline muted autoplay></video>
+
+      <!-- Framing guide: bent-forward figure seen from behind, with the plumb reference -->
+      <svg class="capture__guide" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+        <line class="guide-plumb" x1="150" y1="8" x2="150" y2="392" stroke-dasharray="6 6" />
+        <g class="guide-figure">
+          <!-- legs continuing up out of frame -->
+          <path d="M118 12 L118 62" /><path d="M182 12 L182 62" />
+          <!-- back: pelvis nearest camera at top, shoulders farther and lower in frame -->
+          <path d="M110 66 C 104 130, 116 200, 122 252" />
+          <path d="M190 66 C 196 130, 184 200, 178 252" />
+          <path d="M110 66 Q 150 54 190 66" />
+          <!-- shoulder line + head -->
+          <path d="M122 252 Q 150 244 178 252" />
+          <circle cx="150" cy="292" r="27" />
+          <!-- arms hanging toward the floor -->
+          <path d="M124 256 C 112 300, 104 330, 100 362" />
+          <path d="M176 256 C 188 300, 196 330, 200 362" />
+        </g>
+        <g>
+          <line class="guide-tick" x1="40" y1="66" x2="96" y2="66" />
+          <text class="guide-text" x="40" y="60">Hips</text>
+          <line class="guide-tick" x1="204" y1="252" x2="260" y2="252" />
+          <text class="guide-text" x="204" y="246">Shoulders</text>
+        </g>
+      </svg>
+
+      <p class="capture__hint" id="capture-hint"><b>Bend forward at the waist</b> · arms hanging loose · back to the camera</p>
+      <div class="capture__timer hidden mono" id="capture-timer">3</div>
+      <div class="capture__error hidden" id="capture-error"></div>
+    </div>
+
+    <div class="capture__controls">
+      <button class="capture__aux capture__aux--left" id="capture-timer-toggle" aria-pressed="true">Timer 8s</button>
+      <button class="shutter" id="capture-shutter" aria-label="Take screening photo"><span class="shutter__core"></span></button>
+      <button class="capture__aux capture__aux--right" id="capture-upload-btn">Upload</button>
+      <input type="file" accept="image/*" id="capture-file" class="visually-hidden" />
+    </div>
+
+    <div class="capture__steps">
+      <div class="step-label"><span class="step-label__num">01</span> Capture <span class="step-label__rule"></span></div>
+      <ol>
+        <li>Bare back or a fitted top. Shoes off, feet together.</li>
+        <li>Bend forward at the waist until your back is flat, knees straight, arms hanging.</li>
+        <li>Phone behind you at hip height, held level — a helper or the timer both work.</li>
+        <li>Frame hips at the top, shoulders and head lower down.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ============================ 02 · ANALYZE =========================== -->
+  <section class="screen analyze" id="screen-analyze" aria-labelledby="analyze-title" aria-live="polite">
+    <div class="step-label"><span class="step-label__num">02</span> Analyze <span class="step-label__rule"></span></div>
+    <h2 id="analyze-title" style="margin-bottom:var(--space-4)">Measuring your photo</h2>
+    <div class="analyze__frame">
+      <img id="analyze-preview" alt="" />
+      <div class="analyze__sweep"></div>
+    </div>
+    <ul class="analyze__log" id="analyze-log">
+      <li data-step="model">Loading pose model</li>
+      <li data-step="detect">Measuring at five framings</li>
+      <li data-step="agree">Checking the framings agree</li>
+      <li data-step="compare">Comparing to screening bands</li>
+    </ul>
+    <p class="analyze__detail mono" id="analyze-detail"></p>
+  </section>
+
+  <!-- ============================ 03 · RESULT ============================ -->
+  <section class="screen result" id="screen-result" aria-labelledby="result-title">
+    <div class="step-label"><span class="step-label__num">03</span> Result <span class="step-label__rule"></span></div>
+    <h2 class="visually-hidden" id="result-title">Your screening result</h2>
+    <div id="result-body"></div>
+  </section>
+
+  <!-- ============================ 04 · CARE ============================== -->
+  <section class="screen screen--pad" id="screen-doctors" aria-labelledby="doctors-title">
+    <div class="step-label"><span class="step-label__num">04</span> Next step <span class="step-label__rule"></span></div>
+    <h2 id="doctors-title" style="margin-bottom:var(--space-2)">Clinicians who treat scoliosis</h2>
+    <p class="small muted" style="margin-bottom:var(--space-4)">Orthopedic surgeons, pediatric orthopedists, and physical therapists near you. Curve evaluation usually starts with a pediatrician or family doctor, who refers on if needed.</p>
+
+    <div class="locbar">
+      <input type="text" id="loc-input" placeholder="ZIP code, city, or address" autocomplete="postal-code" aria-label="Search location" />
+      <button class="btn" id="loc-search">Find</button>
+    </div>
+    <button class="btn btn--ghost btn--block" id="loc-gps" style="margin-bottom:var(--space-4)">Use my current location</button>
+
+    <div class="filters" role="group" aria-label="Filters">
+      <button class="chip" data-filter-spec="ortho" aria-pressed="false">Orthopedic</button>
+      <button class="chip" data-filter-spec="pediatric" aria-pressed="false">Pediatric</button>
+      <button class="chip" data-filter-spec="pt" aria-pressed="false">Physical therapy</button>
+      <button class="chip" data-filter-radius="5000" aria-pressed="false">≤ 5 km</button>
+      <button class="chip" data-filter-radius="15000" aria-pressed="true">≤ 15 km</button>
+      <button class="chip" data-filter-radius="50000" aria-pressed="false">≤ 50 km</button>
+      <button class="chip" data-filter-rating="4" aria-pressed="false">4.0+ rated</button>
+    </div>
+
+    <div id="map" role="img" aria-label="Map of nearby clinicians"></div>
+    <div class="source-line"><span id="places-source">Source: —</span><span id="places-count"></span></div>
+    <div id="places-notice"></div>
+    <div id="places-list"></div>
+  </section>
+
+  <!-- ============================ LEARN ================================== -->
+  <section class="screen screen--pad article" id="screen-resources" aria-labelledby="resources-title">
+    <div class="step-label"><span class="step-label__num">REF</span> Background reading <span class="step-label__rule"></span></div>
+    <h1 id="resources-title" style="margin-bottom:var(--space-4)">What scoliosis actually is</h1>
+
+    <p>A spine is supposed to be straight when you look at someone from behind. Scoliosis means it curves sideways, usually in an S or C shape, and the vertebrae also rotate slightly as they curve. That rotation is why one side of the back can look higher than the other when you bend forward — the ribs get carried along with the twist.</p>
+    <p>The most common kind is <b>adolescent idiopathic scoliosis</b>. "Idiopathic" means no one knows the cause. It usually shows up between ages 10 and 15, during the growth spurt, and it's more likely to progress in girls. It is common: roughly 2 to 3 in 100 adolescents have a curve of 10° or more. Most of those curves are small, never progress, and need nothing but a check-up now and then.</p>
+
+    <h2>What the forward bend test shows</h2>
+    <p>The Adam's forward bend test is the standard screening move. You bend forward at the waist with your arms hanging, and someone looks along your back from behind. If the spine is rotated, one side of the rib cage or lower back sits higher than the other — a "rib hump."</p>
+    <p>Clinicians measure that hump with a <b>scoliometer</b>, a small level laid across the back. It reads out an <b>angle of trunk rotation (ATR)</b> in degrees. The widely used referral cutoff is <b>7°</b>, which corresponds roughly to a 20° spinal curve — the point where treatment decisions start to matter. Readings between about 5° and 7° usually mean "check again in a few months."</p>
+
+    <h2>What SpineCheck can and can't measure</h2>
+    <p>This part is worth being blunt about, because it decides how much weight to give anything the app tells you.</p>
+    <p><b>It measures how level your shoulders and hips look.</b> Those are real screening signs — an uneven shoulder or waistline is often what makes a parent or a school nurse look twice — and they can be measured from a photograph reliably enough to be worth reporting, with an error bar.</p>
+    <p><b>It does not measure trunk rotation.</b> An earlier version of this app did try to, by reading the depth the pose model estimates for each body point. Tested against clinical photographs of people with confirmed curves, those depth numbers moved further than the rib hump they were supposed to detect when the same photo was simply re-cropped. They looked precise and meant nothing, so they were removed. A rib hump is a centimetre or two of depth across a back; a single phone photo does not carry that information, which is exactly why the scoliometer exists.</p>
+    <p><b>Every reading comes with its uncertainty.</b> Each photo is measured five times at slightly different framings. You get the middle value and the spread between them, and if the five disagree too much you get no number at all rather than a confident-looking wrong one.</p>
+
+    <h2>How scoliosis is really diagnosed</h2>
+    <p>Screening only decides who should get looked at. Diagnosis takes an X-ray.</p>
+    <figure class="figure-cobb">
+      <svg viewBox="0 0 300 170" role="img" aria-label="Diagram of a Cobb angle measured between the most tilted vertebrae at the ends of a spinal curve">
+        <line class="fig-plumb" x1="150" y1="8" x2="150" y2="162" />
+        <path class="fig-spine" d="M150 12 C 178 46, 182 74, 158 100 C 138 122, 134 144, 150 160" />
+        <g class="fig-vert">
+          <rect x="152" y="26" width="34" height="12" transform="rotate(22 169 32)" />
+          <rect x="146" y="94" width="34" height="12" transform="rotate(-20 163 100)" />
+        </g>
+        <line class="fig-angle" x1="152" y1="18" x2="252" y2="58" />
+        <line class="fig-angle" x1="146" y1="106" x2="252" y2="66" />
+        <path class="fig-angle" d="M236 52 A 40 40 0 0 1 236 72" fill="none" />
+        <text class="fig-text" x="248" y="92" text-anchor="end">Cobb angle</text>
+        <text class="fig-text" x="16" y="20">Plumb line</text>
+        <text class="fig-text" x="16" y="34">(vertical reference)</text>
+      </svg>
+      <figcaption>A Cobb angle is measured on a standing X-ray, between the most tilted vertebra at the top of the curve and the most tilted one at the bottom. 10° or more is scoliosis. Under 10° is just normal spinal asymmetry.</figcaption>
+    </figure>
+    <p>A visit typically includes: a history (growth, family history, pain, any neurological symptoms), the forward bend test with a scoliometer, a check of leg lengths and skin markings, and — if the exam warrants it — a low-dose standing X-ray of the full spine. Growth remaining matters as much as the curve size, because a curve in a still-growing spine is the one likely to get bigger.</p>
+
+    <h2>What treatment actually looks like</h2>
+    <table class="path-table">
+      <thead><tr><th>Curve</th><th>Usual path</th></tr></thead>
+      <tbody>
+        <tr><td>&lt; 10°</td><td>Not scoliosis. No treatment.</td></tr>
+        <tr><td>10–24°</td><td>Observation. Recheck every 4–12 months while growing. Often paired with scoliosis-specific physical therapy (Schroth, SEAS) to work on posture and trunk control.</td></tr>
+        <tr><td>25–45°</td><td>Bracing, if the person is still growing. A brace doesn't straighten the spine — it holds the curve from getting worse until growth finishes. It works better the more hours a day it's worn.</td></tr>
+        <tr><td>&gt; 45–50°</td><td>Surgery is discussed. Usually spinal fusion, sometimes vertebral body tethering for the right candidates. This is the minority of cases.</td></tr>
+      </tbody>
+    </table>
+    <p>Most people screened never reach the bracing conversation. The reason early detection matters is that bracing only works while there's growth left — catching a curve at 13 gives options that catching it at 17 does not.</p>
+
+    <h2>Why school screening matters</h2>
+    <p>School screening exists because scoliosis peaks exactly when kids stop being examined regularly. It's painless in the early stages, hidden by clothing, and easy for a teenager to not mention. A 30-second forward bend test in a gym catches curves that would otherwise be found years later, past the point where a brace could have helped.</p>
+    <p>Coverage has thinned out. Some U.S. states mandate screening, some recommend it, and others have dropped their programs, generally citing cost, staffing, and the argument that screening produces referrals and X-rays for curves that would never have progressed. The counter-argument from pediatric orthopedic groups is that the cost of a missed curve — a brace-eligible teenager who instead becomes a surgical candidate — is much higher than the cost of some extra referrals.</p>
+    <p>If your school doesn't screen, a forward bend check at home once or twice a year during the growth years is a reasonable substitute. That's what this app is for — not to replace the exam, but to make it likelier that someone who needs one actually gets one.</p>
+
+    <h2>Read further</h2>
+    <ul class="link-list">
+      <li><a href="https://www.srs.org/" target="_blank" rel="noopener noreferrer">
+        <span class="link-list__name">Scoliosis Research Society</span>
+        <span class="link-list__desc">The international professional society. Patient section covers conditions, treatments, and finding a specialist.</span></a></li>
+      <li><a href="https://www.scoliosis.org/" target="_blank" rel="noopener noreferrer">
+        <span class="link-list__name">National Scoliosis Foundation</span>
+        <span class="link-list__desc">Patient-led nonprofit: education, support groups, and advocacy for school screening.</span></a></li>
+      <li><a href="https://orthoinfo.aaos.org/" target="_blank" rel="noopener noreferrer">
+        <span class="link-list__name">AAOS OrthoInfo</span>
+        <span class="link-list__desc">Plain-language condition articles written and reviewed by orthopedic surgeons.</span></a></li>
+      <li><a href="https://orthokids.org/" target="_blank" rel="noopener noreferrer">
+        <span class="link-list__name">POSNA OrthoKids</span>
+        <span class="link-list__desc">Pediatric Orthopaedic Society of North America's family-facing site, written for parents and kids.</span></a></li>
+      <li><a href="https://www.niams.nih.gov/health-topics/scoliosis" target="_blank" rel="noopener noreferrer">
+        <span class="link-list__name">NIH / NIAMS — Scoliosis</span>
+        <span class="link-list__desc">Government health overview: causes, diagnosis, treatment, and current research.</span></a></li>
+      <li><a href="https://www.settingscoliosisstraight.org/" target="_blank" rel="noopener noreferrer">
+        <span class="link-list__name">Setting Scoliosis Straight Foundation</span>
+        <span class="link-list__desc">Runs the Harms Study Group research registry; patient education and outcomes data.</span></a></li>
+    </ul>
+
+    <div class="disclaimer" style="margin-top:var(--space-6)">
+      <strong>SpineCheck does not diagnose scoliosis.</strong> It calculates geometric asymmetry from a photograph. Only a licensed physician, using a physical exam and imaging, can diagnose scoliosis or rule it out. Nothing here is medical advice. If you have back pain that wakes you at night, numbness, weakness, or a rapidly changing curve, contact a clinician promptly rather than tracking it here.
+    </div>
+  </section>
+
+  <!-- ============================ LOG ==================================== -->
+  <section class="screen screen--pad" id="screen-history" aria-labelledby="history-title">
+    <div class="step-label"><span class="step-label__num">LOG</span> Scan record <span class="step-label__rule"></span></div>
+    <h2 id="history-title" style="margin-bottom:var(--space-2)">Your scan history</h2>
+    <p class="small muted" style="margin-bottom:var(--space-4)">A single reading matters less than the direction it moves. During growth years, rescanning every few months shows whether asymmetry is stable or increasing.</p>
+    <div id="history-body"></div>
+  </section>
+
+  </main>
+
+  <nav class="tabbar" role="tablist" aria-label="Sections">
+    <button class="tab" role="tab" data-tab="capture" aria-selected="true">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6V2h4M18 6V2h-4M2 14v4h4M18 14v4h-4"/><line x1="10" y1="4" x2="10" y2="16"/></svg>
+      Scan
+    </button>
+    <button class="tab" role="tab" data-tab="doctors" aria-selected="false">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 18s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z"/><path d="M10 5v6M7 8h6"/></svg>
+      Care
+    </button>
+    <button class="tab" role="tab" data-tab="resources" aria-selected="false">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H3z"/><path d="M17 3h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6z"/></svg>
+      Learn
+    </button>
+    <button class="tab" role="tab" data-tab="history" aria-selected="false">
+      <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 16V4M3 16h14"/><polyline points="6,12 9,9 12,11 17,6"/></svg>
+      Log
+    </button>
+  </nav>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

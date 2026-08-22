@@ -1,0 +1,219 @@
+/* Onboarding, guided capture, and the analysis state. */
+
+/* ---------- Onboarding ----------------------------------------------- */
+
+.intro { padding: var(--space-6) var(--gutter) var(--space-8); }
+
+.intro__plumb {
+  display: block;
+  margin: 0 auto var(--space-5);
+  width: 40px;
+  height: 96px;
+}
+
+.intro__title { text-align: center; margin-bottom: var(--space-2); }
+.intro__lede { text-align: center; color: var(--ink-500); margin-bottom: var(--space-6); }
+
+.claim-list { list-style: none; margin: 0 0 var(--space-5); padding: 0; }
+.claim-list li {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-bottom: 1px dashed var(--rule);
+}
+.claim-list li:first-child { border-top: 1px dashed var(--rule); }
+.claim-list__key {
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--scrub);
+  padding-top: 3px;
+}
+.claim-list__key--no { color: var(--marker); }
+.claim-list b { font-weight: 600; }
+
+/* ---------- Capture viewport ----------------------------------------- */
+
+/* Display is owned by .screen[data-active] so these stay hidden when inactive. */
+.screen[data-active].capture,
+.screen[data-active].analyze { display: flex; }
+
+.capture { flex-direction: column; min-height: calc(100dvh - 50px); background: var(--ink-900); }
+
+.capture__stage {
+  position: relative;
+  flex: 1;
+  min-height: 340px;
+  background: #060D14;
+  overflow: hidden;
+}
+.capture__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.capture__guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.capture__guide .guide-figure { stroke: rgba(237,240,241,0.82); fill: none; stroke-width: 1.6; stroke-dasharray: 7 5; }
+.capture__guide .guide-plumb  { stroke: var(--marker); stroke-width: 1; opacity: 0.85; }
+.capture__guide .guide-tick   { stroke: rgba(237,240,241,0.5); stroke-width: 1; }
+.capture__guide .guide-text {
+  font-family: var(--font-num);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  fill: rgba(237,240,241,0.65);
+  text-transform: uppercase;
+}
+
+.capture__hint {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  padding: var(--space-3) var(--gutter);
+  background: linear-gradient(to bottom, rgba(6,13,20,0.85), transparent);
+  color: var(--paper);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.capture__hint b { font-weight: 600; }
+
+.capture__timer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-num);
+  font-size: 5rem;
+  font-weight: 600;
+  color: var(--paper);
+  background: rgba(6,13,20,0.35);
+  text-shadow: 0 2px 16px rgba(0,0,0,0.5);
+}
+
+.capture__error {
+  position: absolute;
+  inset: auto var(--gutter) var(--space-4);
+  padding: var(--space-3);
+  background: var(--paper);
+  border-left: 3px solid var(--marker);
+  font-size: var(--text-sm);
+}
+
+/* ---------- Capture controls (one-handed) ----------------------------- */
+
+.capture__controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--gutter) calc(var(--nav-h) + var(--space-4));
+  background: var(--ink-900);
+}
+
+.shutter {
+  width: 78px; height: 78px;
+  border-radius: 50%;
+  border: 2px solid var(--paper);
+  background: transparent;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  justify-self: center;
+}
+.shutter__core {
+  width: 60px; height: 60px;
+  border-radius: 50%;
+  background: var(--marker);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.shutter:active .shutter__core { transform: scale(0.88); }
+.shutter[data-armed='true'] .shutter__core { background: var(--paper); }
+
+.capture__aux {
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-3);
+  background: transparent;
+  border: 1px solid rgba(237,240,241,0.28);
+  border-radius: var(--radius);
+  color: var(--paper);
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.capture__aux[aria-pressed='true'] { border-color: var(--marker); color: var(--marker); }
+.capture__aux--right { justify-self: end; }
+.capture__aux--left { justify-self: start; }
+
+.capture__steps {
+  padding: var(--space-4) var(--gutter);
+  background: var(--ink-900);
+  color: var(--ink-300);
+  border-top: 1px solid rgba(237,240,241,0.12);
+}
+.capture__steps ol { margin: 0; padding-left: 1.15rem; font-size: var(--text-sm); }
+.capture__steps li { margin-bottom: var(--space-1); }
+.capture__steps li::marker { font-family: var(--font-num); color: var(--scrub); }
+
+/* ---------- Analysis state ------------------------------------------- */
+
+.analyze { padding: var(--space-8) var(--gutter); min-height: 70dvh; flex-direction: column; justify-content: center; }
+
+.analyze__frame {
+  position: relative;
+  border: var(--hair);
+  background: var(--paper-raised);
+  aspect-ratio: 3 / 4;
+  max-height: 44dvh;
+  overflow: hidden;
+  margin-bottom: var(--space-5);
+}
+.analyze__frame img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.6) contrast(1.05); }
+.analyze__sweep {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--scrub);
+  box-shadow: 0 0 18px rgba(31,110,140,0.75);
+  animation: sweep 1.9s var(--ease) infinite;
+}
+@keyframes sweep {
+  0%   { left: 0%; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+.analyze__log { list-style: none; margin: 0; padding: 0; font-family: var(--font-num); font-size: var(--text-sm); }
+.analyze__log li {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  color: var(--ink-300);
+  border-bottom: 1px dashed var(--rule-soft);
+}
+.analyze__log li[data-state='active'] { color: var(--ink-700); }
+.analyze__log li[data-state='done'] { color: var(--ink-500); }
+.analyze__log li::before { content: '○'; color: var(--rule); }
+.analyze__log li[data-state='active']::before { content: '◐'; color: var(--scrub); }
+.analyze__log li[data-state='done']::before { content: '●'; color: var(--clear); }
+
+.analyze__detail {
+  margin-top: var(--space-3);
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-300);
+  min-height: 1.2em;
+}

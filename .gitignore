@@ -1,0 +1,16 @@
+# Dependencies (there are none — this app has no build step)
+node_modules/
+
+# OS noise
+.DS_Store
+
+# Benchmark image set.
+# The labelled photographs the detector is evaluated against are NOT in this repo.
+# Several are clinical photographs of patients, used for local evaluation only and
+# not redistributed. bench/README.md explains how to assemble your own set.
+bench/images/
+bench/set/
+*.jpg
+*.jpeg
+*.png
+*.webp
