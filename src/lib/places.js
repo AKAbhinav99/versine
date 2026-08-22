@@ -6,6 +6,7 @@
  * so the UI never has to care which one answered. */
 
 import { PLACES } from '../config.js';
+import { looksLikePostalCode } from './countries.js';
 
 const EARTH_RADIUS_M = 6371000;
 
@@ -62,14 +63,59 @@ function geolocationMessage(error) {
   return 'Location lookup timed out. Type a ZIP code or city instead.';
 }
 
-/** Free-text place lookup via OpenStreetMap Nominatim (no key required). */
-export async function geocode(query) {
-  const url = `${PLACES.nominatimUrl}?format=json&limit=1&q=${encodeURIComponent(query)}`;
-  const response = await fetchWithTimeout(url, { headers: { Accept: 'application/json' } }, 12000);
+/**
+ * Place lookup via OpenStreetMap Nominatim (no key required).
+ *
+ * A bare postal code goes through Nominatim's structured `postalcode` field
+ * rather than free text, and both forms are constrained to a country when one is
+ * given — otherwise "2000" matches a postcode in a dozen different countries and
+ * the map silently lands on the wrong continent.
+ */
+export async function geocode(query, { country = '' } = {}) {
+  const trimmed = query.trim();
+  const params = new URLSearchParams({ format: 'json', limit: '1', addressdetails: '1' });
+  if (country) params.set('countrycodes', country.toLowerCase());
+  if (looksLikePostalCode(trimmed)) params.set('postalcode', trimmed);
+  else params.set('q', trimmed);
+
+  const response = await fetchWithTimeout(
+    `${PLACES.nominatimUrl}?${params}`, { headers: { Accept: 'application/json' } }, 12000,
+  );
   if (!response.ok) throw new Error('Location lookup failed. Try a different spelling.');
+
   const [match] = await response.json();
-  if (!match) throw new Error(`No place found for "${query}".`);
-  return { lat: Number(match.lat), lng: Number(match.lon), label: match.display_name };
+  if (!match) {
+    throw new Error(country
+      ? `No place found for "${trimmed}" in the selected country. Check the country, or try a city name.`
+      : `No place found for "${trimmed}". Try adding a city or picking a country.`);
+  }
+  return { lat: Number(match.lat), lng: Number(match.lon), label: placeLabel(match) };
+}
+
+/** Turn coordinates back into a readable place, so a GPS fix can be confirmed. */
+export async function describePlace({ lat, lng }) {
+  try {
+    const params = new URLSearchParams({
+      format: 'json', addressdetails: '1', zoom: '14', lat: String(lat), lon: String(lng),
+    });
+    const response = await fetchWithTimeout(
+      `${PLACES.nominatimReverseUrl}?${params}`, { headers: { Accept: 'application/json' } }, 10000,
+    );
+    if (!response.ok) return null;
+    return placeLabel(await response.json());
+  } catch {
+    return null; // a missing label is cosmetic; the search still works
+  }
+}
+
+/** "Cambridge, Massachusetts 02138, United States" from Nominatim's address parts. */
+function placeLabel(match) {
+  const a = match?.address;
+  if (!a) return match?.display_name || null;
+  const town = a.city || a.town || a.village || a.municipality || a.suburb || a.county;
+  const region = a.state || a.region;
+  const line = [town, [region, a.postcode].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return [line, a.country].filter(Boolean).join(', ') || match.display_name;
 }
 
 /* ---------------------------------------------------------------- Google --- */

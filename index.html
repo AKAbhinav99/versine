@@ -50,11 +50,11 @@
     <ul class="claim-list">
       <li>
         <span class="claim-list__key">DOES</span>
-        <span><b>Measure geometry.</b> It finds body landmarks in your photo and calculates shoulder tilt, hip tilt, and an estimated trunk rotation angle.</span>
+        <span><b>Measure geometry.</b> It finds body landmarks in your photo and calculates how far your shoulders and hips sit off level, measuring the same photo five times so you get an error bar with the number.</span>
       </li>
       <li>
         <span class="claim-list__key">DOES</span>
-        <span><b>Show its work.</b> Every number, and the points it measured from, are shown on your own photo.</span>
+        <span><b>Show its work.</b> Every number, the points it measured from, and how much those measurements disagreed are all shown on your own photo.</span>
       </li>
       <li>
         <span class="claim-list__key">DOES</span>
@@ -66,7 +66,7 @@
       </li>
       <li>
         <span class="claim-list__key claim-list__key--no">NO</span>
-        <span><b>A clear result is not an all-clear.</b> Curves can be present without much surface asymmetry, and photo angle affects the numbers. If you have symptoms or concerns, see a clinician regardless of what this says.</span>
+        <span><b>It cannot measure trunk rotation.</b> The rib hump a clinician feels for is a centimetre or two of depth, which a single photo does not carry. That is what a scoliometer is for. A clear result here is not an all-clear either — curves can exist with level shoulders.</span>
       </li>
     </ul>
 
@@ -85,24 +85,24 @@
       <svg class="capture__guide" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <line class="guide-plumb" x1="150" y1="8" x2="150" y2="392" stroke-dasharray="6 6" />
         <g class="guide-figure">
-          <!-- legs continuing up out of frame -->
-          <path d="M118 12 L118 62" /><path d="M182 12 L182 62" />
-          <!-- back: pelvis nearest camera at top, shoulders farther and lower in frame -->
-          <path d="M110 66 C 104 130, 116 200, 122 252" />
-          <path d="M190 66 C 196 130, 184 200, 178 252" />
-          <path d="M110 66 Q 150 54 190 66" />
-          <!-- shoulder line + head -->
-          <path d="M122 252 Q 150 244 178 252" />
-          <circle cx="150" cy="292" r="27" />
-          <!-- arms hanging toward the floor -->
-          <path d="M124 256 C 112 300, 104 330, 100 362" />
-          <path d="M176 256 C 188 300, 196 330, 200 362" />
+          <!-- Seen from behind and above: hips nearest the camera at the bottom,
+               the back receding upward, shoulders and head toward the top. -->
+          <circle cx="150" cy="92" r="22" />
+          <path d="M128 124 Q 150 117 172 124" />
+          <path d="M124 128 C 114 186, 114 248, 118 300" />
+          <path d="M176 128 C 186 186, 186 248, 182 300" />
+          <path d="M118 304 Q 150 326 182 304" />
+          <!-- arms hanging toward the floor, close along the trunk -->
+          <path d="M126 131 C 108 182, 100 240, 99 288" />
+          <path d="M174 131 C 192 182, 200 240, 201 288" />
+          <!-- legs continuing down out of frame -->
+          <path d="M130 328 L 130 392" /><path d="M170 328 L 170 392" />
         </g>
         <g>
-          <line class="guide-tick" x1="40" y1="66" x2="96" y2="66" />
-          <text class="guide-text" x="40" y="60">Hips</text>
-          <line class="guide-tick" x1="204" y1="252" x2="260" y2="252" />
-          <text class="guide-text" x="204" y="246">Shoulders</text>
+          <line class="guide-tick" x1="212" y1="126" x2="266" y2="126" />
+          <text class="guide-text" x="212" y="120">Shoulders</text>
+          <line class="guide-tick" x1="212" y1="306" x2="266" y2="306" />
+          <text class="guide-text" x="212" y="300">Hips</text>
         </g>
       </svg>
 
@@ -123,8 +123,8 @@
       <ol>
         <li>Bare back or a fitted top. Shoes off, feet together.</li>
         <li>Bend forward at the waist until your back is flat, knees straight, arms hanging.</li>
-        <li>Phone behind you at hip height, held level — a helper or the timer both work.</li>
-        <li>Frame hips at the top, shoulders and head lower down.</li>
+        <li>Phone behind you at about chest height, angled down at your back — a helper or the timer both work.</li>
+        <li>Frame your hips at the bottom, shoulders and head toward the top, whole body inside the edges.</li>
       </ol>
     </div>
   </section>
@@ -160,10 +160,16 @@
     <p class="small muted" style="margin-bottom:var(--space-4)">Orthopedic surgeons, pediatric orthopedists, and physical therapists near you. Curve evaluation usually starts with a pediatrician or family doctor, who refers on if needed.</p>
 
     <div class="locbar">
-      <input type="text" id="loc-input" placeholder="ZIP code, city, or address" autocomplete="postal-code" aria-label="Search location" />
+      <input type="text" id="loc-input" placeholder="ZIP or postal code, city, or address" autocomplete="postal-code" aria-label="Search location" />
       <button class="btn" id="loc-search">Find</button>
     </div>
-    <button class="btn btn--ghost btn--block" id="loc-gps" style="margin-bottom:var(--space-4)">Use my current location</button>
+    <div class="locbar locbar--secondary">
+      <label class="visually-hidden" for="loc-country">Country to search in</label>
+      <select id="loc-country" aria-describedby="loc-country-hint"></select>
+      <button class="btn btn--ghost" id="loc-gps">Use my location</button>
+    </div>
+    <p class="loc-hint" id="loc-country-hint">A postal code on its own is ambiguous worldwide — set the country and SpineCheck looks it up as a postal code rather than guessing.</p>
+    <p class="loc-resolved hidden" id="loc-resolved"></p>
 
     <div class="filters" role="group" aria-label="Filters">
       <button class="chip" data-filter-spec="ortho" aria-pressed="false">Orthopedic</button>

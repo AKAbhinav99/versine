@@ -8,19 +8,21 @@ import { saveScan, makeThumbnail } from '../lib/storage.js';
 import { showScreen } from '../router.js';
 import { renderResult } from '../screens/result.js';
 
-/* A back with the left shoulder sitting a few degrees high. */
+/* A back seen from behind and above, bent forward: head at the top, shoulders
+   below it, hips nearest the camera at the bottom. The left shoulder sits a few
+   degrees high. */
 const IMAGE_LANDMARKS = {
-  [POSE.NOSE]: { x: 0.50, y: 0.86 },
-  [POSE.LEFT_SHOULDER]: { x: 0.36, y: 0.580 },
-  [POSE.RIGHT_SHOULDER]: { x: 0.64, y: 0.605 },
-  [POSE.LEFT_ELBOW]: { x: 0.30, y: 0.74 },
-  [POSE.RIGHT_ELBOW]: { x: 0.70, y: 0.75 },
-  [POSE.LEFT_WRIST]: { x: 0.27, y: 0.90 },
-  [POSE.RIGHT_WRIST]: { x: 0.73, y: 0.91 },
-  [POSE.LEFT_HIP]: { x: 0.41, y: 0.220 },
-  [POSE.RIGHT_HIP]: { x: 0.59, y: 0.225 },
-  [POSE.LEFT_KNEE]: { x: 0.42, y: 0.04 },
-  [POSE.RIGHT_KNEE]: { x: 0.58, y: 0.04 },
+  [POSE.NOSE]: { x: 0.50, y: 0.19 },
+  [POSE.LEFT_SHOULDER]: { x: 0.36, y: 0.360 },
+  [POSE.RIGHT_SHOULDER]: { x: 0.64, y: 0.385 },
+  [POSE.LEFT_ELBOW]: { x: 0.30, y: 0.50 },
+  [POSE.RIGHT_ELBOW]: { x: 0.70, y: 0.51 },
+  [POSE.LEFT_WRIST]: { x: 0.27, y: 0.63 },
+  [POSE.RIGHT_WRIST]: { x: 0.73, y: 0.64 },
+  [POSE.LEFT_HIP]: { x: 0.41, y: 0.520 },
+  [POSE.RIGHT_HIP]: { x: 0.59, y: 0.525 },
+  [POSE.LEFT_KNEE]: { x: 0.44, y: 0.78 },
+  [POSE.RIGHT_KNEE]: { x: 0.56, y: 0.78 },
 };
 
 const fill = (overrides, base) => {
@@ -42,21 +44,22 @@ function placeholderPhoto() {
   ctx.fillStyle = backdrop;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+  /* Head at the top, back widening down toward the hips at the bottom. */
   ctx.fillStyle = '#8d7a6b';
   ctx.beginPath();
-  ctx.moveTo(280, 190);
-  ctx.quadraticCurveTo(360, 158, 442, 190);
-  ctx.lineTo(470, 600);
-  ctx.quadraticCurveTo(360, 645, 250, 600);
-  ctx.closePath();
+  ctx.arc(360, 182, 56, 0, Math.PI * 2);
   ctx.fill();
   ctx.beginPath();
-  ctx.arc(360, 760, 70, 0, Math.PI * 2);
+  ctx.moveTo(288, 330);
+  ctx.quadraticCurveTo(360, 306, 432, 330);
+  ctx.lineTo(458, 528);
+  ctx.quadraticCurveTo(360, 566, 262, 528);
+  ctx.closePath();
   ctx.fill();
 
   ctx.font = '500 20px "IBM Plex Mono", monospace';
   ctx.fillStyle = 'rgba(237,240,241,0.75)';
-  ctx.fillText('DEMO IMAGE — NOT A REAL SCAN', 150, 60);
+  ctx.fillText('DEMO IMAGE — NOT A REAL SCAN', 150, 40);
   return canvas;
 }
 

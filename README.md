@@ -39,6 +39,7 @@ landmarks always produce the same numbers.
 | `calculateShoulderAsymmetry` | Angle between the shoulder line and horizontal, in pixel space so the image aspect ratio doesn't skew it. |
 | `calculateHipAsymmetry` | Same, for the hip line. |
 | `assessPoseQuality` | Landmark confidence, framing, forward-bend sanity check, and a "was the phone held level" check. |
+| `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent — a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
 | `measureWithConsensus` | Runs the above at five framings of the same photo and reduces them to a median, a spread, and a usable/withheld verdict. |
 
 **Every reading is measured five times.** Landmark positions shift when a photo is
@@ -79,9 +80,21 @@ measure was tried as a replacement and did not separate the groups either. See
   filtering done in JS, because regex inside the query makes Overpass time out.
 
 Geocoding for typed locations uses Nominatim. The map is Leaflet with CARTO tiles.
-Neither provider publishes insurance acceptance, so the app doesn't invent it — it
-says so and tells the user to ask when they call. Distance, specialty, and rating
-filters are applied client-side.
+
+**Postal codes get a country.** "2000" is a valid postcode in Australia, Belgium,
+Denmark and a dozen other places, so a bare code is sent through Nominatim's
+structured `postalcode` field constrained to a selected country (defaulted from the
+browser locale) rather than free-text search. Wherever the search lands, the
+resolved place is printed above the map — "Cambridge, Massachusetts 02138, United
+States" — so a wrong match is visible instead of silent. GPS results are
+reverse-geocoded for the same reason.
+
+**The rating filter follows the data.** OpenStreetMap publishes no ratings, so
+against that provider the rating chips are disabled with an explanation rather than
+silently emptying the list, which is what they used to do. Empty results now name
+the filter responsible instead of always blaming the radius. Neither provider
+publishes insurance acceptance, so the app doesn't invent it — it says so and tells
+the user to ask when they call.
 
 ## Layout
 
@@ -117,7 +130,7 @@ tests/                  unit tests for the math and the consensus
 cd ~/spinecheck && node --test tests/
 ```
 
-19 tests: the angle math and its aspect-ratio correction, the pose quality
+21 tests: the angle math and its aspect-ratio correction, the pose quality
 warnings, and the consensus reduction — median selection, the spread as an error
 bar, the reliability gate, warning deduplication, and the threshold bands.
 

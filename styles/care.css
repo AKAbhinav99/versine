@@ -18,6 +18,58 @@
 }
 .locbar input::placeholder { color: var(--ink-300); }
 
+.locbar--secondary { margin-bottom: var(--space-2); }
+.locbar select {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0 var(--space-3);
+  border: var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--text-base);
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-500) 50%),
+                    linear-gradient(135deg, var(--ink-500) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: var(--space-6);
+}
+.locbar--secondary .btn { flex: none; }
+
+.loc-hint {
+  font-size: var(--text-xs);
+  color: var(--ink-300);
+  margin-bottom: var(--space-3);
+  line-height: 1.45;
+}
+.loc-resolved {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-num);
+  font-size: var(--text-sm);
+  color: var(--ink-700);
+  border-left: 2px solid var(--scrub);
+  padding: var(--space-2) var(--space-3);
+  background: var(--scrub-wash);
+  margin-bottom: var(--space-3);
+}
+.loc-resolved b {
+  font-weight: 500;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  font-size: var(--text-xs);
+  color: var(--scrub-dim);
+}
+
+/* A filter the current data source cannot support is shown, but inert. */
+.chip[aria-disabled='true'] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
 .filters {
   display: flex;
   gap: var(--space-2);

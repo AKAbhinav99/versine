@@ -4,24 +4,32 @@
 
 import { $, $$, el, formatDistance, escapeHtml } from '../lib/dom.js';
 import { PLACES } from '../config.js';
-import { findClinicians, currentPosition, geocode, getApiKey, setApiKey } from '../lib/places.js';
+import { findClinicians, currentPosition, geocode, describePlace, getApiKey, setApiKey } from '../lib/places.js';
+import { countryOptions, defaultCountry } from '../lib/countries.js';
 import { onEnter } from '../router.js';
 
 const LAST_CENTER_KEY = 'spinecheck.lastCenter';
 
 const state = {
   center: null,
+  country: '',
   radiusM: PLACES.defaultRadiusM,
   specs: new Set(),
   minRating: 0,
   results: [],
+  provider: null,
   loading: false,
 };
+
+/* OpenStreetMap carries no ratings, so the rating filter is meaningless against
+   it. Without this the filter silently emptied the list. */
+const providerHasRatings = () => state.provider === 'google';
 
 let map = null;
 let markerLayer = null;
 
 export function initDoctors() {
+  initCountrySelect();
   $('#loc-gps').addEventListener('click', useCurrentLocation);
   $('#loc-search').addEventListener('click', useTypedLocation);
   $('#loc-input').addEventListener('keydown', (event) => {
@@ -44,6 +52,7 @@ export function initDoctors() {
   }));
 
   $$('[data-filter-rating]').forEach((chip) => chip.addEventListener('click', () => {
+    if (chip.getAttribute('aria-disabled') === 'true') return;
     const on = chip.getAttribute('aria-pressed') === 'true';
     chip.setAttribute('aria-pressed', String(!on));
     state.minRating = on ? 0 : Number(chip.dataset.filterRating);
@@ -63,11 +72,34 @@ function onShow() {
 
 /* ------------------------------------------------------------------ where --- */
 
+function initCountrySelect() {
+  const select = $('#loc-country');
+  state.country = localStorage.getItem(PLACES.countryStorage) ?? defaultCountry();
+
+  select.append(new Option('Any country', ''));
+  for (const { code, name } of countryOptions()) select.append(new Option(name, code));
+  select.value = state.country;
+
+  select.addEventListener('change', () => {
+    state.country = select.value;
+    localStorage.setItem(PLACES.countryStorage, state.country);
+  });
+}
+
 function restoreCenter() {
   try {
     const saved = JSON.parse(localStorage.getItem(LAST_CENTER_KEY) || 'null');
     if (saved?.lat) state.center = saved;
   } catch { /* ignore malformed cache */ }
+}
+
+/** Show where the search actually landed, so a wrong postal-code match is obvious. */
+async function showResolvedPlace(label) {
+  const box = $('#loc-resolved');
+  const text = label || await describePlace(state.center);
+  if (!text) { box.classList.add('hidden'); return; }
+  box.replaceChildren(el('b', {}, 'Searching near'), el('span', {}, text));
+  box.classList.remove('hidden');
 }
 
 function rememberCenter() {
@@ -80,6 +112,7 @@ async function useCurrentLocation() {
     state.center = await currentPosition();
     rememberCenter();
     await search();
+    showResolvedPlace(null);
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -90,10 +123,11 @@ async function useTypedLocation() {
   if (!query) return;
   setStatus(`Looking up “${query}”…`);
   try {
-    const place = await geocode(query);
+    const place = await geocode(query, { country: state.country });
     state.center = { lat: place.lat, lng: place.lng };
     rememberCenter();
     await search();
+    showResolvedPlace(place.label);
   } catch (error) {
     setStatus(error.message, true);
   }
@@ -109,8 +143,10 @@ async function search() {
   try {
     const { results, provider, notice } = await findClinicians(state.center, state.radiusM);
     state.results = results;
+    state.provider = provider;
     $('#places-source').textContent = provider === 'google'
       ? 'Source: Google Places' : 'Source: OpenStreetMap';
+    syncRatingFilter();
     renderResults(notice);
   } catch (error) {
     state.results = [];
@@ -120,10 +156,24 @@ async function search() {
   }
 }
 
+/** Turn the rating chips off when the answering provider publishes no ratings. */
+function syncRatingFilter() {
+  const available = providerHasRatings();
+  if (!available) state.minRating = 0;
+
+  $$('[data-filter-rating]').forEach((chip) => {
+    chip.setAttribute('aria-disabled', String(!available));
+    if (!available) chip.setAttribute('aria-pressed', 'false');
+    chip.title = available
+      ? 'Filter to practices rated at least this highly'
+      : 'OpenStreetMap does not publish ratings. Add a Google Places key below to filter by rating.';
+  });
+}
+
 function visibleResults() {
   return state.results.filter((clinic) => {
     if (state.specs.size && !state.specs.has(clinic.specialty)) return false;
-    if (state.minRating && !(clinic.rating >= state.minRating)) return false;
+    if (state.minRating && providerHasRatings() && !(clinic.rating >= state.minRating)) return false;
     if (clinic.distanceM !== null && clinic.distanceM > state.radiusM) return false;
     return true;
   });
@@ -141,13 +191,26 @@ function renderResults(notice) {
 
   list.replaceChildren();
   if (!results.length) {
-    list.append(el('div', { class: 'empty' },
-      state.center
-        ? 'No matching practices in this radius. Widen the distance filter, or search a nearby larger town.'
-        : 'Set a location above to see clinicians near you.'));
+    list.append(el('div', { class: 'empty' }, emptyReason()));
     return;
   }
   results.forEach((clinic, index) => list.append(clinicCard(clinic, index)));
+}
+
+/** Say which filter emptied the list, rather than blaming the radius every time. */
+function emptyReason() {
+  if (!state.center) return 'Set a location above to see clinicians near you.';
+  if (!state.results.length) {
+    return 'Nothing found around this point. Widen the distance filter, or search a nearby larger town.';
+  }
+  const hidden = state.results.length - visibleResults().length;
+  if (state.minRating && providerHasRatings()) {
+    return `All ${hidden} nearby practices were hidden by the ${state.minRating.toFixed(1)}+ rating filter. Many clinics have no rating at all, so this filter is aggressive — turn it off to see them.`;
+  }
+  if (state.specs.size) {
+    return `All ${hidden} nearby practices were hidden by the specialty filter. Turn one off to widen the search.`;
+  }
+  return `All ${hidden} results are further away than the current distance filter allows.`;
 }
 
 function clinicCard(clinic, index) {

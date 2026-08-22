@@ -5,7 +5,7 @@
  * and hips are. It does not measure trunk rotation. See bench/README.md for why
  * the depth-derived rotation estimate was removed. */
 
-import { THRESHOLDS } from '../config.js';
+import { THRESHOLDS, POSE_CHECK } from '../config.js';
 import {
   POSE, toPixels, distance2d, midpoint,
   calculateShoulderAsymmetry, calculateHipAsymmetry,
@@ -50,19 +50,21 @@ export function assessPoseQuality(landmarks, frame, measurements) {
     warnings.push('Part of your torso sits at the edge of the frame. Step back so hips and shoulders are both well inside the photo.');
   }
 
-  /* Framed from behind and slightly above, a bent-forward back puts the hips
-     nearest the camera at the top of the image, the shoulders lower down, and
-     the head hanging below them. Someone still standing upright projects the
-     other way round. This is a sanity check on the pose, not a measurement. */
+  /* Bending forward points the trunk away from the camera, so the shoulder-to-hip
+     distance in the image shrinks against shoulder width. Shoulders stay higher in
+     the frame than hips either way — that ordering only inverts if the camera is
+     below the trunk or the photo is rotated, which is worth its own note. */
   const shoulderMid = midpoint(toPixels(landmarks[POSE.LEFT_SHOULDER], frame), toPixels(landmarks[POSE.RIGHT_SHOULDER], frame));
   const hipMid = midpoint(toPixels(landmarks[POSE.LEFT_HIP], frame), toPixels(landmarks[POSE.RIGHT_HIP], frame));
   const shoulderWidth = distance2d(toPixels(landmarks[POSE.LEFT_SHOULDER], frame), toPixels(landmarks[POSE.RIGHT_SHOULDER], frame));
-  const nose = toPixels(landmarks[POSE.NOSE], frame);
 
-  const bendSignal = (shoulderMid.y - hipMid.y) / Math.max(shoulderWidth, 1);
-  const headBelowShoulders = nose.y > shoulderMid.y;
-  if (bendSignal < -0.15 && !headBelowShoulders) {
-    warnings.push('This looks closer to a standing pose than a forward bend. Bending forward makes trunk asymmetry easier to see, so the reading means more from the bend position.');
+  const torsoRatio = distance2d(shoulderMid, hipMid) / Math.max(shoulderWidth, 1);
+  const shouldersAboveHips = shoulderMid.y < hipMid.y;
+
+  if (!shouldersAboveHips) {
+    warnings.push('Your hips came out higher in the frame than your shoulders. That usually means the phone was below waist height or the photo is rotated. Hold it at about chest height, angled down at your back.');
+  } else if (torsoRatio > POSE_CHECK.standingTorsoRatio) {
+    warnings.push('Your back looks close to upright rather than bent forward. Bending at the waist until your back is flat is what makes trunk asymmetry visible, so the reading means more from that position.');
   }
 
   /* A phone rolled sideways tilts shoulders and hips together by the same amount. */
@@ -75,8 +77,10 @@ export function assessPoseQuality(landmarks, frame, measurements) {
 
   return {
     landmarkConfidence: weakest,
-    bendSignal,
-    posture: bendSignal > 0.1 ? 'bent forward' : bendSignal < -0.15 ? 'upright?' : 'level view',
+    torsoRatio,
+    posture: !shouldersAboveHips ? 'inverted?'
+      : torsoRatio <= POSE_CHECK.bentTorsoRatio ? 'bent forward'
+      : torsoRatio > POSE_CHECK.standingTorsoRatio ? 'upright?' : 'partly bent',
     warnings,
     usable: weakest >= 0.35 && inFrame,
   };

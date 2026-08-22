@@ -28,6 +28,24 @@ export const THRESHOLDS = {
   minLandmarkVisibility: 0.6,
 };
 
+/* Is the subject actually bent forward?
+ *
+ * Photographed from behind, the shoulders sit higher in the frame than the hips
+ * whether the subject is standing or bent — a camera held at chest height looks
+ * down at both. What changes is foreshortening: bending forward points the trunk
+ * away from the camera, so the shoulder-to-hip distance in the image collapses
+ * relative to shoulder width.
+ *
+ * standingTorsoRatio is measured: every standing photograph in bench/ came out
+ * between 1.06 and 1.47. The bent-forward side is physical reasoning, not data —
+ * the one forward-bend image in the set is too tightly cropped to detect. So this
+ * raises a note, never withholds a reading.
+ */
+export const POSE_CHECK = {
+  standingTorsoRatio: 1.0,
+  bentTorsoRatio: 0.8,
+};
+
 /* How much disagreement between framings is tolerable before a reading is
    withheld. Derived from the same benchmark: readings whose spread across
    framings exceeded ~3.5 degrees came from detections that had gone wrong. */
@@ -45,6 +63,8 @@ export const PLACES = {
   textSearchUrl: 'https://places.googleapis.com/v1/places:searchText',
   overpassUrl: 'https://overpass-api.de/api/interpreter',
   nominatimUrl: 'https://nominatim.openstreetmap.org/search',
+  nominatimReverseUrl: 'https://nominatim.openstreetmap.org/reverse',
+  countryStorage: 'spinecheck.country',
   defaultRadiusM: 15000,
   queries: [
     { label: 'Orthopedic', spec: 'ortho', text: 'orthopedic surgeon scoliosis' },

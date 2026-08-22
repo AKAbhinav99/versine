@@ -104,6 +104,22 @@ differently-biased distributions: spreads roughly doubled (one case 1.08° → 3
 two more cases fell below the reliability gate, and sensitivity dropped from 0.86
 to 0.80. Reverted; the finding is recorded in the code comment.
 
+### 5. The forward-bend check was pointing the wrong way
+
+A separate bug the same images caught. The pose check assumed that photographing a
+bent-forward subject from behind puts the hips *higher* in the frame than the
+shoulders. It does not — a camera at chest height looks down at both, so shoulders
+stay higher either way. Measured across the eight standing photographs, the
+shoulder-to-hip distance came out at 1.06 to 1.47 times shoulder width, with
+shoulders above hips in every single one.
+
+The check now uses foreshortening instead: bending points the trunk away from the
+camera, which collapses that ratio. Hips appearing above shoulders is treated as
+its own signal — the phone was below the trunk, or the photo is rotated. The
+standing side of the threshold is measured; the bent side is physical reasoning,
+since the one forward-bend image in the set is too tightly cropped to detect. It
+raises a note and never withholds a reading.
+
 ## Where the current detector lands
 
 Full pipeline, latest run:
