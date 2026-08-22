@@ -12,12 +12,15 @@ const MAX_ANALYSIS_EDGE = 1440; // downscale huge uploads before pose detection
 let stream = null;
 let timerEnabled = true;
 let countdown = null;
+let facingMode = 'environment';   // the back camera is the one pointed at a back
+let switching = false;
 
 const video = () => $('#capture-video');
 
 export function initCapture() {
   $('#capture-shutter').addEventListener('click', onShutter);
   $('#capture-timer-toggle').addEventListener('click', toggleTimer);
+  $('#capture-flip').addEventListener('click', flipCamera);
   $('#capture-upload-btn').addEventListener('click', () => $('#capture-file').click());
   $('#capture-file').addEventListener('change', onFileChosen);
 
@@ -31,12 +34,9 @@ async function startCamera() {
   if (stream) return;
   showError(null);
   try {
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1706 } },
-      audio: false,
-    });
-    video().srcObject = stream;
-    await video().play();
+    stream = await openStream(facingMode);
+    await showStream();
+    await updateFlipAvailability();
   } catch (error) {
     stream = null;
     showError(
@@ -44,6 +44,82 @@ async function startCamera() {
         ? 'Camera access is blocked. Allow it in your browser settings, or use Upload to analyse a photo someone else took.'
         : 'No camera available here. Use Upload to analyse a photo taken on another device.',
     );
+  }
+}
+
+/** `ideal` rather than `exact` so a device with one camera still opens it. */
+const openStream = (facing) => navigator.mediaDevices.getUserMedia({
+  video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 1706 } },
+  audio: false,
+});
+
+async function showStream() {
+  const element = video();
+  element.srcObject = stream;
+  element.dataset.facing = actualFacing();
+  await element.play();
+}
+
+/** What the granted track actually is, which need not be what was asked for. */
+function actualFacing() {
+  const settings = stream?.getVideoTracks()[0]?.getSettings?.() || {};
+  return settings.facingMode || facingMode;
+}
+
+/* ------------------------------------------------------------------ flip --- */
+
+/** Hide the control on hardware with nothing to switch to. */
+async function updateFlipAvailability() {
+  const button = $('#capture-flip');
+  let cameras = 0;
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    cameras = devices.filter((device) => device.kind === 'videoinput').length;
+  } catch {
+    cameras = 0;
+  }
+  button.classList.toggle('hidden', cameras < 2);
+  setFlipLabel();
+}
+
+const setFlipLabel = () => {
+  $('#capture-flip-label').textContent = actualFacing() === 'user' ? 'Front' : 'Rear';
+};
+
+async function flipCamera() {
+  if (switching) return;
+  switching = true;
+  cancelCountdown();
+
+  const previous = facingMode;
+  const button = $('#capture-flip');
+  button.disabled = true;
+
+  /* The old track has to be released first — many devices refuse to open the
+     second camera while the first one is still held. */
+  if (stream) stream.getTracks().forEach((track) => track.stop());
+  stream = null;
+
+  facingMode = previous === 'environment' ? 'user' : 'environment';
+  try {
+    stream = await openStream(facingMode);
+    await showStream();
+    setFlipLabel();
+    showError(null);
+  } catch {
+    facingMode = previous;
+    try {
+      stream = await openStream(facingMode);
+      await showStream();
+      setFlipLabel();
+      showError('That camera would not open, so the previous one is still running.');
+    } catch {
+      stream = null;
+      showError('The camera stopped responding. Reload the page, or use Upload instead.');
+    }
+  } finally {
+    button.disabled = false;
+    switching = false;
   }
 }
 

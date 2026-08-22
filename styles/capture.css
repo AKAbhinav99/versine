@@ -73,6 +73,36 @@
   text-transform: uppercase;
 }
 
+/* Bottom corner of the viewfinder: clear of the coaching text at the top, and
+   within thumb reach of the shutter below it. */
+.capture__flip {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1px solid rgba(237,240,241,0.35);
+  border-radius: var(--radius);
+  background: rgba(6,13,20,0.6);
+  color: var(--paper);
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+.capture__flip:active { background: rgba(6,13,20,0.85); }
+.capture__flip[disabled] { opacity: 0.5; }
+
+/* The front camera preview is mirrored so it feels like a mirror. The captured
+   frame is drawn from the video track, not the styled element, so the photo the
+   analysis sees is never flipped — which matters here, because the reading names
+   a left or right side. */
+.capture__video[data-facing='user'] { transform: scaleX(-1); }
+
 .capture__hint {
   position: absolute;
   left: 0; right: 0; top: 0;
