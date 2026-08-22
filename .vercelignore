@@ -1,0 +1,8 @@
+# The detector benchmark is a local development tool. It fetches its image set
+# from localhost:4322, so on a deployed site it would be a dead page — and the
+# images it names are clinical photographs of patients. Keep it out entirely.
+bench/
+
+# Unit tests and editor config are not part of the site.
+tests/
+.claude/
