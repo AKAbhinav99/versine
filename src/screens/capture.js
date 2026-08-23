@@ -6,11 +6,17 @@ import { $ } from '../lib/dom.js';
 import { onEnter, onLeave } from '../router.js';
 import { openAdjust } from './adjust.js';
 
-const TIMER_SECONDS = 8;
+/* Getting into a forward bend and settling takes longer than a snapshot timer
+   usually allows, so the choices run past the usual 3 and 10 seconds. Off is for
+   when someone else is holding the phone. */
+const TIMER_OPTIONS = [0, 3, 5, 10, 15, 20];
+const TIMER_STORAGE = 'versine.timerSeconds';
+const DEFAULT_TIMER_SECONDS = 10;
+const CUE_FROM = 3;             // start the audible countdown this many seconds out
 const MAX_ANALYSIS_EDGE = 1440; // downscale huge uploads before pose detection
 
 let stream = null;
-let timerEnabled = true;
+let timerSeconds = DEFAULT_TIMER_SECONDS;
 let countdown = null;
 let facingMode = 'environment';   // the back camera is the one pointed at a back
 let switching = false;
@@ -18,8 +24,9 @@ let switching = false;
 const video = () => $('#capture-video');
 
 export function initCapture() {
+  restoreTimerChoice();
   $('#capture-shutter').addEventListener('click', onShutter);
-  $('#capture-timer-toggle').addEventListener('click', toggleTimer);
+  $('#capture-timer-toggle').addEventListener('click', cycleTimer);
   $('#capture-flip').addEventListener('click', flipCamera);
   $('#capture-upload-btn').addEventListener('click', () => $('#capture-file').click());
   $('#capture-file').addEventListener('change', onFileChosen);
@@ -133,33 +140,82 @@ function stopCamera() {
 
 /* ---------------------------------------------------------------- shutter --- */
 
-function toggleTimer() {
-  timerEnabled = !timerEnabled;
+/* ------------------------------------------------------------------ timer --- */
+
+function restoreTimerChoice() {
+  /* Not Number(getItem(...)) — that turns a missing key into 0, which is itself a
+     valid choice, so the default would never have applied. */
+  const stored = localStorage.getItem(TIMER_STORAGE);
+  const saved = stored === null ? NaN : Number(stored);
+  timerSeconds = TIMER_OPTIONS.includes(saved) ? saved : DEFAULT_TIMER_SECONDS;
+  renderTimerButton();
+}
+
+/** Tapping cycles the delay — one control, no menu to open one-handed. */
+function cycleTimer() {
+  cancelCountdown();
+  const next = (TIMER_OPTIONS.indexOf(timerSeconds) + 1) % TIMER_OPTIONS.length;
+  timerSeconds = TIMER_OPTIONS[next];
+  try { localStorage.setItem(TIMER_STORAGE, String(timerSeconds)); } catch { /* not persisted */ }
+  renderTimerButton();
+}
+
+function renderTimerButton() {
   const button = $('#capture-timer-toggle');
-  button.setAttribute('aria-pressed', String(timerEnabled));
-  button.textContent = timerEnabled ? `Timer ${TIMER_SECONDS}s` : 'Timer off';
+  button.setAttribute('aria-pressed', String(timerSeconds > 0));
+  button.textContent = timerSeconds > 0 ? `Timer ${timerSeconds}s` : 'Timer off';
+  button.title = timerSeconds > 0
+    ? `${timerSeconds} second delay. Tap to change.`
+    : 'Shutter fires immediately. Tap to add a delay.';
+}
+
+/* You are bent over with your back to the phone when this fires, so the count
+   has to be audible. Vibration where it exists, a short tone where it does not —
+   iOS supports one and not the other. */
+let audio = null;
+
+function cue(kind) {
+  const isCapture = kind === 'capture';
+  if (navigator.vibrate) navigator.vibrate(isCapture ? 240 : 40);
+  try {
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    audio = audio || new Ctor();
+    const now = audio.currentTime;
+    const length = isCapture ? 0.34 : 0.09;
+    const osc = audio.createOscillator();
+    const gain = audio.createGain();
+    osc.frequency.value = isCapture ? 880 : 620;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + length);
+    osc.connect(gain).connect(audio.destination);
+    osc.start(now);
+    osc.stop(now + length + 0.02);
+  } catch { /* no audio available; the vibration and the on-screen count remain */ }
 }
 
 function onShutter() {
   if (countdown) { cancelCountdown(); return; }
   if (!stream) { $('#capture-file').click(); return; }
-  if (timerEnabled) startCountdown(); else captureFrame();
+  if (timerSeconds > 0) startCountdown(); else captureFrame();
 }
 
 function startCountdown() {
-  let remaining = TIMER_SECONDS;
+  let remaining = timerSeconds;
   const readout = $('#capture-timer');
   const shutter = $('#capture-shutter');
 
   shutter.dataset.armed = 'true';
   readout.classList.remove('hidden');
   readout.textContent = String(remaining);
-  setHint('Get into position — <b>bend forward, arms hanging</b>');
+  setHint('Get into position — <b>bend forward, arms hanging</b>. Tap again to cancel.');
 
   countdown = setInterval(() => {
     remaining -= 1;
     readout.textContent = String(Math.max(remaining, 0));
-    if (remaining <= 0) { cancelCountdown(); captureFrame(); }
+    if (remaining > 0 && remaining <= CUE_FROM) cue('tick');
+    if (remaining <= 0) { cue('capture'); cancelCountdown(); captureFrame(); }
   }, 1000);
 }
 
