@@ -18,8 +18,13 @@ const state = {
   minRating: 0,
   results: [],
   provider: null,
-  loading: false,
 };
+
+/* Every lookup takes a token. A response is only applied if its token is still
+   the newest — so pressing the button again supersedes the request in flight
+   instead of being dropped, which is what used to happen. Overpass can take
+   fifteen seconds, and for that whole window every press did nothing. */
+let searchToken = 0;
 
 /* OpenStreetMap carries no ratings, so the rating filter is meaningless against
    it. Without this the filter silently emptied the list. */
@@ -107,52 +112,72 @@ function rememberCenter() {
 }
 
 async function useCurrentLocation() {
-  setStatus('Locating you…');
+  const button = $('#loc-gps');
+  setBusy(button, true, 'Locating…');
+  setStatus('Asking your browser for your location…');
   try {
     state.center = await currentPosition();
     rememberCenter();
-    await search();
-    showResolvedPlace(null);
+    if (await search()) showResolvedPlace(null);
   } catch (error) {
     setStatus(error.message, true);
+    $('#loc-input').focus();   // the typed fallback is the way out
+  } finally {
+    setBusy(button, false, 'Use my location');
   }
 }
 
 async function useTypedLocation() {
   const query = $('#loc-input').value.trim();
-  if (!query) return;
+  if (!query) {
+    setStatus('Type a postal code, city, or address first — or use your location.', true);
+    $('#loc-input').focus();
+    return;
+  }
+
+  const button = $('#loc-search');
+  setBusy(button, true, '…');
   setStatus(`Looking up “${query}”…`);
   try {
     const place = await geocode(query, { country: state.country });
     state.center = { lat: place.lat, lng: place.lng };
     rememberCenter();
-    await search();
-    showResolvedPlace(place.label);
+    if (await search()) showResolvedPlace(place.label);
   } catch (error) {
     setStatus(error.message, true);
+  } finally {
+    setBusy(button, false, 'Find');
   }
 }
 
 /* ----------------------------------------------------------------- search --- */
 
+/** @returns {Promise<boolean>} true if this search was still the current one. */
 async function search() {
-  if (!state.center || state.loading) return;
-  state.loading = true;
+  if (!state.center) return false;
+  const token = ++searchToken;
+
   setStatus('Searching for clinicians nearby…');
+  $('#places-list').replaceChildren(el('div', { class: 'empty' }, 'Searching…'));
 
   try {
     const { results, provider, notice } = await findClinicians(state.center, state.radiusM);
+    if (token !== searchToken) return false;   // a newer search has taken over
+
     state.results = results;
     state.provider = provider;
     $('#places-source').textContent = provider === 'google'
       ? 'Source: Google Places' : 'Source: OpenStreetMap';
     syncRatingFilter();
     renderResults(notice);
+    clearStatus();
+    return true;
   } catch (error) {
+    if (token !== searchToken) return false;
     state.results = [];
-    setStatus(`Search failed: ${error.message}`, true);
-  } finally {
-    state.loading = false;
+    renderResults();
+    setStatus(error.message, true);
+    return false;
   }
 }
 
@@ -267,9 +292,26 @@ function keyForm() {
     }, 'Save'));
 }
 
+/* Status sits beside the controls rather than inside the results list, so a
+   search finishing cannot wipe out the message explaining why the last one
+   failed. */
 function setStatus(message, isError = false) {
-  $('#places-list').replaceChildren(
-    el('div', { class: isError ? 'quality-note' : 'empty' }, message));
+  const box = $('#loc-status');
+  box.textContent = message;
+  box.classList.toggle('loc-status--error', isError);
+  box.classList.remove('hidden');
+}
+
+function clearStatus() {
+  const box = $('#loc-status');
+  box.textContent = '';
+  box.classList.remove('loc-status--error');
+  box.classList.add('hidden');
+}
+
+function setBusy(button, busy, label) {
+  button.setAttribute('aria-busy', String(busy));
+  button.textContent = label;
 }
 
 /* -------------------------------------------------------------------- map --- */

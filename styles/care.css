@@ -64,6 +64,29 @@
   color: var(--scrub-dim);
 }
 
+/* Progress and failures live here, next to the controls that caused them —
+   not in the results list, where a later search would overwrite them. */
+.loc-status {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+  border-left: 3px solid var(--scrub);
+  background: var(--scrub-wash);
+  color: var(--ink-700);
+}
+.loc-status--error { border-left-color: var(--marker); background: var(--marker-wash); }
+.loc-status::before {
+  content: '·';
+  font-family: var(--font-num);
+  color: var(--scrub);
+}
+.loc-status--error::before { content: '!'; color: var(--marker); font-weight: 600; }
+
+.btn[aria-busy='true'] { opacity: 0.7; pointer-events: none; }
+
 /* A filter the current data source cannot support is shown, but inert. */
 .chip[aria-disabled='true'] {
   opacity: 0.45;
