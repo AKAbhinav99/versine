@@ -10,6 +10,8 @@ node_modules/
 # not redistributed. bench/README.md explains how to assemble your own set.
 bench/images/
 bench/set/
+# Bundled clinic index is data, not media — keep it
+!data/clinics/*.json
 *.jpg
 *.jpeg
 *.png

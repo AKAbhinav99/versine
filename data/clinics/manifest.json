@@ -1,0 +1,7 @@
+{
+  "builtAt": null,
+  "source": "OpenStreetMap contributors, ODbL",
+  "regions": [],
+  "total": 0,
+  "note": "Empty until built. Run: GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs"
+}

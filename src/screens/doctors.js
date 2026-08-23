@@ -9,6 +9,7 @@ import { geocode, describePlace } from '../lib/geocoding.js';
 import { currentPosition } from '../lib/geolocation.js';
 import { CancelledError } from '../lib/net.js';
 import { PROVIDER_KEYS, getKey, setKey, configuredKeys } from '../lib/keys.js';
+import { localInView, indexCoverage, clearLearned } from '../lib/clinic-index.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
 import { onEnter } from '../router.js';
 
@@ -36,7 +37,8 @@ let inFlight = null;   // AbortController for the search currently running
 let providerHasRatings = () => false;
 
 let map = null;
-let markerLayer = null;
+let markerLayer = null;   // numbered pins for the current result list
+let indexLayer = null;    // every clinic the local index knows about, in view
 
 export function initDoctors() {
   initCountrySelect();
@@ -68,6 +70,8 @@ export function initDoctors() {
     state.minRating = on ? 0 : Number(chip.dataset.filterRating);
     renderResults();
   }));
+
+  $('#search-area').addEventListener('click', searchMapArea);
 
   onEnter('doctors', onShow);
   restoreCenter();
@@ -127,6 +131,7 @@ async function useCurrentLocation() {
        failing search reads as if the GPS itself failed, which it did not. */
     setStatus('Found you. Looking for clinicians nearby…');
     showResolvedPlace(null);
+    flyTo(state.center);
     await search();
   } catch (error) {
     setStatus(error.message, true);
@@ -152,6 +157,7 @@ async function useTypedLocation() {
     state.center = { lat: place.lat, lng: place.lng };
     rememberCenter();
     showResolvedPlace(place.label);
+    flyTo(state.center);
     await search();
   } catch (error) {
     setStatus(error.message, true);
@@ -162,8 +168,25 @@ async function useTypedLocation() {
 
 /* ----------------------------------------------------------------- search --- */
 
+/** Force a live lookup for wherever the map is now, and fold it into the index. */
+async function searchMapArea() {
+  if (!map) return;
+  const button = $('#search-area');
+  const centre = map.getCenter();
+  state.center = { lat: centre.lat, lng: centre.lng };
+  rememberCenter();
+
+  setBusy(button, true, 'Searching…');
+  try {
+    showResolvedPlace(await describePlace(state.center));
+    await search({ skipLocal: true });
+  } finally {
+    setBusy(button, false, 'Search this area for more');
+  }
+}
+
 /** @returns {Promise<boolean>} true if this search was still the current one. */
-async function search() {
+async function search({ skipLocal = false } = {}) {
   if (!state.center) return false;
   const token = ++searchToken;
 
@@ -178,7 +201,7 @@ async function search() {
   $('#places-list').replaceChildren(el('div', { class: 'empty' }, 'Searching…'));
 
   try {
-    const answer = await findClinicians(state.center, state.radiusM, { signal: controller.signal });
+    const answer = await findClinicians(state.center, state.radiusM, { signal: controller.signal, skipLocal });
     if (token !== searchToken) return false;   // a newer search has taken over
 
     state.results = answer.results;
@@ -302,6 +325,7 @@ function renderNotice(extra) {
     el('p', { class: 'small', style: 'margin-top:var(--space-3)' },
       'Clinics are looked up in this order, falling through to the next whenever one fails: '),
     el('p', { class: 'label' }, clinicProviders().join('  →  ')),
+    el('p', { class: 'small', id: 'index-coverage' }, 'Checking the local index…'),
 
     el('p', { class: 'small' },
       "OpenStreetMap's services need no key and cost nothing, but they are shared, volunteer-run and often overloaded — they are the reason a lookup sometimes fails. Any key below is free to obtain and moves that provider ahead of them."),
@@ -313,6 +337,30 @@ function renderNotice(extra) {
 
     el('p', { class: 'small muted', style: 'margin-top:var(--space-3)' },
       'Keys are stored in this browser only, and each is sent solely to the service it belongs to.')));
+
+  describeCoverage();
+}
+
+/* The local index is the first thing tried, so say plainly how much of it there
+   is — bundled with the app, and learned from searches on this device. */
+async function describeCoverage() {
+  const box = $('#index-coverage');
+  if (!box) return;
+  const c = await indexCoverage();
+
+  const bundled = c.bundledRegions
+    ? `${c.bundledClinics.toLocaleString()} clinics bundled across ${c.bundledRegions} regions (built ${c.builtAt})`
+    : 'nothing bundled yet — run tools/build-clinic-index.mjs';
+  const learned = c.learnedClinics
+    ? `${c.learnedClinics.toLocaleString()} learned from ${c.learnedAreas} searched area${c.learnedAreas === 1 ? '' : 's'} on this device`
+    : 'nothing learned yet — every live search adds to it';
+
+  box.replaceChildren(
+    el('span', {}, `Local index: ${bundled}; ${learned}. `),
+    c.learnedClinics
+      ? el('button', { class: 'btn btn--quiet', style: 'padding:0', onClick: () => { clearLearned(); describeCoverage(); } }, 'Clear learned')
+      : null,
+  );
 }
 
 function keyRow(provider) {
@@ -363,6 +411,14 @@ function clearStatus() {
   box.classList.add('hidden');
 }
 
+/** Move the map to a place immediately, before any lookup runs. */
+function flyTo(center) {
+  ensureMap();
+  if (!map) return;
+  map.setView([center.lat, center.lng], 13);
+  drawIndexMarkers();
+}
+
 function setBusy(button, busy, label) {
   button.setAttribute('aria-busy', String(busy));
   button.textContent = label;
@@ -373,12 +429,36 @@ function setBusy(button, busy, label) {
 function ensureMap() {
   if (map || typeof window.L === 'undefined') return;
   map = window.L.map('map', { zoomControl: false, attributionControl: true });
+  map.on('moveend', drawIndexMarkers);
   window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19,
     attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
   }).addTo(map);
+  indexLayer = window.L.layerGroup().addTo(map);
   markerLayer = window.L.layerGroup().addTo(map);
   map.setView(state.center ? [state.center.lat, state.center.lng] : [39.5, -98.35], state.center ? 12 : 3);
+}
+
+/* Everything the local index holds for the visible area, drawn as plain dots so
+   the map is populated before anyone searches anything. Costs no network. */
+async function drawIndexMarkers() {
+  if (!map || !indexLayer) return;
+  const b = map.getBounds();
+  const clinics = await localInView({
+    south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast(),
+  });
+
+  indexLayer.clearLayers();
+  const listed = new Set(state.results.map((clinic) => `${clinic.name}|${Math.round(clinic.lat * 1e4)}`));
+
+  for (const clinic of clinics) {
+    if (listed.has(`${clinic.name}|${Math.round(clinic.lat * 1e4)}`)) continue;
+    window.L.circleMarker([clinic.lat, clinic.lng], {
+      radius: 4, color: '#1F6E8C', weight: 1.5, fillColor: '#EDF0F1', fillOpacity: 0.9,
+    }).addTo(indexLayer).bindPopup(`<b>${escapeHtml(clinic.name)}</b><br>${escapeHtml(clinic.address || '')}`);
+  }
+
+  $('#map-count').textContent = clinics.length ? `${clinics.length} in view` : '';
 }
 
 function drawMarkers(results) {
@@ -404,4 +484,5 @@ function drawMarkers(results) {
 
   if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
   else map.setView([state.center.lat, state.center.lng], 12);
+  drawIndexMarkers();
 }

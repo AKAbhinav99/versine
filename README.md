@@ -80,13 +80,48 @@ measure was tried as a replacement and did not separate the groups either. See
 Two provider chains, each trying the next when one fails. Everything is optional:
 with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 
-**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)) — richest first:
+**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)) — local first, then richest:
 
 | | key | gives |
 |---|---|---|
+| Local index | none | instant, offline, cannot fail — see below |
 | Google Places | required | ratings, review counts, opening hours |
 | Geoapify Places | required | good coverage, no ratings |
 | OpenStreetMap / Overpass | none | the keyless fallback |
+
+### The local index
+
+The most reliable network call is the one you don't make. Clinics are looked up
+first in a local index held on the device, and only when that has nothing does the
+app go to a server. A search of a covered area makes **zero** clinic network
+requests — typing an address geocodes it, moves the map, and filters data already
+present.
+
+Two things fill it, in [`src/lib/clinic-index.js`](src/lib/clinic-index.js):
+
+- **bundled** — regions built offline by
+  [`tools/build-clinic-index.mjs`](tools/build-clinic-index.mjs) and shipped as
+  static JSON under `data/clinics/`. Same origin, no key, no rate limit.
+- **learned** — every live lookup is folded back in and kept, so an area searched
+  once is local from then on. The index fills in wherever it is actually used.
+
+Local results are offered only for areas known to be covered — a bundled region,
+or an area a live search has already swept. Otherwise a half-populated corner
+would suppress the live lookup that would have found the rest.
+
+The map draws every clinic the index knows about in the current viewport as you
+pan, so it is populated before anyone searches. "Search this area for more" forces
+a live lookup for wherever the map is and folds the answer in.
+
+**`data/clinics/` ships empty.** Build it with:
+
+```bash
+GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs
+```
+
+Geoapify answers in about a second per region. Without a key it falls back to
+Overpass, which works but is slow and will refuse connections if pushed — it is
+run one request at a time with pauses for that reason.
 
 **Geocoding** ([`src/lib/geocoding.js`](src/lib/geocoding.js)) — keyless first, so no
 quota is spent while the free service is healthy: Nominatim → Geoapify → MapTiler

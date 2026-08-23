@@ -7,6 +7,7 @@
 
 import { fetchWithTimeout, readJson, runChain, haversineMeters, delay, CancelledError } from './net.js';
 import { getKey, hasKey } from './keys.js';
+import { localSearch, remember } from './clinic-index.js';
 
 const SPECIALTY_LABEL = { ortho: 'Orthopedics', pediatric: 'Pediatric ortho', pt: 'Physical therapy' };
 
@@ -233,13 +234,18 @@ async function overpassAttempt(center, radiusM, signal) {
 
 /* ------------------------------------------------------------------- chain --- */
 
+/* The local index goes first: it is same-origin static data, so it cannot be
+   rate-limited, cannot time out, and needs no key. It answers only for areas it
+   actually covers, and returns nothing otherwise so the chain falls through. */
 const PROVIDERS = [
-  { id: 'google', label: 'Google Places', ratings: true, available: () => hasKey('google'), search: searchGoogle },
-  { id: 'geoapify', label: 'Geoapify', ratings: false, available: () => hasKey('geoapify'), search: searchGeoapify },
-  { id: 'osm', label: 'OpenStreetMap', ratings: false, available: () => true, search: searchOverpass },
+  { id: 'local', label: 'Local index', ratings: false, live: false, available: () => true, search: (c, r) => localSearch(c, r) },
+  { id: 'google', label: 'Google Places', ratings: true, live: true, available: () => hasKey('google'), search: searchGoogle },
+  { id: 'geoapify', label: 'Geoapify', ratings: false, live: true, available: () => hasKey('geoapify'), search: searchGeoapify },
+  { id: 'osm', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchOverpass },
 ];
 
 export const clinicProviders = () => PROVIDERS.filter((p) => p.available()).map((p) => p.label);
+export const liveProviders = () => PROVIDERS.filter((p) => p.live && p.available()).map((p) => p.label);
 
 /**
  * Finds clinicians around a point, falling through the providers until one
@@ -248,16 +254,23 @@ export const clinicProviders = () => PROVIDERS.filter((p) => p.available()).map(
  * @returns {Promise<{results: object[], provider: string, label: string,
  *                    hasRatings: boolean, attempts: string[]}>}
  */
-export async function findClinicians(center, radiusM, { signal = null } = {}) {
+export async function findClinicians(center, radiusM, { signal = null, skipLocal = false } = {}) {
+  const providers = skipLocal ? PROVIDERS.filter((p) => p.live) : PROVIDERS;
+
   const { value, provider, attempts } = await runChain(
-    PROVIDERS, (p) => nonEmpty(p.search(center, radiusM, signal)), { signal },
+    providers, (p) => nonEmpty(p.search(center, radiusM, signal)), { signal },
   );
+
+  /* Anything fetched live is folded into the local index, so the next search of
+     this area needs no network at all. */
+  if (provider.live) remember(value, center, radiusM);
 
   return {
     results: value.sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity)),
     provider: provider.id,
     label: provider.label,
     hasRatings: provider.ratings,
+    fromNetwork: provider.live,
     attempts,
   };
 }
