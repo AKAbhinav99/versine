@@ -112,6 +112,9 @@
 }
 .key-row .locbar { margin-top: var(--space-2); margin-bottom: 0; }
 .key-row .btn { flex: none; }
+.key-row__verdict { margin-top: var(--space-2); }
+.key-row__verdict--ok { color: var(--clear); }
+.key-row__verdict--bad { color: var(--marker); }
 
 /* A filter the current data source cannot support is shown, but inert. */
 .chip[aria-disabled='true'] {

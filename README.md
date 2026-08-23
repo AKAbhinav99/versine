@@ -86,8 +86,19 @@ with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 |---|---|---|
 | Local index | none | instant, offline, cannot fail — see below |
 | Google Places | required | ratings, review counts, opening hours |
-| Geoapify Places | required | good coverage, no ratings |
-| OpenStreetMap / Overpass | none | the keyless fallback |
+| OpenStreetMap / Overpass | none | the best data for this niche, and the flakiest service |
+| Geoapify Places | required | general clinics and hospitals, as a last resort |
+
+OpenStreetMap sits **above** Geoapify despite being far less reliable, because the
+ordering is by how useful the answer is, not how dependable the service is.
+Measured on the same 15 km circle in Cambridge MA: OpenStreetMap returned 28
+practices that actually treat backs (25 physical therapy, 3 orthopedic); Geoapify
+returned 59 general clinics and hospitals and no specialists at all. Geoapify has
+no physiotherapy category — `healthcare.physiotherapist` does not exist and 400s
+the whole request — so it cannot find the single most common practice type this
+app is looking for. It stays as the bottom of the chain because a hospital is a
+real route to a referral, and those results are labelled "General clinic" rather
+than dressed up as specialists.
 
 ### The local index
 
@@ -119,9 +130,16 @@ a live lookup for wherever the map is and folds the answer in.
 GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs
 ```
 
-Geoapify answers in about a second per region. Without a key it falls back to
-Overpass, which works but is slow and will refuse connections if pushed — it is
-run one request at a time with pauses for that reason.
+Geoapify answers in about a second per region, but bear the coverage caveat above
+in mind — an index built from it will be hospitals rather than physiotherapists.
+Overpass gives better data for this purpose and is the default, but it is slow and
+will start refusing connections if pushed, which is why it runs one request at a
+time with pauses. `data/clinics/` currently ships Boston and New York (231
+clinics, 28 KB); the rest of the configured regions are yours to build.
+
+Each provider's key can be checked in place from the Care tab — the **Test**
+button calls the endpoint Versine actually uses it for, since provider dashboards
+hand out several keys and rarely say which is which.
 
 **Geocoding** ([`src/lib/geocoding.js`](src/lib/geocoding.js)) — keyless first, so no
 quota is spent while the free service is healthy: Nominatim → Geoapify → MapTiler

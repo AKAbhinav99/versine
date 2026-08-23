@@ -30,7 +30,14 @@ const OUT_DIR = join(ROOT, 'data', 'clinics');
 
 const ENDPOINT = 'https://overpass-api.de/api/interpreter';
 const GEOAPIFY_KEY = process.env.GEOAPIFY_KEY || '';
-const GEOAPIFY_CATEGORIES = 'healthcare.physiotherapist,healthcare.clinic_or_praxis,healthcare.hospital';
+/* Verified live: "healthcare.physiotherapist" is not a Geoapify category and
+   400s the whole request. Geoapify has no physiotherapy category at all. */
+const GEOAPIFY_CATEGORIES = [
+  'healthcare.clinic_or_praxis',
+  'healthcare.clinic_or_praxis.orthopaedics',
+  'healthcare.clinic_or_praxis.paediatrics',
+  'healthcare.hospital',
+].join(',');
 const USER_AGENT = 'versine-clinic-index/1.0 (scoliosis screening aid; one-off index build)';
 const PAUSE_MS = 2500;      // between requests, always
 const RETRIES = 4;
@@ -152,7 +159,7 @@ async function askGeoapify(bbox) {
       lon: p.lon ?? feature.geometry?.coordinates?.[0],
       tags: {
         name: p.name,
-        healthcare: (p.categories || []).some((c) => c.includes('physiotherapist')) ? 'physiotherapist' : '',
+        healthcare: (p.categories || []).some((c) => c.includes('.orthopaedics')) ? 'orthopaedics' : '',
         'healthcare:speciality': (p.categories || []).join(' '),
         phone: p.contact?.phone || p.phone,
         'addr:street': p.street,

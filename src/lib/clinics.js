@@ -9,7 +9,12 @@ import { fetchWithTimeout, readJson, runChain, haversineMeters, delay, Cancelled
 import { getKey, hasKey } from './keys.js';
 import { localSearch, remember } from './clinic-index.js';
 
-const SPECIALTY_LABEL = { ortho: 'Orthopedics', pediatric: 'Pediatric ortho', pt: 'Physical therapy' };
+const SPECIALTY_LABEL = {
+  ortho: 'Orthopedics',
+  pediatric: 'Pediatric ortho',
+  pt: 'Physical therapy',
+  general: 'General clinic',
+};
 
 /** Does this practice plausibly treat scoliosis? */
 const RELEVANT = /ortho|spine|spinal|scolio|physical therapy|physiotherap|sports medicine|rehab|chiro/i;
@@ -92,10 +97,30 @@ async function searchGoogle(center, radiusM, signal) {
 
 /* ---------------------------------------------------------------- Geoapify --- */
 
-/* Broad categories plus the same name filter used for OpenStreetMap, rather than
-   narrow sub-categories — a category name this app gets wrong would be a 400 for
-   the whole request, and coverage varies by country anyway. */
-const GEOAPIFY_CATEGORIES = 'healthcare.physiotherapist,healthcare.clinic_or_praxis,healthcare.hospital';
+/* Verified against the live API — an unsupported category 400s the whole request,
+   which is what "healthcare.physiotherapist" did. Geoapify has no physiotherapy
+   category at all, which is the main reason its coverage for this app is thinner
+   than OpenStreetMap's. */
+const GEOAPIFY_CATEGORIES = [
+  'healthcare.clinic_or_praxis',
+  'healthcare.clinic_or_praxis.orthopaedics',
+  'healthcare.clinic_or_praxis.paediatrics',
+  'healthcare.hospital',
+].join(',');
+
+/* With no physiotherapy category and mostly general-practice names, filtering
+   Geoapify by name the way OpenStreetMap is filtered discards everything. So
+   sub-category decides where it can, the name decides where it cannot, and what
+   is left stays in labelled as general — a hospital is a real place to get a
+   scoliosis referral, it just is not a specialist. */
+function geoapifySpecialty(name, categories) {
+  const cats = categories.join(' ');
+  if (cats.includes('.orthopaedics')) return 'ortho';
+  if (cats.includes('.paediatrics')) return 'pediatric';
+  if (RELEVANT.test(name)) return classify(name);
+  if (cats.includes('healthcare.hospital')) return 'general';
+  return 'general';
+}
 
 async function searchGeoapify(center, radiusM, signal) {
   const params = new URLSearchParams({
@@ -116,14 +141,11 @@ async function searchGeoapify(center, radiusM, signal) {
     if (!p.name) return null;
 
     const categories = p.categories || [];
-    const haystack = `${p.name} ${categories.join(' ')}`;
-    if (!RELEVANT.test(haystack)) return null;
-
     const lat = p.lat ?? feature.geometry?.coordinates?.[1];
     const lng = p.lon ?? feature.geometry?.coordinates?.[0];
     if (!lat || !lng) return null;
 
-    const specialty = classify(haystack);
+    const specialty = geoapifySpecialty(p.name, categories);
     return {
       id: `geoapify-${p.place_id || `${lat},${lng}`}`,
       name: p.name,
@@ -135,7 +157,12 @@ async function searchGeoapify(center, radiusM, signal) {
       phone: p.contact?.phone || p.phone || null,
       openNow: null,
       specialty,
-      tags: buildTags(categories.filter((c) => c !== 'healthcare'), specialty),
+      tags: buildTags(
+        categories
+          .filter((c) => c.startsWith('healthcare.') && c !== 'healthcare.clinic_or_praxis')
+          .map((c) => c.split('.').pop()),
+        specialty,
+      ),
       website: p.website || null,
       directionsUrl: directionsFor(lat, lng),
       source: 'geoapify',
@@ -234,14 +261,23 @@ async function overpassAttempt(center, radiusM, signal) {
 
 /* ------------------------------------------------------------------- chain --- */
 
-/* The local index goes first: it is same-origin static data, so it cannot be
-   rate-limited, cannot time out, and needs no key. It answers only for areas it
-   actually covers, and returns nothing otherwise so the chain falls through. */
+/* Ordered by how useful the answer is for this particular question, not by how
+   reliable the service is.
+ *
+ * The local index goes first because it is same-origin static data: it cannot be
+ * rate-limited or time out, and it answers only for areas it covers.
+ *
+ * OpenStreetMap sits above Geoapify despite being the flakier service, because it
+ * tags physiotherapists explicitly and Geoapify has no physiotherapy category at
+ * all. Measured on the same 15km circle: OpenStreetMap returned 27 practices that
+ * actually treat backs, Geoapify returned 59 general clinics and hospitals and no
+ * specialists. Geoapify is the fallback beneath it — hospitals are a real route to
+ * a referral, and they are labelled as general rather than dressed up. */
 const PROVIDERS = [
   { id: 'local', label: 'Local index', ratings: false, live: false, available: () => true, search: (c, r) => localSearch(c, r) },
   { id: 'google', label: 'Google Places', ratings: true, live: true, available: () => hasKey('google'), search: searchGoogle },
-  { id: 'geoapify', label: 'Geoapify', ratings: false, live: true, available: () => hasKey('geoapify'), search: searchGeoapify },
   { id: 'osm', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchOverpass },
+  { id: 'geoapify', label: 'Geoapify', ratings: false, live: true, available: () => hasKey('geoapify'), search: searchGeoapify },
 ];
 
 export const clinicProviders = () => PROVIDERS.filter((p) => p.available()).map((p) => p.label);

@@ -8,7 +8,7 @@ import { findClinicians, clinicProviders } from '../lib/clinics.js';
 import { geocode, describePlace } from '../lib/geocoding.js';
 import { currentPosition } from '../lib/geolocation.js';
 import { CancelledError } from '../lib/net.js';
-import { PROVIDER_KEYS, getKey, setKey, configuredKeys } from '../lib/keys.js';
+import { PROVIDER_KEYS, getKey, setKey, configuredKeys, testKey } from '../lib/keys.js';
 import { localInView, indexCoverage, clearLearned } from '../lib/clinic-index.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
 import { onEnter } from '../router.js';
@@ -372,12 +372,26 @@ function keyRow(provider) {
     style: 'flex:1;min-width:0',
   });
 
+  const verdict = el('p', { class: 'small muted key-row__verdict' }, '');
+
+  /* Dashboards hand out several keys and do not say which is which. Checking the
+     key against the endpoint it will actually be used for is the only answer
+     that means anything. */
+  const check = async () => {
+    verdict.textContent = 'Checking…';
+    verdict.classList.remove('key-row__verdict--ok', 'key-row__verdict--bad');
+    const result = await testKey(provider.id, input.value);
+    verdict.textContent = result.message;
+    verdict.classList.add(result.ok ? 'key-row__verdict--ok' : 'key-row__verdict--bad');
+  };
+
   return el('div', { class: 'key-row' },
     el('div', { class: 'key-row__head' },
       el('span', { class: 'label' }, provider.label),
       el('a', { href: provider.signup, target: '_blank', rel: 'noopener', class: 'small' }, 'Get a free key')),
     el('p', { class: 'small muted' }, provider.note),
     el('div', { class: 'locbar' }, input,
+      el('button', { class: 'btn btn--ghost', onClick: check }, 'Test'),
       el('button', {
         class: 'btn',
         onClick: () => {
@@ -385,7 +399,8 @@ function keyRow(provider) {
           renderNotice();
           if (state.center) search();
         },
-      }, 'Save')));
+      }, 'Save')),
+    verdict);
 }
 
 /* Status sits beside the controls rather than inside the results list, so a

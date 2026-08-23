@@ -1,7 +1,29 @@
 {
-  "builtAt": null,
+  "builtAt": "2026-08-23",
   "source": "OpenStreetMap contributors, ODbL",
-  "regions": [],
-  "total": 0,
-  "note": "Empty until built. Run: GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs"
+  "regions": [
+    {
+      "id": "boston",
+      "name": "Boston",
+      "bbox": [
+        42.2,
+        -71.3,
+        42.55,
+        -70.95
+      ],
+      "count": 28
+    },
+    {
+      "id": "nyc",
+      "name": "New York City",
+      "bbox": [
+        40.55,
+        -74.1,
+        40.9,
+        -73.75
+      ],
+      "count": 203
+    }
+  ],
+  "total": 231
 }
