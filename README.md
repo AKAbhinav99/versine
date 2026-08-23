@@ -1,10 +1,10 @@
-# SpineCheck
+# Versine
 
 A mobile-first web app that screens for the surface asymmetry associated with
 scoliosis, using a phone camera and the Adam's forward bend test, then points the
 user toward clinicians who actually treat it.
 
-**SpineCheck does not diagnose scoliosis.** It measures geometry in a photograph.
+**Versine does not diagnose scoliosis.** It measures geometry in a photograph.
 Scoliosis is diagnosed by a licensed physician from a standing spine X-ray, measured
 as a Cobb angle. The UI says so in the onboarding gate, on every result, and in the
 resources section.

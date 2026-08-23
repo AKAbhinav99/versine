@@ -59,12 +59,12 @@ export const RELIABILITY = {
    which needs no key. A key entered in the UI is stored under PLACES_KEY_STORAGE. */
 export const PLACES = {
   googleApiKey: '',
-  keyStorage: 'spinecheck.placesKey',
+  keyStorage: 'versine.placesKey',
   textSearchUrl: 'https://places.googleapis.com/v1/places:searchText',
   overpassUrl: 'https://overpass-api.de/api/interpreter',
   nominatimUrl: 'https://nominatim.openstreetmap.org/search',
   nominatimReverseUrl: 'https://nominatim.openstreetmap.org/reverse',
-  countryStorage: 'spinecheck.country',
+  countryStorage: 'versine.country',
   defaultRadiusM: 15000,
   queries: [
     { label: 'Orthopedic', spec: 'ortho', text: 'orthopedic surgeon scoliosis' },
@@ -73,6 +73,17 @@ export const PLACES = {
   ],
 };
 
-export const STORAGE_KEY = 'spinecheck.history.v1';
-export const INTRO_KEY = 'spinecheck.introAccepted.v1';
+export const STORAGE_KEY = 'versine.history.v1';
+export const INTRO_KEY = 'versine.introAccepted.v1';
+
+/* The app was called SpineCheck until the rename. Anything stored under the old
+   namespace is carried across on first load, so a rename does not silently throw
+   away someone's scan history. */
+export const LEGACY_KEYS = {
+  'spinecheck.history.v1': STORAGE_KEY,
+  'spinecheck.introAccepted.v1': INTRO_KEY,
+  'spinecheck.placesKey': 'versine.placesKey',
+  'spinecheck.country': 'versine.country',
+  'spinecheck.lastCenter': 'versine.lastCenter',
+};
 export const HISTORY_LIMIT = 60;

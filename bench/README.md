@@ -1,6 +1,6 @@
 # Detector bench
 
-A labelled-image benchmark for the SpineCheck detector. It exists because the
+A labelled-image benchmark for the Versine detector. It exists because the
 first version of this app reported a confident-looking trunk rotation angle that
 turned out to be noise, and nothing caught it until the numbers were put next to
 photographs with known answers.

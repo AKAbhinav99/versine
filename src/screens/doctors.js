@@ -8,7 +8,7 @@ import { findClinicians, currentPosition, geocode, describePlace, getApiKey, set
 import { countryOptions, defaultCountry } from '../lib/countries.js';
 import { onEnter } from '../router.js';
 
-const LAST_CENTER_KEY = 'spinecheck.lastCenter';
+const LAST_CENTER_KEY = 'versine.lastCenter';
 
 const state = {
   center: null,
@@ -250,7 +250,7 @@ function renderNotice(extra) {
       ? 'Using your Google Places key · insurance data'
       : 'Using OpenStreetMap · add a Google Places key for ratings'),
     el('p', { style: 'margin-top:var(--space-3)' },
-      'Neither Google Places nor OpenStreetMap publishes which insurance a practice accepts, so SpineCheck does not guess at it. Ask when you call — and ask whether they see scoliosis patients, since not every orthopedist does.'),
+      'Neither Google Places nor OpenStreetMap publishes which insurance a practice accepts, so Versine does not guess at it. Ask when you call — and ask whether they see scoliosis patients, since not every orthopedist does.'),
     el('p', { html: `With a <a href="https://developers.google.com/maps/documentation/places/web-service/get-api-key" target="_blank" rel="noopener">Google Places API key</a> you also get ratings, review counts, and opening hours. The key is stored only in this browser and sent only to <code>places.googleapis.com</code>.` }),
     keyForm()));
 }

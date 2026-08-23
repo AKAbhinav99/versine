@@ -45,11 +45,11 @@ export async function runAnalysis(photoCanvas, adjustments = null) {
 }
 
 function reportFailure(error, photoCanvas) {
-  console.error('[SpineCheck] analysis failed', error);
+  console.error('[Versine] analysis failed', error);
   renderFailure({
     photo: photoCanvas,
     headline: 'The pose model failed to load',
-    body: 'SpineCheck downloads its landmark model the first time you scan, so this step needs a network connection. Check you are online and try the scan again.',
+    body: 'Versine downloads its landmark model the first time you scan, so this step needs a network connection. Check you are online and try the scan again.',
   });
 }
 

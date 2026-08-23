@@ -157,7 +157,7 @@ function methodPanel() {
       el('li', {}, 'Shoulder and hip tilt: the angle between the line joining that pair and horizontal, measured in pixel space so image proportions do not skew it.'),
       el('li', {}, 'Each photo is measured at five framings. The reading is the median, the ± is the spread, and a wide spread means no number is reported.'),
       el('li', {}, el('b', {}, 'Not measured: trunk rotation. '),
-        'The rib hump a clinician feels for is a depth difference of a centimetre or two. Testing against clinical photographs showed the depth this model estimates moves further than that when the same photo is simply re-cropped, so SpineCheck does not report a rotation angle. A scoliometer, laid on the back in the forward bend, is what measures that — and 7° on one is the usual referral level.'),
+        'The rib hump a clinician feels for is a depth difference of a centimetre or two. Testing against clinical photographs showed the depth this model estimates moves further than that when the same photo is simply re-cropped, so Versine does not report a rotation angle. A scoliometer, laid on the back in the forward bend, is what measures that — and 7° on one is the usual referral level.'),
       el('li', {}, 'The bands here are calibrated on a small set of labelled clinical photographs. They are provisional, not clinically validated.')));
 }
 
@@ -185,7 +185,7 @@ function actions() {
 function disclaimer() {
   return el('div', { class: 'disclaimer' },
     el('strong', {}, 'This is not a diagnosis. '),
-    'SpineCheck measures how level your shoulders and hips look in a photograph. That is one of several signs a clinician checks, and on its own it neither finds nor rules out scoliosis. Scoliosis is diagnosed by a physician from a standing spine X-ray, measured as a Cobb angle. Camera height, posture, and clothing all move these numbers.');
+    'Versine measures how level your shoulders and hips look in a photograph. That is one of several signs a clinician checks, and on its own it neither finds nor rules out scoliosis. Scoliosis is diagnosed by a physician from a standing spine X-ray, measured as a Cobb angle. Camera height, posture, and clothing all move these numbers.');
 }
 
 /* -------------------------------------------------------------- animation --- */

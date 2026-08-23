@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#0B1622" />
-<title>SpineCheck — a scoliosis screening aid</title>
-<meta name="description" content="A guided forward-bend screening aid that measures trunk asymmetry from a phone photo and points you toward real clinical care. Not a diagnosis." />
+<title>Versine — a scoliosis screening aid</title>
+<meta name="description" content="Versine measures how far your shoulders and hips sit off level in a forward-bend photo, reports the number with its error bar, and points you toward real clinical care. Not a diagnosis." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -27,7 +27,7 @@
       <line x1="0" y1="4" x2="4" y2="4" stroke="#7E97A9" stroke-width="1" />
       <line x1="12" y1="4" x2="16" y2="4" stroke="#7E97A9" stroke-width="1" />
     </svg>
-    <span class="masthead__name">SpineCheck</span>
+    <span class="masthead__name">Versine</span>
     <span class="masthead__tag">Screening aid</span>
   </header>
 
@@ -45,7 +45,7 @@
     </svg>
 
     <h1 class="intro__title" id="intro-title">A screening check,<br />not a diagnosis.</h1>
-    <p class="intro__lede small">SpineCheck measures how symmetric your back looks in a forward-bend photo, and tells you whether it's worth having a clinician take a look.</p>
+    <p class="intro__lede small">Versine measures how symmetric your back looks in a forward-bend photo, and tells you whether it's worth having a clinician take a look.</p>
 
     <ul class="claim-list">
       <li>
@@ -219,7 +219,7 @@
       <select id="loc-country" aria-describedby="loc-country-hint"></select>
       <button class="btn btn--ghost" id="loc-gps">Use my location</button>
     </div>
-    <p class="loc-hint" id="loc-country-hint">A postal code on its own is ambiguous worldwide — set the country and SpineCheck looks it up as a postal code rather than guessing.</p>
+    <p class="loc-hint" id="loc-country-hint">A postal code on its own is ambiguous worldwide — set the country and Versine looks it up as a postal code rather than guessing.</p>
     <p class="loc-resolved hidden" id="loc-resolved"></p>
 
     <div class="filters" role="group" aria-label="Filters">
@@ -250,7 +250,7 @@
     <p>The Adam's forward bend test is the standard screening move. You bend forward at the waist with your arms hanging, and someone looks along your back from behind. If the spine is rotated, one side of the rib cage or lower back sits higher than the other — a "rib hump."</p>
     <p>Clinicians measure that hump with a <b>scoliometer</b>, a small level laid across the back. It reads out an <b>angle of trunk rotation (ATR)</b> in degrees. The widely used referral cutoff is <b>7°</b>, which corresponds roughly to a 20° spinal curve — the point where treatment decisions start to matter. Readings between about 5° and 7° usually mean "check again in a few months."</p>
 
-    <h2>What SpineCheck can and can't measure</h2>
+    <h2>What Versine can and can't measure</h2>
     <p>This part is worth being blunt about, because it decides how much weight to give anything the app tells you.</p>
     <p><b>It measures how level your shoulders and hips look.</b> Those are real screening signs — an uneven shoulder or waistline is often what makes a parent or a school nurse look twice — and they can be measured from a photograph reliably enough to be worth reporting, with an error bar.</p>
     <p><b>It does not measure trunk rotation.</b> An earlier version of this app did try to, by reading the depth the pose model estimates for each body point. Tested against clinical photographs of people with confirmed curves, those depth numbers moved further than the rib hump they were supposed to detect when the same photo was simply re-cropped. They looked precise and meant nothing, so they were removed. A rib hump is a centimetre or two of depth across a back; a single phone photo does not carry that information, which is exactly why the scoliometer exists.</p>
@@ -317,7 +317,7 @@
     </ul>
 
     <div class="disclaimer" style="margin-top:var(--space-6)">
-      <strong>SpineCheck does not diagnose scoliosis.</strong> It calculates geometric asymmetry from a photograph. Only a licensed physician, using a physical exam and imaging, can diagnose scoliosis or rule it out. Nothing here is medical advice. If you have back pain that wakes you at night, numbness, weakness, or a rapidly changing curve, contact a clinician promptly rather than tracking it here.
+      <strong>Versine does not diagnose scoliosis.</strong> It calculates geometric asymmetry from a photograph. Only a licensed physician, using a physical exam and imaging, can diagnose scoliosis or rule it out. Nothing here is medical advice. If you have back pain that wakes you at night, numbness, weakness, or a rapidly changing curve, contact a clinician promptly rather than tracking it here.
     </div>
   </section>
 

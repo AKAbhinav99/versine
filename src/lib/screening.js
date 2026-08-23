@@ -137,7 +137,7 @@ function unusable(reading) {
     level: 'unclear',
     kicker: `Readings disagreed by ${reading.shoulderSpreadDeg?.toFixed(1) ?? '—'}°`,
     headline: 'This photo gave an unstable reading',
-    body: 'SpineCheck measures each photo at several slightly different framings and only reports a number when they agree. This one did not, which usually means blurred edges, an awkward angle, or clothing hiding the shoulder line. Retake it and the numbers should settle.',
+    body: 'Versine measures each photo at several slightly different framings and only reports a number when they agree. This one did not, which usually means blurred edges, an awkward angle, or clothing hiding the shoulder line. Retake it and the numbers should settle.',
   };
 }
 
