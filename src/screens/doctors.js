@@ -4,7 +4,7 @@
 
 import { $, $$, el, formatDistance, escapeHtml } from '../lib/dom.js';
 import { PLACES } from '../config.js';
-import { findClinicians, currentPosition, geocode, describePlace, getApiKey, setApiKey } from '../lib/places.js';
+import { findClinicians, currentPosition, geocode, describePlace, getApiKey, setApiKey, CancelledError } from '../lib/places.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
 import { onEnter } from '../router.js';
 
@@ -25,6 +25,7 @@ const state = {
    instead of being dropped, which is what used to happen. Overpass can take
    fifteen seconds, and for that whole window every press did nothing. */
 let searchToken = 0;
+let inFlight = null;   // AbortController for the search currently running
 
 /* OpenStreetMap carries no ratings, so the rating filter is meaningless against
    it. Without this the filter silently emptied the list. */
@@ -118,7 +119,11 @@ async function useCurrentLocation() {
   try {
     state.center = await currentPosition();
     rememberCenter();
-    if (await search()) showResolvedPlace(null);
+    /* Say the location was found before the clinic search runs. Otherwise a
+       failing search reads as if the GPS itself failed, which it did not. */
+    setStatus('Found you. Looking for clinicians nearby…');
+    showResolvedPlace(null);
+    await search();
   } catch (error) {
     setStatus(error.message, true);
     $('#loc-input').focus();   // the typed fallback is the way out
@@ -142,7 +147,8 @@ async function useTypedLocation() {
     const place = await geocode(query, { country: state.country });
     state.center = { lat: place.lat, lng: place.lng };
     rememberCenter();
-    if (await search()) showResolvedPlace(place.label);
+    showResolvedPlace(place.label);
+    await search();
   } catch (error) {
     setStatus(error.message, true);
   } finally {
@@ -157,11 +163,20 @@ async function search() {
   if (!state.center) return false;
   const token = ++searchToken;
 
+  /* Cancel the request this one supersedes. Ignoring a stale response was not
+     enough — the abandoned request kept holding one of the few per-IP slots the
+     free service allows, so repeated presses starved each other. */
+  inFlight?.abort();
+  const controller = new AbortController();
+  inFlight = controller;
+
   setStatus('Searching for clinicians nearby…');
   $('#places-list').replaceChildren(el('div', { class: 'empty' }, 'Searching…'));
 
   try {
-    const { results, provider, notice } = await findClinicians(state.center, state.radiusM);
+    const { results, provider, notice } = await findClinicians(
+      state.center, state.radiusM, { signal: controller.signal },
+    );
     if (token !== searchToken) return false;   // a newer search has taken over
 
     state.results = results;
@@ -173,11 +188,13 @@ async function search() {
     clearStatus();
     return true;
   } catch (error) {
-    if (token !== searchToken) return false;
+    if (error instanceof CancelledError || token !== searchToken) return false;
     state.results = [];
     renderResults();
-    setStatus(error.message, true);
+    setStatus(error.message, true, { retry: true });
     return false;
+  } finally {
+    if (inFlight === controller) inFlight = null;
   }
 }
 
@@ -295,9 +312,15 @@ function keyForm() {
 /* Status sits beside the controls rather than inside the results list, so a
    search finishing cannot wipe out the message explaining why the last one
    failed. */
-function setStatus(message, isError = false) {
+function setStatus(message, isError = false, { retry = false } = {}) {
   const box = $('#loc-status');
-  box.textContent = message;
+  box.replaceChildren(el('span', {}, message));
+  if (retry) {
+    box.append(el('button', {
+      class: 'btn btn--quiet loc-status__retry',
+      onClick: () => search(),
+    }, 'Try again'));
+  }
   box.classList.toggle('loc-status--error', isError);
   box.classList.remove('hidden');
 }

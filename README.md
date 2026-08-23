@@ -178,5 +178,10 @@ the capture guide, and drawn down the pelvis on the result photo.
 - Camera height and roll move the numbers. The app warns when shoulders and hips
   tilt together, which usually means a tilted phone, but it cannot catch every bad
   angle.
-- Overpass is a free shared service and gets rate-limited. The UI reports that
-  plainly rather than showing an empty list.
+- **Overpass is a free, shared, volunteer-run service and it is often
+  overloaded.** It answers 429 when its per-IP slots are full and 504 when its
+  gateway gives up, and it sometimes drops connections outright — which a browser
+  reports only as `TypeError: Failed to fetch`. Lookups retry three times with
+  backoff, cancel any request they supersede so slots are not wasted, name the
+  host and the cause when they finally fail, and offer a retry. A Google Places
+  key avoids the whole service.

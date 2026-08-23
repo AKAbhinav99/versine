@@ -29,19 +29,47 @@ export function haversineMeters(a, b) {
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-/** fetch with a hard deadline — no network call may leave the UI spinning. */
-async function fetchWithTimeout(url, options = {}, ms = 20000) {
+/** Raised when the caller deliberately cancelled; callers ignore it silently. */
+export class CancelledError extends Error {
+  constructor() { super('cancelled'); this.name = 'CancelledError'; }
+}
+
+/**
+ * fetch with a hard deadline and an optional external cancel.
+ *
+ * A bare `fetch` rejects with TypeError("Failed to fetch") for every network
+ * level failure — DNS, refused connection, a server hanging up mid-response —
+ * and that string used to reach the UI verbatim. It says nothing to anyone.
+ */
+async function fetchWithTimeout(url, options = {}, ms = 20000, signal = null) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), ms);
+  const relay = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) throw new CancelledError();
+    signal.addEventListener('abort', relay, { once: true });
+  }
+
   try {
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
-    if (error.name === 'AbortError') throw new Error('The lookup took too long. Try a smaller radius.');
+    if (signal?.aborted) throw new CancelledError();
+    if (error.name === 'AbortError') {
+      throw Object.assign(new Error(`${hostOf(url)} did not answer within ${Math.round(ms / 1000)} seconds.`), { transient: true });
+    }
+    if (error instanceof TypeError) {
+      throw Object.assign(new Error(navigator.onLine
+        ? `Could not reach ${hostOf(url)}. The connection was refused or dropped.`
+        : 'Your device is offline. Reconnect and try again.'), { transient: navigator.onLine });
+    }
     throw error;
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener('abort', relay);
   }
 }
+
+const hostOf = (url) => { try { return new URL(url).host; } catch { return 'the server'; } };
 
 export async function currentPosition(options = {}) {
   if (!navigator.geolocation) {
@@ -135,7 +163,7 @@ function placeLabel(match) {
 
 /* ---------------------------------------------------------------- Google --- */
 
-async function searchGoogle(center, radiusM, key) {
+async function searchGoogle(center, radiusM, key, signal = null) {
   const requests = PLACES.queries.map(async ({ text, spec }) => {
     const response = await fetchWithTimeout(PLACES.textSearchUrl, {
       method: 'POST',
@@ -155,7 +183,7 @@ async function searchGoogle(center, radiusM, key) {
           circle: { center: { latitude: center.lat, longitude: center.lng }, radius: Math.min(radiusM, 50000) },
         },
       }),
-    }, 15000);
+    }, 15000, signal);
 
     if (!response.ok) {
       const detail = await response.json().catch(() => ({}));
@@ -220,21 +248,54 @@ function isRelevant(tags) {
   return RELEVANT.test(tags['healthcare:speciality'] || '') || RELEVANT.test(tags.name);
 }
 
-async function searchOverpass(center, radiusM) {
+/* Overpass is a free, shared, volunteer-run service under permanent load. It
+   answers 429 when the per-IP slots are full and 504 when its own gateway gives
+   up, and both clear on their own within seconds — so they are retried rather
+   than reported. Only a failure that survives every attempt reaches the user. */
+const OVERPASS_ATTEMPTS = 3;
+const OVERPASS_BACKOFF_MS = [0, 1500, 4000];
+
+async function searchOverpass(center, radiusM, signal = null) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < OVERPASS_ATTEMPTS; attempt += 1) {
+    if (signal?.aborted) throw new CancelledError();
+    if (OVERPASS_BACKOFF_MS[attempt]) await delay(OVERPASS_BACKOFF_MS[attempt], signal);
+
+    try {
+      return await overpassAttempt(center, radiusM, signal);
+    } catch (error) {
+      if (error instanceof CancelledError) throw error;
+      if (!error.transient) throw error;
+      lastError = error;
+    }
+  }
+
+  throw new Error(`${lastError.message} OpenStreetMap's free lookup service is shared and often overloaded — it was tried ${OVERPASS_ATTEMPTS} times. Adding a Google Places key below avoids it entirely.`);
+}
+
+function delay(ms, signal) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new CancelledError()); }, { once: true });
+  });
+}
+
+async function overpassAttempt(center, radiusM, signal) {
   const response = await fetchWithTimeout(PLACES.overpassUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `data=${encodeURIComponent(overpassQuery(center, Math.min(radiusM, 50000)))}`,
-  }, 30000);
+  }, 30000, signal);
 
-  if (response.status === 429 || response.status === 504) {
-    throw new Error("OpenStreetMap's free lookup service is busy right now. Wait a moment and try again, or add a Google Places key below for faster results.");
+  if ([429, 502, 503, 504].includes(response.status)) {
+    throw Object.assign(new Error(`OpenStreetMap answered ${response.status}.`), { transient: true });
   }
   if (!response.ok) throw new Error(`OpenStreetMap lookup failed (${response.status}).`);
 
   const data = await response.json();
   if (data.remark && /timed out|error/i.test(data.remark)) {
-    throw new Error('The OpenStreetMap query timed out. Try a smaller radius.');
+    throw Object.assign(new Error('The OpenStreetMap query timed out.'), { transient: true });
   }
 
   return dedupe(
@@ -307,15 +368,16 @@ function dedupe(results) {
  * missing key or a failed request, and reports which provider actually answered.
  * @returns {Promise<{results: object[], provider: 'google'|'osm', notice: string|null}>}
  */
-export async function findClinicians(center, radiusM = PLACES.defaultRadiusM) {
+export async function findClinicians(center, radiusM = PLACES.defaultRadiusM, { signal = null } = {}) {
   const key = getApiKey();
 
   if (key) {
     try {
-      const results = await searchGoogle(center, radiusM, key);
+      const results = await searchGoogle(center, radiusM, key, signal);
       return { results: sortByDistance(results), provider: 'google', notice: null };
     } catch (error) {
-      const results = await searchOverpass(center, radiusM);
+      if (error instanceof CancelledError) throw error;
+      const results = await searchOverpass(center, radiusM, signal);
       return {
         results: sortByDistance(results),
         provider: 'osm',
@@ -324,7 +386,7 @@ export async function findClinicians(center, radiusM = PLACES.defaultRadiusM) {
     }
   }
 
-  const results = await searchOverpass(center, radiusM);
+  const results = await searchOverpass(center, radiusM, signal);
   return { results: sortByDistance(results), provider: 'osm', notice: null };
 }
 

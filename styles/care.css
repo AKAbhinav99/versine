@@ -78,6 +78,17 @@
   color: var(--ink-700);
 }
 .loc-status--error { border-left-color: var(--marker); background: var(--marker-wash); }
+.loc-status { flex-wrap: wrap; align-items: flex-start; }
+.loc-status__retry {
+  min-height: 34px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--marker);
+  color: var(--marker);
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
 .loc-status::before {
   content: '·';
   font-family: var(--font-num);
