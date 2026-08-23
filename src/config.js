@@ -55,22 +55,11 @@ export const RELIABILITY = {
   implausibleTiltDeg: 25,
 };
 
-/* Google Places API (New). Leave blank and the app falls back to OpenStreetMap,
-   which needs no key. A key entered in the UI is stored under PLACES_KEY_STORAGE. */
+/* Clinician finder. Providers and their keys live in lib/keys.js, lib/clinics.js
+   and lib/geocoding.js — this is just the shared search shape. */
 export const PLACES = {
-  googleApiKey: '',
-  keyStorage: 'versine.placesKey',
-  textSearchUrl: 'https://places.googleapis.com/v1/places:searchText',
-  overpassUrl: 'https://overpass-api.de/api/interpreter',
-  nominatimUrl: 'https://nominatim.openstreetmap.org/search',
-  nominatimReverseUrl: 'https://nominatim.openstreetmap.org/reverse',
   countryStorage: 'versine.country',
   defaultRadiusM: 15000,
-  queries: [
-    { label: 'Orthopedic', spec: 'ortho', text: 'orthopedic surgeon scoliosis' },
-    { label: 'Pediatric', spec: 'pediatric', text: 'pediatric orthopedic doctor' },
-    { label: 'Physical therapy', spec: 'pt', text: 'physical therapist scoliosis' },
-  ],
 };
 
 export const STORAGE_KEY = 'versine.history.v1';

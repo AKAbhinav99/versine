@@ -77,32 +77,45 @@ measure was tried as a replacement and did not separate the groups either. See
 
 ## Finding care
 
-[`src/lib/places.js`](src/lib/places.js) has two live providers behind one interface:
+Two provider chains, each trying the next when one fails. Everything is optional:
+with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 
-- **Google Places API (New)** text search — used when an API key is present. Gives
-  ratings, review counts, phone numbers, and opening hours. Enter a key in the
-  Care tab (stored in `localStorage`, sent only to `places.googleapis.com`), or set
-  `PLACES.googleApiKey` in [`src/config.js`](src/config.js).
-- **OpenStreetMap via Overpass** — the keyless default. Real, current data; no
-  ratings. Every Overpass clause is a plain indexed tag lookup with relevance
-  filtering done in JS, because regex inside the query makes Overpass time out.
+**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)) — richest first:
 
-Geocoding for typed locations uses Nominatim. The map is Leaflet with CARTO tiles.
+| | key | gives |
+|---|---|---|
+| Google Places | required | ratings, review counts, opening hours |
+| Geoapify Places | required | good coverage, no ratings |
+| OpenStreetMap / Overpass | none | the keyless fallback |
+
+**Geocoding** ([`src/lib/geocoding.js`](src/lib/geocoding.js)) — keyless first, so no
+quota is spent while the free service is healthy: Nominatim → Geoapify → MapTiler
+→ Geocode.maps.co.
+
+Overpass is deliberately last. It is free, shared and volunteer-run, and it is the
+service that made the chain necessary — it answers 429 when its per-IP slots fill,
+504 when its gateway gives up, and sometimes drops connections outright, which a
+browser reports only as `TypeError: Failed to fetch`. It gets three attempts with
+backoff before the chain moves on.
+
+Keys are entered in the Care tab, stored in `localStorage` on the device, and each
+is sent only to the service it belongs to. Every provider that fails is named in
+the UI, with the reason — an invalid key reports as "rejected the API key (401)"
+rather than disappearing into a silent fallback.
 
 **Postal codes get a country.** "2000" is a valid postcode in Australia, Belgium,
-Denmark and a dozen other places, so a bare code is sent through Nominatim's
-structured `postalcode` field constrained to a selected country (defaulted from the
-browser locale) rather than free-text search. Wherever the search lands, the
-resolved place is printed above the map — "Cambridge, Massachusetts 02138, United
-States" — so a wrong match is visible instead of silent. GPS results are
-reverse-geocoded for the same reason.
+Denmark and a dozen other places, so a bare code is sent as a postal code
+constrained to the selected country (defaulted from the browser locale) wherever
+the provider supports saying so. The resolved place is printed above the map, so a
+wrong match is visible rather than silent, and GPS fixes are reverse-geocoded for
+the same reason.
 
-**The rating filter follows the data.** OpenStreetMap publishes no ratings, so
-against that provider the rating chips are disabled with an explanation rather than
-silently emptying the list, which is what they used to do. Empty results now name
-the filter responsible instead of always blaming the radius. Neither provider
-publishes insurance acceptance, so the app doesn't invent it — it says so and tells
-the user to ask when they call.
+**The rating filter follows the data.** Only Google publishes ratings, so against
+any other provider the rating chips are disabled with an explanation rather than
+silently emptying the list. Empty results name the filter responsible. Nobody
+publishes insurance acceptance, so the app doesn't invent it.
+
+The map is Leaflet with CARTO tiles.
 
 ## Layout
 
@@ -116,7 +129,6 @@ src/
     geometry.js         the asymmetry math (pure, testable)
     screening.js        quality checks, banding, next steps
     pose.js             MediaPipe Pose wrapper
-    places.js           Google Places + OpenStreetMap providers
     storage.js          scan history in localStorage
     dom.js              small DOM helpers
   screens/
@@ -128,6 +140,11 @@ src/
     doctors.js          map, filters, clinic cards
     history.js          trend chart and scan log
     consensus.js        multi-framing measurement and the reliability gate
+    net.js              shared fetch, cancellation, and the provider chain
+    keys.js             optional API keys, stored per device
+    geocoding.js        place lookup across four providers
+    clinics.js          clinician search across three providers
+    geolocation.js      browser position, with failures that explain themselves
   dev/demo.js           ?demo fixture, never used in a real scan
 bench/                  labelled-image benchmark for the detector
 tests/                  unit tests for the math and the consensus

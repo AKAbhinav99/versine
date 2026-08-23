@@ -98,6 +98,21 @@
 
 .btn[aria-busy='true'] { opacity: 0.7; pointer-events: none; }
 
+.key-row {
+  border-top: 1px solid var(--rule);
+  padding-top: var(--space-3);
+  margin-top: var(--space-3);
+}
+.key-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+.key-row .locbar { margin-top: var(--space-2); margin-bottom: 0; }
+.key-row .btn { flex: none; }
+
 /* A filter the current data source cannot support is shown, but inert. */
 .chip[aria-disabled='true'] {
   opacity: 0.45;

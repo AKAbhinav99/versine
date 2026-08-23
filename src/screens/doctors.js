@@ -4,7 +4,11 @@
 
 import { $, $$, el, formatDistance, escapeHtml } from '../lib/dom.js';
 import { PLACES } from '../config.js';
-import { findClinicians, currentPosition, geocode, describePlace, getApiKey, setApiKey, CancelledError } from '../lib/places.js';
+import { findClinicians, clinicProviders } from '../lib/clinics.js';
+import { geocode, describePlace } from '../lib/geocoding.js';
+import { currentPosition } from '../lib/geolocation.js';
+import { CancelledError } from '../lib/net.js';
+import { PROVIDER_KEYS, getKey, setKey, configuredKeys } from '../lib/keys.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
 import { onEnter } from '../router.js';
 
@@ -27,9 +31,9 @@ const state = {
 let searchToken = 0;
 let inFlight = null;   // AbortController for the search currently running
 
-/* OpenStreetMap carries no ratings, so the rating filter is meaningless against
-   it. Without this the filter silently emptied the list. */
-const providerHasRatings = () => state.provider === 'google';
+/* Only Google publishes ratings, so the rating filter is meaningless against the
+   others. Without this the filter silently emptied the list. */
+let providerHasRatings = () => false;
 
 let map = null;
 let markerLayer = null;
@@ -174,17 +178,20 @@ async function search() {
   $('#places-list').replaceChildren(el('div', { class: 'empty' }, 'Searching…'));
 
   try {
-    const { results, provider, notice } = await findClinicians(
-      state.center, state.radiusM, { signal: controller.signal },
-    );
+    const answer = await findClinicians(state.center, state.radiusM, { signal: controller.signal });
     if (token !== searchToken) return false;   // a newer search has taken over
 
-    state.results = results;
-    state.provider = provider;
-    $('#places-source').textContent = provider === 'google'
-      ? 'Source: Google Places' : 'Source: OpenStreetMap';
+    state.results = answer.results;
+    state.provider = answer.provider;
+    providerHasRatings = () => answer.hasRatings;
+    $('#places-source').textContent = `Source: ${answer.label}`;
     syncRatingFilter();
-    renderResults(notice);
+
+    /* If earlier providers were tried and failed, say which — silently falling
+       back hides a broken key or an outage the user could fix. */
+    renderResults(answer.attempts.length
+      ? `Answered by ${answer.label} after ${answer.attempts.join('; ')}.`
+      : undefined);
     clearStatus();
     return true;
   } catch (error) {
@@ -208,7 +215,7 @@ function syncRatingFilter() {
     if (!available) chip.setAttribute('aria-pressed', 'false');
     chip.title = available
       ? 'Filter to practices rated at least this highly'
-      : 'OpenStreetMap does not publish ratings. Add a Google Places key below to filter by rating.';
+      : 'This lookup service does not publish ratings. Only Google Places does — add a key below.';
   });
 }
 
@@ -282,31 +289,55 @@ function clinicCard(clinic, index) {
 
 function renderNotice(extra) {
   const box = $('#places-notice');
-  const usingGoogle = Boolean(getApiKey());
+  const configured = configuredKeys();
   box.replaceChildren();
 
   if (extra) box.append(el('div', { class: 'notice' }, extra));
 
   box.append(el('details', { class: 'notice' },
-    el('summary', {}, usingGoogle
-      ? 'Using your Google Places key · insurance data'
-      : 'Using OpenStreetMap · add a Google Places key for ratings'),
-    el('p', { style: 'margin-top:var(--space-3)' },
-      'Neither Google Places nor OpenStreetMap publishes which insurance a practice accepts, so Versine does not guess at it. Ask when you call — and ask whether they see scoliosis patients, since not every orthopedist does.'),
-    el('p', { html: `With a <a href="https://developers.google.com/maps/documentation/places/web-service/get-api-key" target="_blank" rel="noopener">Google Places API key</a> you also get ratings, review counts, and opening hours. The key is stored only in this browser and sent only to <code>places.googleapis.com</code>.` }),
-    keyForm()));
+    el('summary', {}, configured.length
+      ? `Lookup services · ${configured.length} key${configured.length > 1 ? 's' : ''} saved`
+      : 'Lookup services · running keyless, add a key for reliability'),
+
+    el('p', { class: 'small', style: 'margin-top:var(--space-3)' },
+      'Clinics are looked up in this order, falling through to the next whenever one fails: '),
+    el('p', { class: 'label' }, clinicProviders().join('  →  ')),
+
+    el('p', { class: 'small' },
+      "OpenStreetMap's services need no key and cost nothing, but they are shared, volunteer-run and often overloaded — they are the reason a lookup sometimes fails. Any key below is free to obtain and moves that provider ahead of them."),
+
+    el('p', { class: 'small' },
+      'Nobody publishes which insurance a practice accepts, so Versine does not guess at it. Ask when you call — and ask whether they see scoliosis patients, since not every orthopedist does.'),
+
+    ...PROVIDER_KEYS.map(keyRow),
+
+    el('p', { class: 'small muted', style: 'margin-top:var(--space-3)' },
+      'Keys are stored in this browser only, and each is sent solely to the service it belongs to.')));
 }
 
-function keyForm() {
+function keyRow(provider) {
   const input = el('input', {
-    type: 'password', placeholder: 'Google Places API key', value: getApiKey(),
-    'aria-label': 'Google Places API key', style: 'flex:1;min-width:0',
+    type: 'password',
+    placeholder: `${provider.label} key`,
+    value: getKey(provider.id),
+    'aria-label': `${provider.label} API key`,
+    style: 'flex:1;min-width:0',
   });
-  return el('div', { class: 'locbar', style: 'margin-top:var(--space-3)' }, input,
-    el('button', {
-      class: 'btn',
-      onClick: () => { setApiKey(input.value); renderNotice(); if (state.center) search(); },
-    }, 'Save'));
+
+  return el('div', { class: 'key-row' },
+    el('div', { class: 'key-row__head' },
+      el('span', { class: 'label' }, provider.label),
+      el('a', { href: provider.signup, target: '_blank', rel: 'noopener', class: 'small' }, 'Get a free key')),
+    el('p', { class: 'small muted' }, provider.note),
+    el('div', { class: 'locbar' }, input,
+      el('button', {
+        class: 'btn',
+        onClick: () => {
+          setKey(provider.id, input.value);
+          renderNotice();
+          if (state.center) search();
+        },
+      }, 'Save')));
 }
 
 /* Status sits beside the controls rather than inside the results list, so a
