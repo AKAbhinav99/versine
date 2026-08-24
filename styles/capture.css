@@ -386,3 +386,15 @@
   width: 26px; height: 26px; border-radius: 50%;
   background: var(--paper); border: 2px solid var(--scrub);
 }
+
+/* Shown when the analysis cluster fails to load on accept. The panel is dark, so
+   this borrows the on-dark marker rather than the paper-tuned one. */
+.adjust__error {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  border-left: 2px solid var(--marker);
+  background: rgba(214, 64, 42, 0.14);
+  color: var(--paper);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}

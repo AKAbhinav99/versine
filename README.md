@@ -341,6 +341,17 @@ Measured on a cold load: 20 requests before the app is interactive, no contact
 with unpkg at all, and four font files rather than five — `Archivo 500` was
 declared and used by nothing.
 
+One thing worth knowing if you touch the lazy loading: **a failed dynamic import
+is cached by the browser itself.** Clearing your own promise is not enough. The
+module map records a module whose fetch failed, and importing the same specifier
+again returns that cached failure without going near the network — verified with
+the server back up and the file returning 200, where a plain re-import still
+rejected and the identical file behind a fresh query string resolved. Retries
+therefore import `path?retry=N`. That recovers the case that actually happens, a
+whole subtree failing while the network was down; it cannot recover a partial
+failure deeper in the graph, because those modules keep their canonical
+specifiers, so the second failure offers a reload instead.
+
 Not changed: the seven stylesheets. They are about 15 KB gzipped in total and
 HTTP/2 fetches them in one parallel round, so splitting or inlining them would
 trade real complexity for very little. The CSP also forbids the inline `onload`

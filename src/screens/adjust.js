@@ -46,6 +46,7 @@ export function openAdjust(burst) {
   frames = Array.isArray(burst) ? burst : [burst];
   photo = frames[0];
   transform = identity();
+  showAcceptError(null);
   syncControls();
   cloneGuide();
   showScreen('adjust');
@@ -164,16 +165,34 @@ function onPointerUp(event) {
  *  imported here rather than at load, since none of it is needed to show a
  *  viewfinder. main.js warms it on idle so this await is normally already done. */
 async function accept() {
-  const baked = frames.map((frame) => {
-    const output = document.createElement('canvas');
-    output.width = frame.width;
-    output.height = frame.height;
-    paintSource(frame, output, 1);
-    return output;
-  });
+  const button = $('#adjust-accept');
+  showAcceptError(null);
+  button.disabled = true;
 
-  const { runAnalysis } = await import('./analyze.js');
-  runAnalysis(baked, { rotationDeg: transform.rotationDeg, scale: transform.scale });
+  try {
+    const baked = frames.map((frame) => {
+      const output = document.createElement('canvas');
+      output.width = frame.width;
+      output.height = frame.height;
+      paintSource(frame, output, 1);
+      return output;
+    });
+
+    const { runAnalysis } = await import('./analyze.js');
+    runAnalysis(baked, { rotationDeg: transform.rotationDeg, scale: transform.scale });
+  } catch {
+    /* Without this the tap did nothing at all — no navigation, no message, and a
+       photo the person had just posed for apparently thrown away. */
+    showAcceptError('The measuring code could not be loaded, so this photo has not been analysed yet. Your photo is still here — check your connection and tap again.');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function showAcceptError(message) {
+  const box = $('#adjust-error');
+  box.classList.toggle('hidden', !message);
+  if (message) box.textContent = message;
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));

@@ -1,6 +1,6 @@
 /* App entry: wires the screens together and decides where to land on open. */
 
-import { $ } from './lib/dom.js';
+import { $, el } from './lib/dom.js';
 import { INTRO_KEY, LEGACY_KEYS } from './config.js';
 import { showScreen, initTabs, onEnter } from './router.js';
 import { initCapture } from './screens/capture.js';
@@ -18,23 +18,82 @@ initAdjust();
    none of them is needed to show a viewfinder. Each arrives the first time its
    tab is opened, and the router shows the empty screen immediately so the tap
    still feels instant. */
-const once = (load) => { let pending = null; return () => (pending ||= load()); };
+/* The failure branch matters more than the success one, and it has two halves.
+ *
+ * Clearing our own cached promise is the obvious half: one tap made offline
+ * should not leave that tab dead for the session. The other half is not obvious
+ * and cost a round of testing to find — the browser's module map remembers a
+ * module whose fetch failed, so importing the same specifier again returns the
+ * cached failure without going near the network. Measured directly: with the
+ * server back up and the file returning 200, a plain re-import still rejected
+ * while the identical file behind a fresh query string resolved.
+ *
+ * So each retry needs a URL the module map has not seen. This recovers the case
+ * that actually happens — the whole subtree failing because the network was
+ * down. It cannot recover a partial failure deeper in the graph, since those
+ * modules keep their canonical specifiers; a reload is the only cure for that,
+ * and the message says so once a retry has already failed. */
+const lazyModule = (path) => {
+  let pending = null;
+  let attempts = 0;
 
-const doctors = once(() => import('./screens/doctors.js').then((module) => {
-  module.initDoctors();
+  return () => (pending ||= import(attempts++ === 0 ? path : `${path}?retry=${attempts}`)
+    .catch((error) => {
+      pending = null;
+      throw error;
+    }));
+};
+
+const loadDoctors = lazyModule('./screens/doctors.js');
+/* A module namespace object is sealed, so the "already wired" flag lives here.
+   It can only be set after a load that succeeded, which is exactly when the
+   listeners were actually attached. */
+let doctorsWired = false;
+const doctors = () => loadDoctors().then((module) => {
+  if (!doctorsWired) { module.initDoctors(); doctorsWired = true; }
   return module;
-}));
-const history = once(() => import('./screens/history.js'));
+});
+const history = lazyModule('./screens/history.js');
 
-onEnter('doctors', () => { doctors().then((module) => module.showDoctors()); });
-onEnter('history', () => { history().then((module) => module.renderHistory()); });
+/* The tab has already switched by the time this runs, so a silent failure would
+   leave someone staring at an empty screen. */
+const lazyScreen = (screen, load, show, container) => {
+  let failures = 0;
+  onEnter(screen, () => {
+    load()
+      .then((module) => { failures = 0; show(module); })
+      .catch(() => loadFailed(container, ++failures, () => showScreen(screen)));
+  });
+};
+
+lazyScreen('doctors', doctors, (module) => module.showDoctors(), '#places-notice');
+lazyScreen('history', history, (module) => module.renderHistory(), '#history-body');
+
+function loadFailed(container, failures, retry) {
+  const host = $(container);
+  if (!host) return;
+
+  const stubborn = failures > 1;
+  host.replaceChildren(
+    el('div', { class: 'empty' },
+      el('p', {}, 'This section could not load — it is fetched the first time you open it, and the request did not get through. Your scans are safe on this device.'),
+      stubborn
+        ? el('p', { class: 'small muted' }, 'It failed again. Reloading the page clears what the browser cached about the failure, which a retry on its own cannot always do.')
+        : null,
+      stubborn
+        ? el('button', { class: 'btn', onClick: () => location.reload() }, 'Reload the page')
+        : el('button', { class: 'btn', onClick: retry }, 'Try again')));
+}
 
 initTabs((tab) => showScreen(tab));
 
 /* The analysis cluster is not on the critical path, but it is needed the moment
    someone accepts a photo — so it is fetched once the browser is otherwise idle
    rather than at load or at the tap. */
-const warm = () => { import('./screens/analyze.js'); };
+/* Failing here costs nothing: accepting a photo imports it again, and that path
+   reports its own failure. Swallowed so it does not surface as an unhandled
+   rejection every time someone opens the app offline. */
+const warm = () => { import('./screens/analyze.js').catch(() => {}); };
 if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 });
 else setTimeout(warm, 1500);
 
