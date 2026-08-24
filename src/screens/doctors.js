@@ -11,7 +11,6 @@ import { CancelledError } from '../lib/net.js';
 import { PROVIDER_KEYS, getKey, setKey, configuredKeys, testKey } from '../lib/keys.js';
 import { localInView, indexCoverage, clearLearned } from '../lib/clinic-index.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
-import { onEnter } from '../router.js';
 
 const LAST_CENTER_KEY = 'versine.lastCenter';
 
@@ -73,11 +72,11 @@ export function initDoctors() {
 
   $('#search-area').addEventListener('click', searchMapArea);
 
-  onEnter('doctors', onShow);
   restoreCenter();
 }
 
-function onShow() {
+/** Called by the router each time this screen is shown. */
+export function showDoctors() {
   ensureMap();
   if (map) setTimeout(() => map.invalidateSize(), 60);
   if (!state.results.length && state.center) search();
@@ -446,7 +445,62 @@ function setBusy(button, busy, label) {
 
 /* -------------------------------------------------------------------- map --- */
 
+/* Leaflet is 46 KB across two files on a second origin, and it is only ever
+   needed on this one screen. Loading it from the document head made every other
+   screen — including the one the app opens on — wait for a host it never uses.
+   It is fetched the first time the map is actually wanted. */
+const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const LEAFLET_JS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+let leafletPromise = null;
+
+function loadLeaflet() {
+  if (window.L) return Promise.resolve(window.L);
+  if (leafletPromise) return leafletPromise;
+
+  leafletPromise = new Promise((resolve, reject) => {
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = LEAFLET_CSS;
+    document.head.append(css);
+
+    const script = document.createElement('script');
+    script.src = LEAFLET_JS;
+    script.onload = () => resolve(window.L);
+    script.onerror = () => {
+      leafletPromise = null;     // a later visit can retry a transient failure
+      reject(new Error('LEAFLET_UNAVAILABLE'));
+    };
+    document.head.append(script);
+  });
+
+  return leafletPromise;
+}
+
 function ensureMap() {
+  if (map) return;
+  if (!window.L) { requestLeaflet(); return; }
+  buildMap();
+}
+
+/* Every caller of ensureMap already copes with the map not existing yet, so the
+   load can resolve later and catch up. */
+function requestLeaflet() {
+  loadLeaflet()
+    .then(() => {
+      buildMap();
+      if (!map) return;
+      map.invalidateSize();
+      drawIndexMarkers();
+      if (state.results.length) drawMarkers(state.results);
+    })
+    .catch(() => {
+      const host = $('#map');
+      if (host) host.textContent = 'The map could not load. The list below still works.';
+      host?.classList.add('map--failed');
+    });
+}
+
+function buildMap() {
   if (map || typeof window.L === 'undefined') return;
   map = window.L.map('map', { zoomControl: false, attributionControl: true });
   map.on('moveend', drawIndexMarkers);

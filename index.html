@@ -8,8 +8,16 @@
 <meta name="description" content="Versine measures how far your shoulders and hips sit off level in a forward-bend photo, reports the number with its error bar, and points you toward real clinical care. Not a diagnosis." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<!-- Archivo 500 was declared and used by nothing; the other six weights are all in use. -->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="modulepreload" href="src/main.js" />
+<link rel="modulepreload" href="src/config.js" />
+<link rel="modulepreload" href="src/router.js" />
+<link rel="modulepreload" href="src/lib/dom.js" />
+<link rel="modulepreload" href="src/lib/storage.js" />
+<link rel="modulepreload" href="src/screens/capture.js" />
+<link rel="modulepreload" href="src/screens/adjust.js" />
+
 <link rel="stylesheet" href="styles/tokens.css" />
 <link rel="stylesheet" href="styles/base.css" />
 <link rel="stylesheet" href="styles/capture.css" />
@@ -390,7 +398,6 @@
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

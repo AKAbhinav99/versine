@@ -5,10 +5,6 @@ import { INTRO_KEY, LEGACY_KEYS } from './config.js';
 import { showScreen, initTabs, onEnter } from './router.js';
 import { initCapture } from './screens/capture.js';
 import { initAdjust } from './screens/adjust.js';
-import { initDoctors } from './screens/doctors.js';
-import { initIntake } from './screens/intake.js';
-import { renderHistory } from './screens/history.js';
-import { rerenderResult } from './screens/result.js';
 
 /* Carry anything stored under the pre-rename namespace across first. Must run
    before any screen reads storage. */
@@ -16,13 +12,31 @@ migrateLegacyStorage();
 
 initCapture();
 initAdjust();
-initDoctors();
-/* Answering the intake redraws the result underneath it — a red flag has to be
-   able to appear above a verdict that was already on screen. */
-initIntake(rerenderResult);
-onEnter('history', renderHistory);
+
+/* Only the capture flow is loaded up front. The other screens are whole
+   subtrees — the clinician finder alone pulls eight modules and Leaflet — and
+   none of them is needed to show a viewfinder. Each arrives the first time its
+   tab is opened, and the router shows the empty screen immediately so the tap
+   still feels instant. */
+const once = (load) => { let pending = null; return () => (pending ||= load()); };
+
+const doctors = once(() => import('./screens/doctors.js').then((module) => {
+  module.initDoctors();
+  return module;
+}));
+const history = once(() => import('./screens/history.js'));
+
+onEnter('doctors', () => { doctors().then((module) => module.showDoctors()); });
+onEnter('history', () => { history().then((module) => module.renderHistory()); });
 
 initTabs((tab) => showScreen(tab));
+
+/* The analysis cluster is not on the critical path, but it is needed the moment
+   someone accepts a photo — so it is fetched once the browser is otherwise idle
+   rather than at load or at the tap. */
+const warm = () => { import('./screens/analyze.js'); };
+if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 });
+else setTimeout(warm, 1500);
 
 function migrateLegacyStorage() {
   for (const [oldKey, newKey] of Object.entries(LEGACY_KEYS)) {

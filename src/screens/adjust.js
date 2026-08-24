@@ -9,7 +9,6 @@
 
 import { $ } from '../lib/dom.js';
 import { showScreen, onEnter } from '../router.js';
-import { runAnalysis } from './analyze.js';
 
 const MAX_ROTATION_DEG = 20;
 
@@ -160,8 +159,11 @@ function onPointerUp(event) {
 
 /* --------------------------------------------------------------- accept --- */
 
-/** Bake the transform into every frame at full resolution, and measure those. */
-function accept() {
+/** Bake the transform into every frame at full resolution, and measure those.
+ *  The analysis cluster — pose model wrapper, consensus, result, report — is
+ *  imported here rather than at load, since none of it is needed to show a
+ *  viewfinder. main.js warms it on idle so this await is normally already done. */
+async function accept() {
   const baked = frames.map((frame) => {
     const output = document.createElement('canvas');
     output.width = frame.width;
@@ -170,6 +172,7 @@ function accept() {
     return output;
   });
 
+  const { runAnalysis } = await import('./analyze.js');
   runAnalysis(baked, { rotationDeg: transform.rotationDeg, scale: transform.scale });
 }
 

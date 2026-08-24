@@ -14,12 +14,6 @@ import {
 
 let answers = {};
 let returnTo = 'result';
-let onSaved = null;
-
-export function initIntake(afterSave) {
-  onSaved = afterSave;
-  answers = loadIntake().answers;
-}
 
 /** @param {string} from screen to return to when the form is dismissed. */
 export function openIntake(from = 'result') {
@@ -61,9 +55,13 @@ function render() {
   );
 }
 
-function done() {
+async function done() {
   saveIntake(answers);
-  if (typeof onSaved === 'function') onSaved();
+  /* Redraw whatever result is underneath, so a newly reported red flag appears
+     above a verdict that was already on screen. Imported here rather than at the
+     top because result.js imports this module in turn. */
+  const { rerenderResult } = await import('./result.js');
+  rerenderResult();
   showScreen(returnTo);
 }
 

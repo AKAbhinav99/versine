@@ -312,6 +312,41 @@ a hidden `h2`, missing `scope` on the trend table's column headers, four identic
 error that was announced to sighted users only, and two empty tab stops — the
 video preview and the hidden file input.
 
+## Load
+
+The app opens on a viewfinder, so that is all the first load fetches.
+
+ES modules resolve their imports only after each file is fetched and parsed, so
+a module graph costs one round trip per level of depth, not one for the whole
+thing. The graph was 26 modules and four levels deep, every one of them blocking
+the first screen — on a high-latency connection that alone is over a second of
+nothing happening. It is now seven modules, all named in `<link
+rel="modulepreload">` so they fetch in parallel as a single round.
+
+Everything else arrives when it is wanted:
+
+| cluster | when |
+|---|---|
+| capture flow — router, capture, adjust, storage | at load, 7 modules |
+| analysis — pose, consensus, screening, result, report | on idle after first paint |
+| clinician finder — clinics, geocoding, index, keys, Leaflet | first time the Care tab is opened |
+
+Leaflet mattered most: 46 KB across two files on a third origin, loaded from the
+document head on every visit for a screen most people never open. It is now
+fetched by `doctors.js` at the point the map is first wanted, and every caller of
+`ensureMap` already coped with the map not existing yet, so nothing had to be
+restructured around it. If it fails to load the list still works.
+
+Measured on a cold load: 20 requests before the app is interactive, no contact
+with unpkg at all, and four font files rather than five — `Archivo 500` was
+declared and used by nothing.
+
+Not changed: the seven stylesheets. They are about 15 KB gzipped in total and
+HTTP/2 fetches them in one parallel round, so splitting or inlining them would
+trade real complexity for very little. The CSP also forbids the inline `onload`
+handler the usual non-blocking-CSS trick depends on, which would have failed
+silently in production.
+
 ## Tests
 
 ```bash
