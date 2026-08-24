@@ -30,7 +30,7 @@
   color: var(--scrub);
   padding-top: 3px;
 }
-.claim-list__key--no { color: var(--marker); }
+.claim-list__key--no { color: var(--marker-text); }
 .claim-list b { font-weight: 600; }
 
 /* ---------- Capture viewport ----------------------------------------- */
@@ -86,7 +86,7 @@
   gap: 6px;
   min-height: 40px;
   padding: 0 var(--space-3);
-  border: 1px solid rgba(237,240,241,0.35);
+  border: 1px solid rgba(237,240,241,0.48);
   border-radius: var(--radius);
   background: rgba(6,13,20,0.6);
   color: var(--paper);
@@ -103,7 +103,7 @@
 .capture__ghost-btn:active { background: rgba(6,13,20,0.85); }
 .capture__ghost-btn[aria-pressed='true'] {
   border-color: var(--marker);
-  color: var(--marker);
+  color: var(--marker-on-dark);
   background: rgba(6,13,20,0.72);
 }
 
@@ -220,9 +220,15 @@
   letter-spacing: var(--track-label);
   text-transform: uppercase;
 }
-.capture__aux[aria-pressed='true'] { border-color: var(--marker); color: var(--marker); }
+.capture__aux[aria-pressed='true'] { border-color: var(--marker); color: var(--marker-on-dark); }
 .capture__aux--right { justify-self: end; }
 .capture__aux--left { justify-self: start; }
+
+/* This block sits on --ink-900, where the paper-tuned .step-label reads at
+   2.35:1. Same fix as the adjust panel. */
+.capture__steps .step-label { color: var(--ink-300); }
+.capture__steps .step-label__num { color: var(--scrub-on-dark); }
+.capture__steps .step-label__rule { background: var(--ink-500); }
 
 .capture__steps {
   padding: var(--space-4) var(--gutter);
@@ -268,12 +274,12 @@
   display: flex;
   gap: var(--space-3);
   padding: var(--space-2) 0;
-  color: var(--ink-300);
+  color: var(--ink-400);
   border-bottom: 1px dashed var(--rule-soft);
 }
 .analyze__log li[data-state='active'] { color: var(--ink-700); }
 .analyze__log li[data-state='done'] { color: var(--ink-500); }
-.analyze__log li::before { content: '○'; color: var(--rule); }
+.analyze__log li::before { content: '○'; color: var(--rule-control); }
 .analyze__log li[data-state='active']::before { content: '◐'; color: var(--scrub); }
 .analyze__log li[data-state='done']::before { content: '●'; color: var(--clear); }
 
@@ -282,7 +288,7 @@
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-300);
+  color: var(--ink-400);
   min-height: 1.2em;
 }
 
@@ -325,6 +331,12 @@
   color: var(--ink-300);
 }
 .adjust__panel .step-label { color: var(--ink-300); }
+.adjust__panel .step-label__num { color: var(--scrub-on-dark); }
+/* .btn--ghost and .btn--quiet are coloured for paper; on the dark panel they
+   land at 1.23:1 and 3.18:1. */
+.adjust__panel .btn--ghost { color: var(--paper); border-color: var(--ink-500); }
+.adjust__panel .btn--ghost:hover { background: rgba(237,240,241,0.08); border-color: var(--ink-300); }
+.adjust__panel .btn--quiet { color: var(--scrub-on-dark); }
 .adjust__panel .step-label__rule { background: rgba(237,240,241,0.18); }
 .adjust__panel .muted { color: var(--ink-300); }
 

@@ -8,11 +8,13 @@
   --ink-900: #0B1622;   /* deepest slate — headers, capture chrome */
   --ink-700: #17293C;   /* body text on paper */
   --ink-500: #35566F;   /* secondary text, diagram strokes */
-  --ink-300: #7E97A9;   /* tertiary text, disabled */
+  --ink-300: #7E97A9;   /* hairline strokes and disabled states — NOT text */
+  --ink-400: #577083;   /* the darkest tertiary that clears 4.5:1 on paper */
   --paper:   #EDF0F1;   /* cool off-white page (deliberately not cream) */
   --paper-raised: #F7F9F9;
-  --rule:    #C6D0D4;   /* hairline borders / drawing rules */
+  --rule:    #C6D0D4;   /* decorative hairlines and drawing rules */
   --rule-soft: #DCE3E5;
+  --rule-control: #778E98;  /* borders that delimit a control — 3:1 vs paper */
 
   --scrub:   #1F6E8C;   /* medical scrub blue — measurement + primary action */
   --scrub-dim: #12506A;
@@ -23,6 +25,25 @@
   --amber-wash: #F7EEDC;
   --clear:   #2C7A5B;   /* within-range state */
   --clear-wash: #E2EFE9;
+
+  /* Text-weight variants of the three signal colours.
+     The values above are tuned for strokes, fills and 1px rules, where the bar is
+     3:1 and only against an adjacent colour. As small text on their own washes
+     they measure 3.26-4.39:1 and fail WCAG AA. These are the darkest versions of
+     the same hues that clear 4.5:1 on both the wash and the page, so a red flag
+     is legible rather than merely red. Use these whenever the colour is carrying
+     words. */
+  --marker-text: #C13925;
+  --amber-text:  #986010;
+  --clear-text:  #2B785A;
+
+  /* And the mirror problem: this app has dark surfaces too — the capture chrome,
+     the adjust panel, the viewfinder. --scrub and --marker are tuned against
+     paper and drop to 3.18:1 and 4.02:1 against #0B1622. --ink-300 is fine there
+     (5.98:1) and only fails on paper, which is why it appears on both and must be
+     read as "hairlines and text on dark", never as tertiary text on paper. */
+  --scrub-on-dark:  #2E93B8;
+  --marker-on-dark: #E4695A;
 
   /* --- Type ---------------------------------------------------------- */
   --font-ui: 'Archivo', 'Helvetica Neue', Arial, sans-serif;

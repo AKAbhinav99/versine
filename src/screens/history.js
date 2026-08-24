@@ -134,10 +134,12 @@ function entryRow(entry) {
       el('div', { class: 'log-entry__links' },
         el('button', {
           class: 'log-entry__link',
+          'aria-label': `Referral summary for the scan of ${formatDate(entry.timestamp)}`,
           onClick: () => openReport(entry, { from: 'history' }),
         }, 'Summary'),
         el('button', {
           class: 'log-entry__link',
+          'aria-label': `Remove the scan of ${formatDate(entry.timestamp)}`,
           onClick: () => { deleteScan(entry.id); renderHistory(); },
         }, 'Remove'))),
     el('div', { class: 'log-entry__flag', 'data-level': entry.level, title: entry.level }));

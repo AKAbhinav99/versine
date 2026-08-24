@@ -86,7 +86,9 @@ function actions() {
 function header(entry) {
   return el('header', { class: 'report__head' },
     el('div', { class: 'report__title' },
-      el('h1', {}, 'Screening summary'),
+      /* Carries the id the section's aria-labelledby points at, so the screen
+         needs no second, hidden heading above this one. */
+      el('h1', { id: 'report-title' }, 'Screening summary'),
       el('p', { class: 'report__sub' },
         'Self-administered photographic screening. Not a diagnosis, not a clinical measurement.')),
     el('dl', { class: 'report__meta' },
@@ -232,7 +234,10 @@ function trendBlock(history, current) {
     el('h2', { class: 'label' }, `Previous readings (${history.length} scan${history.length > 1 ? 's' : ''} logged)`),
     el('table', { class: 'report__table report__table--trend' },
       el('thead', {}, el('tr', {},
-        el('th', {}, 'Date'), el('th', {}, 'Shoulder tilt'), el('th', {}, 'Framings'), el('th', {}, 'Rotation'))),
+        el('th', { scope: 'col' }, 'Date'),
+        el('th', { scope: 'col' }, 'Shoulder tilt'),
+        el('th', { scope: 'col' }, 'Framings'),
+        el('th', { scope: 'col' }, 'Rotation'))),
       el('tbody', {}, ...rows.map((scan) => el('tr', { 'data-current': scan.id === current.id || null },
         el('td', {}, formatDate(scan.timestamp)),
         el('td', { class: 'mono' }, `${scan.shoulderTiltDeg.toFixed(1)}° ± ${(scan.shoulderSpreadDeg ?? 0).toFixed(1)}°`),

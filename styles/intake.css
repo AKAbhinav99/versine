@@ -57,7 +57,9 @@
   align-items: center;
   min-height: 44px;
   padding: 0 var(--space-4);
-  border: var(--hair);
+  /* A control's boundary has to clear 3:1 against the page, which --rule does
+     not — it is a drawing hairline, not a control border. */
+  border: 1px solid var(--rule-control);
   border-radius: var(--radius);
   background: var(--paper-raised);
   color: var(--ink-700);
@@ -66,7 +68,7 @@
   transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
-.intake__options label:hover { border-color: var(--ink-300); }
+.intake__options label:hover { border-color: var(--ink-500); }
 
 .intake__options input:focus-visible + label {
   outline: 2px solid var(--scrub);
@@ -83,7 +85,7 @@
 .intake__options input:checked + label[data-flag] {
   border-color: var(--marker);
   background: var(--marker-wash);
-  color: var(--marker);
+  color: var(--marker-text);
 }
 
 .intake__clear {
@@ -91,14 +93,14 @@
   padding: 0 var(--space-2);
   border: 0;
   background: none;
-  color: var(--ink-300);
+  color: var(--ink-400);
   font-family: var(--font-num);
   font-size: var(--text-xs);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   cursor: pointer;
 }
-.intake__clear:hover { color: var(--ink-500); }
+.intake__clear:hover { color: var(--ink-700); }
 
 .intake__number {
   display: flex;
@@ -139,8 +141,8 @@
   background: var(--marker-wash);
 }
 
-.redflag__kicker { color: var(--amber); margin-bottom: var(--space-2); }
-.redflag[data-urgency='urgent'] .redflag__kicker { color: var(--marker); }
+.redflag__kicker { color: var(--amber-text); margin-bottom: var(--space-2); }
+.redflag[data-urgency='urgent'] .redflag__kicker { color: var(--marker-text); }
 
 .redflag__body {
   margin: 0;

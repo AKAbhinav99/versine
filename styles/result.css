@@ -99,7 +99,8 @@
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--font-num);
-  font-size: 10px;
+  /* Was a one-off 10px; --text-xs is the smallest size used anywhere else. */
+  font-size: var(--text-xs);
   color: var(--ink-500);
   white-space: nowrap;
 }
@@ -200,21 +201,23 @@
   filter: grayscale(0.5);
 }
 .log-entry__date { font-family: var(--font-num); font-size: var(--text-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.08em; }
-.log-entry__links { display: flex; gap: var(--space-3); padding-top: var(--space-1); }
+.log-entry__links { display: flex; gap: var(--space-4); padding-top: var(--space-1); }
 .log-entry__link {
   background: none;
   border: 0;
+  /* WCAG 2.2 asks 24x24 of any control. At 11px this needs the padding. */
+  min-height: 24px;
   padding: var(--space-1) 0;
   font-family: var(--font-num);
   font-size: var(--text-xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ink-300);
+  color: var(--ink-400);
 }
 .log-entry__link:first-child:hover { color: var(--scrub); }
-.log-entry__link:last-child:hover { color: var(--marker); }
+.log-entry__link:last-child:hover { color: var(--marker-text); }
 .log-entry__value { font-family: var(--font-num); font-size: var(--text-lg); font-weight: 500; }
-.log-entry__error { font-size: var(--text-xs); color: var(--ink-300); }
+.log-entry__error { font-size: var(--text-xs); color: var(--ink-400); }
 .log-entry__flag {
   width: 10px; height: 42px;
   border-radius: 1px;

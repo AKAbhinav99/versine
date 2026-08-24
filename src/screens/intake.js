@@ -112,7 +112,10 @@ const clamp = (value, { min, max }) => Math.min(max, Math.max(min, Math.round(va
 function optionRow(question) {
   const name = `intake-${question.id}`;
 
-  return el('div', { class: 'intake__options', role: 'radiogroup', 'aria-label': question.prompt },
+  /* No role="radiogroup" here: the fieldset and its legend already group and name
+     these, and a radiogroup may contain only radios — the Clear button below is
+     not one, which made the wrapper invalid as well as redundant. */
+  return el('div', { class: 'intake__options' },
     ...question.options.map((option) => {
       const id = `${name}-${option.value}`;
       const isFlag = question.flag?.on === option.value;
@@ -136,6 +139,9 @@ function optionRow(question) {
       ? el('button', {
         class: 'intake__clear',
         type: 'button',
+        /* "Clear" alone is meaningless read out of context, and a screen reader
+           user arriving by control rather than by heading gets exactly that. */
+        'aria-label': `Clear answer to: ${question.prompt}`,
         onClick: () => { delete answers[question.id]; saveIntake(answers); render(); },
       }, 'Clear')
       : null);

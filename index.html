@@ -82,7 +82,7 @@
     <h2 class="visually-hidden" id="capture-title">Guided photo capture</h2>
 
     <div class="capture__stage">
-      <video class="capture__video" id="capture-video" playsinline muted autoplay></video>
+      <video class="capture__video" id="capture-video" playsinline muted autoplay tabindex="-1"></video>
 
       <!-- Your previous scan, faint, so this one can be taken from the same spot.
            Framing variance is the largest error this app measures — see consensus.js -->
@@ -130,15 +130,18 @@
         <span id="capture-flip-label">Rear</span>
       </button>
       <p class="capture__hint" id="capture-hint"><b>Bend forward at the waist</b> · arms hanging loose · back to the camera</p>
-      <div class="capture__timer hidden mono" id="capture-timer">3</div>
-      <div class="capture__error hidden" id="capture-error"></div>
+      <div class="capture__timer hidden mono" id="capture-timer" role="timer" aria-live="off">3</div>
+      <div class="capture__error hidden" id="capture-error" role="alert"></div>
     </div>
 
     <div class="capture__controls">
       <button class="capture__aux capture__aux--left" id="capture-timer-toggle" aria-pressed="true">Timer 8s</button>
       <button class="shutter" id="capture-shutter" aria-label="Take screening photo"><span class="shutter__core"></span></button>
       <button class="capture__aux capture__aux--right" id="capture-upload-btn">Upload</button>
-      <input type="file" accept="image/*" id="capture-file" class="visually-hidden" />
+      <!-- Driven by the Upload button; kept out of the tab order so it is not a
+           nameless invisible stop for keyboard users. -->
+      <input type="file" accept="image/*" id="capture-file" class="visually-hidden"
+             tabindex="-1" aria-hidden="true" />
     </div>
 
     <div class="capture__steps">
@@ -230,7 +233,6 @@
   <!-- ============================ 03c · REPORT ========================== -->
   <section class="screen screen--pad report" id="screen-report" aria-labelledby="report-title">
     <div class="step-label no-print"><span class="step-label__num">03c</span> Referral summary <span class="step-label__rule"></span></div>
-    <h2 class="visually-hidden" id="report-title">Referral summary for a clinician</h2>
     <div id="report-body"></div>
   </section>
 

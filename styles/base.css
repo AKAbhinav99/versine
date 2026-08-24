@@ -35,6 +35,16 @@ p:last-child { margin-bottom: 0; }
   outline-offset: 2px;
 }
 
+/* --scrub is tuned against paper and reaches only 3.41:1 on the near-black
+   viewfinder and adjust panel, which is the bare minimum for a focus indicator.
+   On those surfaces the page colour is the legible one. */
+.capture__stage :focus-visible,
+.capture__controls :focus-visible,
+.capture__steps :focus-visible,
+.adjust__panel :focus-visible {
+  outline-color: var(--paper);
+}
+
 /* ---------- App frame ------------------------------------------------ */
 
 .app {
@@ -166,9 +176,10 @@ p:last-child { margin-bottom: 0; }
 .btn--ghost {
   background: transparent;
   color: var(--ink-700);
-  border-color: var(--rule);
+  /* A control boundary, so --rule-control rather than the drawing hairline. */
+  border-color: var(--rule-control);
 }
-.btn--ghost:hover { background: var(--paper-raised); border-color: var(--ink-300); }
+.btn--ghost:hover { background: var(--paper-raised); border-color: var(--ink-500); }
 .btn--quiet {
   background: transparent;
   border-color: transparent;

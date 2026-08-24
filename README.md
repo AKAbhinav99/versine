@@ -266,6 +266,29 @@ bench/                  labelled-image benchmark for the detector
 tests/                  unit tests for the math and the consensus
 ```
 
+## Accessibility
+
+Audited by measuring rather than by inspection: a script walks every text node on
+every populated screen, composites the real backdrop, and computes the contrast
+ratio; a second pass checks target sizes and accessible names. Seven colour pairs
+failed AA on the first run.
+
+The fix was not to darken the palette. `--marker`, `--amber` and `--clear` are
+tuned for 1px rules, strokes and fills, where the bar is 3:1 — they only fail when
+they carry words. So there are now text-weight variants (`--marker-text`,
+`--amber-text`, `--clear-text`) used wherever the colour is type, and `--ink-400`
+for tertiary text, since `--ink-300` reads at 2.66:1 on paper. The mirror of that
+problem also existed: this app has dark surfaces, and `--scrub` drops to 3.18:1
+against them, hence `--scrub-on-dark` and `--marker-on-dark`. `--rule-control`
+exists because a control's boundary needs 3:1 and the drawing hairline gives 1.37.
+
+Also fixed: a `role="radiogroup"` that contained a button (invalid, and redundant
+beside the fieldset and legend already naming the group), an `h1` rendered beneath
+a hidden `h2`, missing `scope` on the trend table's column headers, four identical
+"Get a free key" links, "Summary"/"Remove" buttons that named no scan, a camera
+error that was announced to sighted users only, and two empty tab stops — the
+video preview and the hidden file input.
+
 ## Tests
 
 ```bash

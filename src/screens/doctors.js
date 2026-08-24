@@ -388,7 +388,12 @@ function keyRow(provider) {
   return el('div', { class: 'key-row' },
     el('div', { class: 'key-row__head' },
       el('span', { class: 'label' }, provider.label),
-      el('a', { href: provider.signup, target: '_blank', rel: 'noopener', class: 'small' }, 'Get a free key')),
+      /* Four of these on the screen, all reading the same out of context. */
+      el('a', {
+        href: provider.signup, target: '_blank', rel: 'noopener',
+        class: 'small key-row__signup',
+        'aria-label': `Get a free ${provider.label} key (opens in a new tab)`,
+      }, 'Get a free key')),
     el('p', { class: 'small muted' }, provider.note),
     el('div', { class: 'locbar' }, input,
       el('button', { class: 'btn btn--ghost', onClick: check }, 'Test'),
