@@ -36,6 +36,7 @@ export function renderResult(payload) {
     pass ? plate(pass, entry, reading) : null,
     reading.usable ? tiltReadout(reading) : null,
     reading.usable ? metricGrid(reading) : null,
+    reading.usable && reading.swayDeg !== null && reading.swayDeg !== undefined ? swayPanel(reading) : null,
     reliabilityPanel(reading),
     adjustments?.rotationDeg ? rotationNote(adjustments.rotationDeg) : null,
     methodPanel(),
@@ -167,6 +168,24 @@ function thresholdRuler(value) {
 const legend = (band, text) => el('span', {},
   el('i', { style: `background:${{ clear: 'rgba(44,122,91,0.45)', monitor: 'rgba(184,117,20,0.5)', refer: 'rgba(214,64,42,0.45)' }[band]}` }), text);
 
+/* The second error bar, kept visually separate from the first because it is a
+   different kind of thing: measured, reported, and deliberately not gated on. */
+function swayPanel(reading) {
+  const wide = reading.swayDeg > reading.shoulderSpreadDeg;
+
+  return el('div', { class: 'sway', 'data-wide': wide || null },
+    el('div', { class: 'label sway__kicker' }, 'How still you were'),
+    el('div', { class: 'sway__row' },
+      el('div', { class: 'sway__value mono' }, reading.swayDeg.toFixed(1), el('sup', {}, '°')),
+      el('p', { class: 'sway__body' },
+        `Across ${reading.usableFrames} frames taken about a second apart, your shoulder tilt moved by ${reading.swayDeg.toFixed(1)}°. `
+        + (wide
+          ? 'That is more than the measurement itself wobbled, which means how you were standing matters more here than anything the app did. Standing more steadily, or having someone hold the phone, would tighten it.'
+          : 'That is less than the measurement itself wobbled, so you were holding the position well.'))),
+    el('p', { class: 'sway__note' },
+      'This is reported, not judged. No threshold for it has been calibrated against anything, so it never decides whether you get a number — that decision still rests on the framing spread above.'));
+}
+
 function metricGrid(reading) {
   return el('div', { class: 'metric-grid' },
     tile('Hip tilt', `${reading.hipTiltDeg.toFixed(1)}°`, shortSide(reading.higherHip)),
@@ -185,7 +204,7 @@ function reliabilityPanel(reading) {
   return el('div', { class: good ? 'notice' : 'quality-note' },
     el('b', {}, good ? 'How steady this reading is. ' : 'Why no number is shown. '),
     good
-      ? `The same photo was measured ${reading.totalFramings} times at slightly different crops. ${reading.passes} produced a usable pose and they agreed within ${reading.shoulderSpreadDeg.toFixed(1)}°. Anything wider than ${RELIABILITY.maxShoulderSpreadDeg}° is withheld rather than reported.`
+      ? `${reading.frames > 1 ? `${reading.usableFrames} of ${reading.frames} frames measured, and each` : 'The photo'} was measured ${reading.totalFramings} times at slightly different crops. ${reading.passes} produced a usable pose and they agreed within ${reading.shoulderSpreadDeg.toFixed(1)}°. Anything wider than ${RELIABILITY.maxShoulderSpreadDeg}° is withheld rather than reported.`
       : `Only ${reading.passes} of ${reading.totalFramings} framings produced a usable pose${reading.shoulderSpreadDeg !== undefined ? `, and they disagreed by ${reading.shoulderSpreadDeg.toFixed(1)}°` : ''}. A number from that would be guesswork, so none is shown.`);
 }
 

@@ -4,7 +4,7 @@
 import { $, $$ } from '../lib/dom.js';
 import { showScreen } from '../router.js';
 import { loadPoseLandmarker } from '../lib/pose.js';
-import { measureWithConsensus } from '../lib/consensus.js';
+import { measureWithConsensus, combineBurst } from '../lib/consensus.js';
 import { classifyReading } from '../lib/screening.js';
 import { saveScan, makeThumbnail } from '../lib/storage.js';
 import { renderResult, renderFailure } from './result.js';
@@ -13,22 +13,33 @@ import { renderResult, renderFailure } from './result.js';
    load looks like progress rather than a hang. */
 const MIN_STEP_MS = 380;
 
-export async function runAnalysis(photoCanvas, adjustments = null) {
+/**
+ * @param {HTMLCanvasElement[]|HTMLCanvasElement} burst frames of one scan
+ */
+export async function runAnalysis(burst, adjustments = null) {
+  const frames = Array.isArray(burst) ? burst : [burst];
   showScreen('analyze');
-  $('#analyze-preview').src = photoCanvas.toDataURL('image/jpeg', 0.55);
+  $('#analyze-preview').src = frames[0].toDataURL('image/jpeg', 0.55);
   resetLog();
 
   try {
     await runStep('model', () => loadPoseLandmarker());
 
-    /* Measured at several framings, because one framing is not reliable on its
-       own — see lib/consensus.js. */
-    const reading = await runStep('detect', () => measureWithConsensus(photoCanvas, (framing) => {
-      setDetail(`framing: ${framing}`);
-    }));
-    setDetail(reading.usable
-      ? `${reading.passes} of ${reading.totalFramings} framings agreed`
-      : `${reading.passes} of ${reading.totalFramings} framings usable`);
+    /* Each frame is measured at several framings because one framing is not
+       reliable on its own, and several frames are measured because one frame
+       cannot show whether the person was still — see lib/consensus.js. */
+    const reading = await runStep('detect', async () => {
+      const measured = [];
+      for (const [index, frame] of frames.entries()) {
+        measured.push(await measureWithConsensus(frame, (framing) => {
+          setDetail(frames.length > 1
+            ? `frame ${index + 1} of ${frames.length} · ${framing}`
+            : `framing: ${framing}`);
+        }));
+      }
+      return combineBurst(measured);
+    });
+    setDetail(detailFor(reading));
 
     await runStep('agree', () => reading);
     const verdict = await runStep('compare', () => classifyReading(reading));
@@ -40,8 +51,17 @@ export async function runAnalysis(photoCanvas, adjustments = null) {
     showScreen('result');
     renderResult({ reading, verdict, entry, adjustments });
   } catch (error) {
-    reportFailure(error, photoCanvas);
+    reportFailure(error, frames[0]);
   }
+}
+
+function detailFor(reading) {
+  const framings = reading.usable
+    ? `${reading.passes} of ${reading.totalFramings} framings agreed`
+    : `${reading.passes} of ${reading.totalFramings} framings usable`;
+  return reading.frames > 1
+    ? `${reading.usableFrames} of ${reading.frames} frames · ${framings}`
+    : framings;
 }
 
 function reportFailure(error, photoCanvas) {

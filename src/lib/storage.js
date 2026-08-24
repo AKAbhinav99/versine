@@ -45,6 +45,12 @@ export function saveScan({ reading, verdict, thumbnail, adjustments = null }) {
        "5 of 5" are different reliability statements and the referral summary
        prints both halves. Entries saved before this was kept omit it. */
     totalFramings: reading.totalFramings,
+    /* Spread across the frames of the burst — how much the person moved, as
+       opposed to how much the crop moved. null when only one frame was usable,
+       which means unknown rather than none. */
+    swayDeg: reading.swayDeg === null || reading.swayDeg === undefined ? null : round(reading.swayDeg),
+    frames: reading.frames ?? 1,
+    usableFrames: reading.usableFrames ?? 1,
     landmarkConfidence: round(reading.landmarkConfidence, 2),
     /* Rotation applied by hand before measuring. Kept because it shifts the
        reading one-for-one, so a trend built from differently-rotated photos is

@@ -15,6 +15,10 @@ const MAX_ROTATION_DEG = 20;
 
 const identity = () => ({ rotationDeg: 0, scale: 1, offsetX: 0, offsetY: 0 });
 
+/* The burst being adjusted. frames[0] is what the screen draws and what the
+   controls act on; the transform applies to all of them, because it corrects the
+   camera and the camera did not move between frames a second apart. */
+let frames = [];
 let photo = null;
 let transform = identity();
 let dragging = null;
@@ -35,9 +39,13 @@ export function initAdjust() {
   onEnter('adjust', () => { draw(); });
 }
 
-/** Entry point from capture: hand over the frame and show the screen. */
-export function openAdjust(sourceCanvas) {
-  photo = sourceCanvas;
+/**
+ * Entry point from capture.
+ * @param {HTMLCanvasElement[]} burst one or more frames of the same scan
+ */
+export function openAdjust(burst) {
+  frames = Array.isArray(burst) ? burst : [burst];
+  photo = frames[0];
   transform = identity();
   syncControls();
   cloneGuide();
@@ -77,8 +85,12 @@ function draw() {
   paint(canvas, width / photo.width);
 }
 
-/** Draws the photo under the current transform. `unit` scales photo px to canvas px. */
-function paint(canvas, unit) {
+/** Draws the previewed frame under the current transform. */
+const paint = (canvas, unit) => paintSource(photo, canvas, unit);
+
+/** Draws any frame of the burst under the current transform. `unit` scales
+ *  source px to canvas px. */
+function paintSource(source, canvas, unit) {
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#0B1622';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -87,7 +99,7 @@ function paint(canvas, unit) {
   ctx.translate(canvas.width / 2 + transform.offsetX * unit, canvas.height / 2 + transform.offsetY * unit);
   ctx.rotate((transform.rotationDeg * Math.PI) / 180);
   ctx.scale(transform.scale * unit, transform.scale * unit);
-  ctx.drawImage(photo, -photo.width / 2, -photo.height / 2);
+  ctx.drawImage(source, -source.width / 2, -source.height / 2);
   ctx.restore();
 }
 
@@ -148,14 +160,17 @@ function onPointerUp(event) {
 
 /* --------------------------------------------------------------- accept --- */
 
-/** Bake the transform into a full-resolution canvas and measure that. */
+/** Bake the transform into every frame at full resolution, and measure those. */
 function accept() {
-  const output = document.createElement('canvas');
-  output.width = photo.width;
-  output.height = photo.height;
-  paint(output, 1);
+  const baked = frames.map((frame) => {
+    const output = document.createElement('canvas');
+    output.width = frame.width;
+    output.height = frame.height;
+    paintSource(frame, output, 1);
+    return output;
+  });
 
-  runAnalysis(output, { rotationDeg: transform.rotationDeg, scale: transform.scale });
+  runAnalysis(baked, { rotationDeg: transform.rotationDeg, scale: transform.scale });
 }
 
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));

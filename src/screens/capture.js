@@ -17,6 +17,12 @@ const CUE_FROM = 3;             // start the audible countdown this many seconds
 const MAX_ANALYSIS_EDGE = 1440; // downscale huge uploads before pose detection
 const GHOST_STORAGE = 'versine.ghost';
 
+/* A scan is a short burst rather than one frame. Three frames roughly a second
+   apart is enough to see whether the person is holding still, and short enough
+   that nobody has to hold a forward bend for it. */
+const BURST_FRAMES = 3;
+const BURST_GAP_MS = 900;
+
 let stream = null;
 let timerSeconds = DEFAULT_TIMER_SECONDS;
 let countdown = null;
@@ -302,17 +308,39 @@ function cancelCountdown() {
 
 /* ---------------------------------------------------------------- frames --- */
 
-function captureFrame() {
-  const source = video();
-  if (!source.videoWidth) { showError('The camera has not started yet. Give it a second and try again.'); return; }
-
+/** One frame off the live track, at its native resolution. */
+function grabFrame(source) {
   const canvas = document.createElement('canvas');
   canvas.width = source.videoWidth;
   canvas.height = source.videoHeight;
   canvas.getContext('2d').drawImage(source, 0, 0);
-  stopCamera();
-  openAdjust(canvas);
+  return canvas;
 }
+
+async function captureFrame() {
+  const source = video();
+  if (!source.videoWidth) { showError('The camera has not started yet. Give it a second and try again.'); return; }
+
+  const frames = [grabFrame(source)];
+  setHint('<b>Hold still</b> — taking a few frames.');
+
+  /* The gaps are what make the burst worth taking: three frames of the same
+     instant would only re-measure the same posture. */
+  for (let i = 1; i < BURST_FRAMES; i += 1) {
+    await wait(BURST_GAP_MS);
+    /* Someone can stand up, or the track can drop, between frames. Whatever was
+       collected before that still measures. */
+    if (!stream || !source.videoWidth) break;
+    frames.push(grabFrame(source));
+    cue('tick');
+  }
+
+  stopCamera();
+  resetHint();
+  openAdjust(frames);
+}
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function onFileChosen(event) {
   const file = event.target.files?.[0];
@@ -322,7 +350,9 @@ function onFileChosen(event) {
   image.onload = () => {
     URL.revokeObjectURL(url);
     stopCamera();
-    openAdjust(canvasFromImage(image));
+    /* An uploaded photograph is a burst of one. Sway is unknown for it, and the
+       reading says so rather than assuming none. */
+    openAdjust([canvasFromImage(image)]);
   };
   image.onerror = () => {
     URL.revokeObjectURL(url);

@@ -84,6 +84,11 @@ export function runDemoScan() {
     higherShoulder: measurements.shoulders.higherSide,
     higherHip: measurements.hips.higherSide,
     sideAgreement: 1,
+    /* A three-frame burst that moved a little more than the crop did, which is
+       the ordinary case and the one worth seeing on the demo. */
+    swayDeg: 1.4,
+    frames: 3,
+    usableFrames: 3,
     warnings: quality.warnings,
     landmarkConfidence: quality.landmarkConfidence,
     primary: { framing: 'as shot', canvas: photo, pose: { landmarks }, measurements, quality },

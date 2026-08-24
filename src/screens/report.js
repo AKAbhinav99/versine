@@ -130,11 +130,18 @@ function readingBlock(entry) {
         row('Shoulder tilt', `${entry.shoulderTiltDeg.toFixed(1)}° ± ${spread.toFixed(1)}°`, sideText(entry.higherShoulder, 'shoulder')),
         row('Hip tilt', `${entry.hipTiltDeg.toFixed(1)}°`, sideText(entry.higherHip, 'hip')),
         row('Framings in agreement', framingText(entry), `Withheld above ${RELIABILITY.maxShoulderSpreadDeg}° spread`),
+        entry.swayDeg === null || entry.swayDeg === undefined
+          ? row('Movement between frames', 'Not measured', 'Single frame — uploaded, or only one frame resolved')
+          : row('Movement between frames', `${entry.swayDeg.toFixed(1)}°`,
+            `Across ${entry.usableFrames || entry.frames} frames about a second apart. Reported, not gated.`),
         row('Landmark confidence', (entry.landmarkConfidence ?? 0).toFixed(2), 'Weakest of the four measured points'),
         row('Band', bandText(entry.level), bandBasis(entry.level)))),
 
     el('p', { class: 'report__note' },
-      `The ± is the actual spread across ${entry.totalFramings ? `${entry.totalFramings} ` : ''}re-croppings of the same photograph, not a rounding or a confidence interval. It is the app's own estimate of how much this number moves when the framing changes.`));
+      `The ± is the actual spread across ${entry.totalFramings ? `${entry.totalFramings} ` : ''}re-croppings of the same photograph, not a rounding or a confidence interval. It is the app's own estimate of how much this number moves when the framing changes. `
+      + (entry.swayDeg === null || entry.swayDeg === undefined
+        ? 'Movement between frames was not measured for this scan, so the ± is a floor on the true uncertainty rather than the whole of it.'
+        : `Movement between frames is listed separately at ${entry.swayDeg.toFixed(1)}°, because it is a different source of uncertainty and the withholding threshold was calibrated only against the framing spread.`)));
 }
 
 const row = (label, value, note) => el('tr', {},

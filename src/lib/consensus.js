@@ -1,13 +1,31 @@
-/* Multi-framing measurement.
+/* Multi-framing measurement, over a short burst of photographs.
  *
  * Landmark positions shift when the same photo is re-cropped, and the shift is
  * the same size as the asymmetry being measured. Benchmarking (bench/README.md)
  * showed a single-framing reading is not trustworthy on its own: shoulder tilt
  * moved by up to 4 degrees across a 6% crop of one photograph.
  *
- * So every scan is measured several times at slightly different framings. The
- * median is the reading; the spread across framings is the error bar, and a wide
- * spread means the photo cannot support a reading at all. */
+ * So every photograph is measured several times at slightly different framings.
+ * The median is that photograph's reading and the spread across framings is how
+ * much the detector wobbled on it.
+ *
+ * That spread answers "how much does re-cropping change the answer". It does not
+ * answer "how much does the person change the answer", and the second question is
+ * the larger one — people breathe, sway, and bend a little differently from one
+ * second to the next. A scan is therefore a burst of a few frames, and the two
+ * sources of variance are kept apart rather than pooled:
+ *
+ *   cropSpread   spread across framings of one photo. Calibrated, and the value
+ *                the reliability gate has always used. Unchanged.
+ *
+ *   sway         spread across the per-frame medians. Real uncertainty that was
+ *                previously invisible — and deliberately NOT gated on, because
+ *                no threshold for it has been calibrated against anything.
+ *                Inventing one would be the same mistake as the depth-derived
+ *                rotation this app already deleted.
+ *
+ * Pooling them into one number would have been simpler and wrong: it would push a
+ * pooled spread against a threshold derived from crop spread alone. */
 
 import { detectPose } from './pose.js';
 import { measureAsymmetry, assessPoseQuality } from './screening.js';
@@ -82,6 +100,57 @@ export async function measureWithConsensus(photo, onProgress = () => {}) {
   }
 
   return summariseReading(passes, photo);
+}
+
+/**
+ * Reduces several frames of the same burst to one reading.
+ *
+ * The reading is the median of the per-frame readings. The error bar stays the
+ * crop spread, because that is the quantity the gate is calibrated against; sway
+ * rides alongside it as a separate, ungated figure.
+ *
+ * Pure, and exported for testing.
+ *
+ * @param {object[]} frames readings from measureWithConsensus, one per frame
+ */
+export function combineBurst(frames) {
+  const usable = frames.filter((frame) => frame.usable);
+
+  /* Nothing measurable in the burst: report the best failure we have, so the
+     result screen can still say which kind of failure it was. */
+  if (!usable.length) {
+    const fallback = frames[0] || { usable: false, reason: 'no-pose', passes: 0, totalFramings: FRAMINGS.length };
+    return { ...fallback, frames: frames.length, usableFrames: 0, swayDeg: null };
+  }
+
+  if (usable.length === 1) {
+    /* One frame is the old behaviour exactly. Sway is unknown, not zero — saying
+       zero would claim the person held perfectly still, which was never tested. */
+    return { ...usable[0], frames: frames.length, usableFrames: 1, swayDeg: null };
+  }
+
+  const tilts = usable.map((frame) => frame.shoulderTiltDeg);
+  const overall = median(tilts);
+
+  /* The frame nearest the overall median carries the overlay, so the photo shown
+     is the one the reported number came from. */
+  const lead = usable.reduce((best, frame) => (
+    Math.abs(frame.shoulderTiltDeg - overall) < Math.abs(best.shoulderTiltDeg - overall) ? frame : best
+  ), usable[0]);
+
+  return {
+    ...lead,
+    shoulderTiltDeg: overall,
+    /* Median of the per-frame crop spreads, not the spread of everything pooled:
+       the gate's threshold was calibrated on a single photo's crop spread and
+       this keeps feeding it the same quantity. */
+    shoulderSpreadDeg: median(usable.map((frame) => frame.shoulderSpreadDeg)),
+    hipTiltDeg: median(usable.map((frame) => frame.hipTiltDeg)),
+    swayDeg: spread(tilts),
+    frames: frames.length,
+    usableFrames: usable.length,
+    warnings: [...new Set(usable.flatMap((frame) => frame.warnings || []))],
+  };
 }
 
 /** Reduce the per-framing passes to one reading. Pure — exported for testing. */

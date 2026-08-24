@@ -233,3 +233,46 @@
   border: 1px dashed var(--rule);
   color: var(--ink-500);
 }
+
+/* --- movement between frames -------------------------------------------- */
+/* Visually a sibling of the readout, not a variant of it: this number is
+   reported and never gated on, and the panel should not look like a verdict. */
+
+.sway {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: var(--hair);
+  border-left: 3px solid var(--rule-control);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+.sway[data-wide] { border-left-color: var(--amber); }
+
+.sway__kicker { color: var(--ink-500); margin-bottom: var(--space-3); }
+.sway[data-wide] .sway__kicker { color: var(--amber-text); }
+
+.sway__row { display: flex; align-items: baseline; gap: var(--space-4); }
+
+.sway__value {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--ink-900);
+  line-height: 1;
+}
+.sway__value sup { font-size: 0.55em; }
+
+.sway__body {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-700);
+}
+
+.sway__note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--ink-500);
+}

@@ -40,7 +40,30 @@ landmarks always produce the same numbers.
 | `calculateHipAsymmetry` | Same, for the hip line. |
 | `assessPoseQuality` | Landmark confidence, framing, forward-bend sanity check, and a "was the phone held level" check. |
 | `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent — a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
-| `measureWithConsensus` | Runs the above at five framings of the same photo and reduces them to a median, a spread, and a usable/withheld verdict. |
+| `measureWithConsensus` | Runs the above at five framings of one photo and reduces them to a median, a spread, and a usable/withheld verdict. |
+| `combineBurst` | Reduces the frames of one burst to a single reading, keeping the two kinds of uncertainty apart. |
+
+**A scan is a burst, not a photograph.** The spread across five re-croppings
+answers *how much does re-cropping change the answer*. It does not answer *how
+much does the person change the answer*, and the second is the bigger one —
+people breathe and sway, and two photographs a second apart disagree by more
+than five crops of one photograph do. So the shutter takes three frames about a
+second apart, and the two sources are reported separately:
+
+- **crop spread** — across framings of one frame. This is what the reliability
+  gate has always used, and it keeps using exactly that.
+- **sway** — across the per-frame readings. Reported on the result and on the
+  referral summary, and **never gated on**, because no threshold for it has been
+  calibrated against anything.
+
+Pooling them would have been simpler and wrong: it would push a larger number
+against a threshold derived from a smaller one. A single uploaded photograph is
+a burst of one, and its sway is reported as unknown rather than as zero.
+
+The honest limit: **the benchmark cannot validate this.** `bench/` is a set of
+still photographs, and a still photograph cannot sway. The reduction is covered
+by unit tests and the capture path is verified, but whether the sway figure is
+*accurate* needs real people photographed over time, which has not been done.
 
 **The previous scan can be shown over the viewfinder.** Framing variance is the
 largest error in the pipeline — it is literally what `measureWithConsensus`
@@ -295,9 +318,10 @@ video preview and the hidden file input.
 cd ~/spinecheck && node --test tests/
 ```
 
-31 tests: the angle math and its aspect-ratio correction, the pose quality
+42 tests: the angle math and its aspect-ratio correction, the pose quality
 warnings, the consensus reduction — median selection, the spread as an error bar,
-the reliability gate, warning deduplication, and the threshold bands — and the
+the reliability gate, warning deduplication, and the threshold bands — the burst
+reduction, which exists mainly to keep sway out of the calibrated gate, and the
 intake derivations, which exist mainly to keep answers from ever reaching the
 measurement.
 
