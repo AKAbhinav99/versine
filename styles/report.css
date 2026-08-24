@@ -1,0 +1,209 @@
+/* The referral summary — a clinical form, not a web page. Hairline rules, mono
+   for every figure, and enough white space that a clinician can write on it. */
+
+.report__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.report__head {
+  padding-bottom: var(--space-4);
+  border-bottom: 2px solid var(--ink-700);
+  margin-bottom: var(--space-5);
+}
+
+.report__title h1 {
+  margin: 0;
+  font-size: var(--text-2xl);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.report__sub {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  color: var(--ink-500);
+}
+
+.report__meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin: var(--space-4) 0 0;
+}
+.report__meta dt { margin-bottom: 2px; }
+.report__meta dd {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--ink-700);
+}
+
+.report__section { margin-bottom: var(--space-6); }
+.report__section > h2 { margin: 0 0 var(--space-3); color: var(--scrub); }
+
+/* --- the headline figure ------------------------------------------------- */
+
+.report__figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  border: var(--hair);
+  border-left: 3px solid var(--scrub);
+  background: var(--paper-raised);
+}
+
+.report__number {
+  font-size: var(--text-readout);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--ink-900);
+}
+.report__unit { font-size: 0.5em; vertical-align: super; }
+.report__pm {
+  font-size: 0.36em;
+  font-weight: 500;
+  color: var(--ink-500);
+  letter-spacing: 0;
+}
+
+.report__figurelabel { flex: 1 1 10rem; }
+.report__figurelabel b { display: block; font-size: var(--text-sm); color: var(--ink-700); }
+.report__figurelabel span { font-size: var(--text-sm); color: var(--ink-500); }
+
+/* --- tables -------------------------------------------------------------- */
+
+.report__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.report__table th,
+.report__table td {
+  padding: var(--space-2) var(--space-2) var(--space-2) 0;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.report__table th[scope='row'] {
+  width: 38%;
+  font-weight: 500;
+  color: var(--ink-700);
+}
+
+.report__table thead th {
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+
+.report__rownote { color: var(--ink-500); font-size: var(--text-xs); line-height: 1.5; }
+.report__table--trend th[scope='row'] { width: auto; }
+.report__table--trend tr[data-current] td { background: var(--scrub-wash); font-weight: 600; }
+
+.report__note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--ink-500);
+}
+
+.report__warn {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3);
+  border-left: 2px solid var(--amber);
+  background: var(--amber-wash);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-700);
+}
+.report__warn b { color: var(--ink-900); }
+
+/* --- flags, photo, limits ------------------------------------------------ */
+
+.report__flags {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--amber);
+  border-left-width: 3px;
+  background: var(--amber-wash);
+}
+.report__flags[data-urgency='urgent'] { border-color: var(--marker); background: var(--marker-wash); }
+.report__flags h2 { margin: 0 0 var(--space-2); color: var(--amber); }
+.report__flags[data-urgency='urgent'] h2 { color: var(--marker); }
+.report__flags ul { margin: 0; padding-left: 1.1rem; font-size: var(--text-sm); color: var(--ink-700); }
+.report__flagnote { margin: var(--space-3) 0 0; font-size: var(--text-xs); color: var(--ink-500); }
+
+.report__photo img {
+  display: block;
+  width: 100%;
+  max-width: 460px;
+  border: var(--hair);
+  background: var(--ink-900);
+}
+
+.report__not ul { margin: 0; padding-left: 1.1rem; font-size: var(--text-sm); line-height: 1.6; color: var(--ink-500); }
+.report__not li { margin-bottom: var(--space-3); }
+.report__not b { color: var(--ink-700); }
+
+/* --- the part a clinician writes on -------------------------------------- */
+
+.report__clinician { break-inside: avoid; }
+
+.report__fields {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: var(--hair);
+}
+
+.report__field { display: grid; gap: 2px; }
+.report__rule {
+  height: 1px;
+  margin-top: var(--space-4);
+  background: repeating-linear-gradient(90deg, var(--rule) 0 6px, transparent 6px 10px);
+}
+.report__hint {
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  color: var(--ink-300);
+}
+
+.report__method p {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--ink-500);
+}
+.report__method b { color: var(--ink-700); }
+
+.report__footer {
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--ink-700);
+}
+.report__footer p {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--ink-700);
+}
+.report__footnote {
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-300);
+}
+
+@media (min-width: 560px) {
+  .report__meta { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .report__fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

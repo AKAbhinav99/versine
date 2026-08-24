@@ -1,0 +1,98 @@
+/* Print, which is how the referral summary actually reaches a clinician.
+ *
+ * "Save as PDF" lives in every print dialog including iOS Safari's, so this
+ * stylesheet is the whole export feature — no PDF library, no bundle cost, and
+ * nothing leaves the device to produce it.
+ *
+ * Loaded with media="print", so none of it applies on screen. */
+
+@page {
+  margin: 14mm 12mm;
+}
+
+html, body {
+  background: #fff !important;
+  background-image: none !important;   /* the blueprint grid does not belong on paper */
+  color: #000;
+  font-size: 10.5pt;
+}
+
+/* App chrome is navigation. On paper there is nowhere to navigate. */
+.masthead,
+.tabbar,
+.no-print,
+.step-label {
+  display: none !important;
+}
+
+.app {
+  max-width: none;
+  min-height: 0;
+  border: 0;
+  display: block;
+}
+
+/* Only the report prints, whichever screen happens to be active. */
+.screen { display: none !important; }
+#screen-report { display: block !important; padding: 0 !important; }
+
+/* Hairlines survive at print resolution; washes and tints mostly do not, so the
+   ones carrying meaning are re-stated as borders that will always show. */
+.report__head { border-bottom: 1.5pt solid #000; }
+.report__footer { border-top: 1.5pt solid #000; }
+.report__section > h2 { color: #000; }
+
+.report__figure {
+  border: 0.75pt solid #000;
+  border-left: 2.5pt solid #000;
+  background: transparent;
+}
+.report__number { color: #000; }
+
+/* The one block that keeps its colour on paper. A reported red flag is the most
+   consequential thing on the page, and it should survive being printed, glanced
+   at, and passed across a desk. The heavy left rule carries the same meaning on a
+   monochrome printer or when background printing is switched off. */
+.report__flags,
+.report__flags[data-urgency='urgent'] {
+  border: 0.75pt solid #000;
+  border-left: 3pt solid #000;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.report__flags h2,
+.report__flags[data-urgency='urgent'] h2 { color: #000; }
+
+.report__warn {
+  border: 0.75pt solid #000;
+  border-left: 2.5pt solid #000;
+  background: transparent;
+}
+
+.report__table th,
+.report__table td { border-bottom: 0.5pt solid #999; }
+.report__table--trend tr[data-current] td { background: transparent; font-weight: 700; }
+.report__rownote,
+.report__note,
+.report__method p,
+.report__not ul { color: #333; }
+
+.report__fields { border: 0.75pt solid #000; }
+.report__rule { background: none; border-bottom: 0.5pt solid #000; height: 0; }
+
+/* Keep the pieces a clinician reads as a unit on one page. */
+.report__section,
+.report__figure,
+.report__flags,
+.report__fields,
+.report__footer,
+.report__table tr { break-inside: avoid; }
+
+.report__photo img {
+  max-width: 78mm;
+  border: 0.5pt solid #000;
+  background: transparent;
+}
+
+/* A URL after every link is noise here — there is exactly one, and it is us. */
+a { color: #000; text-decoration: none; }

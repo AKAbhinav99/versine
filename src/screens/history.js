@@ -5,6 +5,7 @@ import { el, $, append, formatDate } from '../lib/dom.js';
 import { THRESHOLDS } from '../config.js';
 import { listScans, clearScans, deleteScan } from '../lib/storage.js';
 import { intakeState, openIntake } from './intake.js';
+import { openReport } from './report.js';
 import { showScreen } from '../router.js';
 
 const TREND_POINTS = 12;
@@ -130,9 +131,14 @@ function entryRow(entry) {
         el('span', { class: 'log-entry__error' }, ` ±${(entry.shoulderSpreadDeg ?? 0).toFixed(1)}`)),
       el('div', { class: 'small muted' },
         `Hips ${entry.hipTiltDeg.toFixed(1)}° · ${entry.passes ?? '—'} framings agreed`),
-      el('button', {
-        class: 'log-entry__remove',
-        onClick: () => { deleteScan(entry.id); renderHistory(); },
-      }, 'Remove')),
+      el('div', { class: 'log-entry__links' },
+        el('button', {
+          class: 'log-entry__link',
+          onClick: () => openReport(entry, { from: 'history' }),
+        }, 'Summary'),
+        el('button', {
+          class: 'log-entry__link',
+          onClick: () => { deleteScan(entry.id); renderHistory(); },
+        }, 'Remove'))),
     el('div', { class: 'log-entry__flag', 'data-level': entry.level, title: entry.level }));
 }

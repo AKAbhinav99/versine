@@ -11,6 +11,7 @@ import { showScreen } from '../router.js';
 import { nextSteps, shortSide } from '../lib/screening.js';
 import { highestUrgency } from '../lib/intake.js';
 import { intakeState, openIntake } from './intake.js';
+import { openReport } from './report.js';
 import { prepareCanvas, drawOverlay } from './overlay.js';
 
 const REVEAL_MS = 1200;
@@ -41,7 +42,7 @@ export function renderResult(payload) {
     reading.warnings?.length ? qualityNote(reading.warnings) : null,
     nextStepsBlock(verdict.level),
     intake.answered ? null : intakePrompt(),
-    actions(),
+    actions(entry),
     disclaimer(),
   );
 
@@ -222,11 +223,30 @@ function nextStepsBlock(level) {
     el('ul', { class: 'next-steps' }, ...nextSteps(level).map((step) => el('li', {}, step))));
 }
 
-function actions() {
+function actions(entry = null) {
   return el('div', { class: 'stack-sm', style: 'margin-bottom:var(--space-5)' },
+    /* Only offered for a reading that was actually logged — a withheld reading
+       has no number to summarise, and a page saying so helps nobody. */
+    entry
+      ? el('button', {
+        class: 'btn btn--block',
+        onClick: () => openReport(entry, { image: annotatedImage(), from: 'result' }),
+      }, 'Referral summary for a clinician')
+      : null,
     el('button', { class: 'btn btn--block', onClick: () => showScreen('doctors') }, 'Find clinicians near me'),
     el('button', { class: 'btn btn--ghost btn--block', onClick: () => showScreen('capture') }, 'Scan again'),
     el('button', { class: 'btn btn--quiet btn--block', onClick: () => showScreen('history') }, 'View scan log'));
+}
+
+/* The overlay as drawn, so the report carries the marked-up photo rather than the
+   bare thumbnail. Returns null if the canvas never rendered. */
+function annotatedImage() {
+  const canvas = $('#result-canvas');
+  try {
+    return canvas?.width ? canvas.toDataURL('image/jpeg', 0.85) : null;
+  } catch {
+    return null;   // a tainted canvas would throw; the thumbnail is the fallback
+  }
 }
 
 function disclaimer() {

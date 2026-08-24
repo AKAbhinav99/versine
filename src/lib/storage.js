@@ -39,7 +39,12 @@ export function saveScan({ reading, verdict, thumbnail, adjustments = null }) {
     shoulderSpreadDeg: round(reading.shoulderSpreadDeg),
     hipTiltDeg: round(reading.hipTiltDeg),
     higherShoulder: reading.higherShoulder,
+    higherHip: reading.higherHip,
     passes: reading.passes,
+    /* How many framings were attempted, not just how many agreed. "3 of 5" and
+       "5 of 5" are different reliability statements and the referral summary
+       prints both halves. Entries saved before this was kept omit it. */
+    totalFramings: reading.totalFramings,
     landmarkConfidence: round(reading.landmarkConfidence, 2),
     /* Rotation applied by hand before measuring. Kept because it shifts the
        reading one-for-one, so a trend built from differently-rotated photos is

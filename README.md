@@ -105,6 +105,36 @@ authoritative is the exact failure this app already corrected once, when the
 depth-derived rotation estimate turned out to be noise. `tests/intake.test.mjs`
 exists mostly to make breaking that rule a deliberate act.
 
+## The referral summary
+
+Any logged scan prints a one-page summary to hand a clinician — from the result
+screen, or from any row in the log.
+
+The honest version of "a report of what is wrong" is not a narrative. This app
+measures one angle and withholds roughly half its readings; a page describing a
+condition would be fabricating one. What a clinician actually needs from a
+measurement taken on a phone by a stranger is narrower: what was measured, how,
+what was not, and what the number is worth.
+
+So the page carries the reading with its error bar, the annotated photograph, a
+**how this was taken** block, an explicit **not measured** list, the self-reported
+history, previous readings, and blank fields for the examining clinician —
+scoliometer ATR, Adam's test, imaging, Cobb angle, follow-up interval.
+
+Two things it refuses to leave implicit. Any hand-applied rotation is printed
+above the angle it moved, because rotation shifts the reading one degree for one
+degree and the app cannot tell whether a tilted camera or a pair of shoulders was
+being levelled. And a trend whose rows were rotated by different amounts is
+labelled as not directly comparable rather than drawn as a line.
+
+The limitations are not a disclaimer at the end; they are what makes the page
+usable. A summary claiming less gets read. One announcing a finding gets
+dismissed, correctly.
+
+Printing goes through `window.print()` and [`styles/print.css`](styles/print.css)
+— no PDF library, no bundle cost, and "Save as PDF" is already in every print
+dialog including iOS Safari's. Nothing is uploaded to produce it.
+
 ## Finding care
 
 Two provider chains, each trying the next when one fails. Everything is optional:
@@ -204,7 +234,7 @@ The map is Leaflet with CARTO tiles.
 
 ```
 index.html              app shell, all screens, resources copy
-styles/                 tokens, base, capture, result, care, intake
+styles/                 tokens, base, capture, result, care, intake, report, print
 src/
   config.js             model URLs, thresholds, places config
   router.js             screen switching with enter/leave hooks
@@ -222,6 +252,7 @@ src/
     overlay.js          landmark/measurement drawing on the photo
     result.js           verdict, readouts, threshold ruler
     intake.js           growth, family history, and symptom questions
+    report.js           the one-page referral summary, built for print
     doctors.js          map, filters, clinic cards
     history.js          trend chart and scan log
     consensus.js        multi-framing measurement and the reliability gate
