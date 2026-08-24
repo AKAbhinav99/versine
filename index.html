@@ -82,6 +82,10 @@
     <div class="capture__stage">
       <video class="capture__video" id="capture-video" playsinline muted autoplay></video>
 
+      <!-- Your previous scan, faint, so this one can be taken from the same spot.
+           Framing variance is the largest error this app measures — see consensus.js -->
+      <img class="capture__ghost hidden" id="capture-ghost" alt="" aria-hidden="true" />
+
       <!-- Framing guide: bent-forward figure seen from behind, with the plumb reference -->
       <svg class="capture__guide" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <line class="guide-plumb" x1="150" y1="8" x2="150" y2="392" stroke-dasharray="6 6" />
@@ -106,6 +110,14 @@
           <text class="guide-text" x="212" y="300">Hips</text>
         </g>
       </svg>
+
+      <button class="capture__ghost-btn hidden" id="capture-ghost-toggle" type="button" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">
+          <rect x="3.5" y="3.5" width="12" height="12" stroke-dasharray="3 2.5" />
+          <rect x="8.5" y="8.5" width="12" height="12" />
+        </svg>
+        <span id="capture-ghost-label">Ghost</span>
+      </button>
 
       <button class="capture__flip hidden" id="capture-flip" type="button" aria-label="Switch camera">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7">

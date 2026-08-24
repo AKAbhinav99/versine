@@ -4,6 +4,7 @@
 
 import { $ } from '../lib/dom.js';
 import { onEnter, onLeave } from '../router.js';
+import { listScans } from '../lib/storage.js';
 import { openAdjust } from './adjust.js';
 
 /* Getting into a forward bend and settling takes longer than a snapshot timer
@@ -14,12 +15,14 @@ const TIMER_STORAGE = 'versine.timerSeconds';
 const DEFAULT_TIMER_SECONDS = 10;
 const CUE_FROM = 3;             // start the audible countdown this many seconds out
 const MAX_ANALYSIS_EDGE = 1440; // downscale huge uploads before pose detection
+const GHOST_STORAGE = 'versine.ghost';
 
 let stream = null;
 let timerSeconds = DEFAULT_TIMER_SECONDS;
 let countdown = null;
 let facingMode = 'environment';   // the back camera is the one pointed at a back
 let switching = false;
+let ghostOn = true;
 
 const video = () => $('#capture-video');
 
@@ -28,11 +31,80 @@ export function initCapture() {
   $('#capture-shutter').addEventListener('click', onShutter);
   $('#capture-timer-toggle').addEventListener('click', cycleTimer);
   $('#capture-flip').addEventListener('click', flipCamera);
+  $('#capture-ghost-toggle').addEventListener('click', toggleGhost);
   $('#capture-upload-btn').addEventListener('click', () => $('#capture-file').click());
   $('#capture-file').addEventListener('change', onFileChosen);
 
-  onEnter('capture', startCamera);
+  onEnter('capture', () => { refreshGhost(); startCamera(); });
   onLeave('capture', stopCamera);
+}
+
+/* ----------------------------------------------------------------- ghost --- */
+
+/* Re-scanning from a different spot is the largest error in this whole app: the
+ * spread across framings is exactly what the reliability gate withholds readings
+ * for, and framing is the part the person holding the phone controls. So the last
+ * scan is drawn faintly over the viewfinder to stand in the same place again.
+ *
+ * It is a framing aid and nothing more. It never touches the captured pixels —
+ * matching a previous photo cannot make a curve look better or worse, only make
+ * two readings comparable. */
+
+function restoreGhostChoice() {
+  const stored = localStorage.getItem(GHOST_STORAGE);
+  ghostOn = stored === null ? true : stored === 'on';
+}
+
+/** The most recent scan that actually kept a thumbnail. */
+const lastThumbnail = () => listScans().find((scan) => scan.thumbnail) || null;
+
+function refreshGhost() {
+  restoreGhostChoice();
+
+  const previous = lastThumbnail();
+  const button = $('#capture-ghost-toggle');
+  const image = $('#capture-ghost');
+
+  /* Nothing to match against on a first scan — the control would be a dead end. */
+  button.classList.toggle('hidden', !previous);
+  if (!previous) {
+    image.classList.add('hidden');
+    image.removeAttribute('src');
+    resetHint();
+    return;
+  }
+
+  if (image.getAttribute('src') !== previous.thumbnail) image.src = previous.thumbnail;
+  applyGhostState();
+}
+
+function applyGhostState() {
+  const image = $('#capture-ghost');
+  const button = $('#capture-ghost-toggle');
+
+  image.classList.toggle('hidden', !ghostOn);
+  /* The preview mirrors for the front camera but the captured frame does not, so
+     an unmirrored thumbnail over a mirrored preview would be reversed. */
+  image.dataset.facing = actualFacing();
+  $('.capture__stage').dataset.ghost = ghostOn ? 'on' : 'off';
+
+  button.setAttribute('aria-pressed', String(ghostOn));
+  button.title = ghostOn
+    ? 'Your last scan is shown faintly. Tap to hide it.'
+    : 'Show your last scan faintly, to line this one up with it.';
+  $('#capture-ghost-label').textContent = ghostOn ? 'Ghost on' : 'Ghost';
+
+  if (ghostOn) {
+    setHint('<b>Stand where the faint outline stands.</b> Same spot, same phone height.');
+  } else {
+    resetHint();
+  }
+}
+
+function toggleGhost() {
+  ghostOn = !ghostOn;
+  try { localStorage.setItem(GHOST_STORAGE, ghostOn ? 'on' : 'off'); } catch { /* not persisted */ }
+  applyGhostState();
 }
 
 /* ---------------------------------------------------------------- camera --- */
@@ -65,6 +137,7 @@ async function showStream() {
   element.srcObject = stream;
   element.dataset.facing = actualFacing();
   await element.play();
+  if (!$('#capture-ghost').classList.contains('hidden')) applyGhostState();
 }
 
 /** What the granted track actually is, which need not be what was asked for. */
@@ -278,5 +351,7 @@ function showError(message) {
 
 function setHint(html) { $('#capture-hint').innerHTML = html; }
 function resetHint() {
-  setHint('<b>Bend forward at the waist</b> · arms hanging loose · back to the camera');
+  setHint(ghostOn && !$('#capture-ghost').classList.contains('hidden')
+    ? '<b>Stand where the faint outline stands.</b> Same spot, same phone height.'
+    : '<b>Bend forward at the waist</b> · arms hanging loose · back to the camera');
 }

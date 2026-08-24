@@ -42,6 +42,16 @@ landmarks always produce the same numbers.
 | `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent — a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
 | `measureWithConsensus` | Runs the above at five framings of the same photo and reduces them to a median, a spread, and a usable/withheld verdict. |
 
+**The previous scan can be shown over the viewfinder.** Framing variance is the
+largest error in the pipeline — it is literally what `measureWithConsensus`
+quantifies by re-cropping the same photo five times, and what the reliability gate
+withholds readings for. It is also the part the person holding the phone actually
+controls. So once a scan exists, the last one is drawn faintly over the live
+preview to stand in the same place again. It is a framing aid and touches no
+pixels: matching a previous photo cannot make a curve look better or worse, only
+make two readings comparable. The preview mirrors for the front camera and the
+captured frame does not, so the ghost mirrors with it.
+
 **The photo can be lined up first.** Capture hands off to an adjust step where
 the shot can be panned, zoomed and rotated onto the framing guide. Pan and zoom
 are free — neither changes an angle. Rotation is not: it moves the measured
@@ -206,7 +216,7 @@ src/
     intake.js           the questions a photo cannot ask, and what they mean
     dom.js              small DOM helpers
   screens/
-    capture.js          camera, framing guide, self-timer, camera switch, upload
+    capture.js          camera, framing guide, self-timer, camera switch, ghost, upload
     adjust.js           pan/zoom/rotate the photo onto the guide before measuring
     analyze.js          the analysis pipeline and its progress log
     overlay.js          landmark/measurement drawing on the photo
