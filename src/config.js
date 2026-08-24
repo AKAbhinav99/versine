@@ -48,11 +48,25 @@ export const POSE_CHECK = {
 
 /* How much disagreement between framings is tolerable before a reading is
    withheld. Derived from the same benchmark: readings whose spread across
-   framings exceeded ~3.5 degrees came from detections that had gone wrong. */
+   framings exceeded ~3.5 degrees came from detections that had gone wrong.
+ *
+ * implausibleTiltDeg discards a single framing whose geometry cannot be a real
+ * shoulder line. It is a guard against the pose model mis-fitting the subject
+ * rather than a screening threshold, and it sits between two measured
+ * populations: across the whole labelled set the largest genuine reading is
+ * 8.3 degrees and the ruler tops out at 8, while observed mis-fits on the
+ * forward-bend photograph came in at 23.6, 83.2 and 87.1 degrees.
+ *
+ * It was 25, which let that 23.6 through — it was discarded only because too few
+ * other framings survived to meet minPasses. Moving it to 15 keeps roughly
+ * double the headroom over any real reading and still excludes every mis-fit
+ * seen. Sweeping the value from 25 down to 8 changes no outcome anywhere on the
+ * benchmark, so this buys defence in depth for a region the set cannot test, and
+ * is explicitly not a score improvement. */
 export const RELIABILITY = {
   minPasses: 3,
   maxShoulderSpreadDeg: 3.5,
-  implausibleTiltDeg: 25,
+  implausibleTiltDeg: 15,
 };
 
 /* Clinician finder. Providers and their keys live in lib/keys.js, lib/clinics.js

@@ -39,6 +39,7 @@ landmarks always produce the same numbers.
 | `calculateShoulderAsymmetry` | Angle between the shoulder line and horizontal, in pixel space so the image aspect ratio doesn't skew it. |
 | `calculateHipAsymmetry` | Same, for the hip line. |
 | `assessPoseQuality` | Landmark confidence, framing, forward-bend sanity check, and a "was the phone held level" check. |
+| `RELIABILITY.implausibleTiltDeg` | Discards a framing whose geometry cannot be a real shoulder line. A mis-fit guard, not a screening threshold — see bench/README.md section 7. |
 | `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent — a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
 | `measureWithConsensus` | Runs the above at five framings of one photo and reduces them to a median, a spread, and a usable/withheld verdict. |
 | `combineBurst` | Reduces the frames of one burst to a single reading, keeping the two kinds of uncertainty apart. |

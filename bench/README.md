@@ -12,6 +12,10 @@ python3 -m http.server 4321                       # the app, from the repo root
 python3 ../scratchpad/serve-bench.py              # the image set on :4322, with CORS
 ```
 
+`serve-bench.py` calls `http.server.test()`, which was removed in Python 3.14. On
+3.14 run a `ThreadingHTTPServer` with the same CORS and `Cache-Control: no-store`
+headers instead.
+
 Open `http://localhost:4321/bench/` and call from the console:
 
 ```js
@@ -120,6 +124,85 @@ standing side of the threshold is measured; the bent side is physical reasoning,
 since the one forward-bend image in the set is too tightly cropped to detect. It
 raises a note and never withholds a reading.
 
+### 6. Re-run twelve times: bit-identical, and every proposed change made it worse
+
+An earlier version of this file said detection "is not bit-identical between
+runs" and cited a pass that scored 0.86 with 10 reported. Re-measured properly —
+seven runs before any change, five after — **every run was identical, case for
+case, number for number.** Not just the same score: the same tilts to two
+decimals. Whatever produced that earlier 0.86 was not run-to-run variance on this
+machine, and the claim is withdrawn.
+
+That reproducibility made it possible to test changes against the set instead of
+arguing about them. Three were tested. All three were rejected by measurement.
+
+**More framings.** Deeper padding does find poses the current set misses —
+`ctl-female-bw` detects at −0.2, −0.3, −0.45 and −0.6 where it currently gets
+only two hits. But the extra framings are lower quality, and the spread is a
+max−min statistic, so one bad framing widens it:
+
+| framing set | reported | sensitivity | specificity |
+|---|---|---|---|
+| current `[0, .03, .06, −.05, −.1]` | 9 | 0.83 | 1.00 |
+| plus `[−.2, −.3]` | 9 | 0.83 | 1.00 |
+| pads-heavy `[0, −.05, −.1, −.2, −.3, −.45]` | 6 | 0.67 | 1.00 |
+| wide sweep, nine framings | 7 | 0.75 | 1.00 |
+
+The wide sweep loses `pos-panel1` (spread 1.7 → 4.8) and `pos-panel5`
+(0.3 → 4.8), both correctly-flagged positives pushed past the gate by framings
+that should never have been asked. The current set stands.
+
+**Upscaling small inputs.** `pos-adams-bend` is 213×200 and detects in only one
+usable framing, so resolution was the obvious suspect. Upscaling 2×, 3×, 4× and
+6× changed nothing on it or on the other weak cases — `ctl-pair-male` stayed at
+0/5 at every scale.
+
+**Gating on side agreement.** Tempting, because the one false negative
+(`pos-nenapadna`) has framings agreeing on the higher side only 60% of the time.
+Rejected on reflection rather than measurement: at 0.93° the tilt is near zero,
+and near zero the higher side flips on noise *because the magnitude is genuinely
+small*. Low agreement there is a property of the answer, not a defect in it.
+That case has 5/5 passes, a 0.81° spread and 0.97 confidence — it is a confident
+measurement of level shoulders in someone who has a curve, which is the
+limitation the app states everywhere, not a bug to gate away.
+
+### 7. The forward-bend photograph is mis-fit outright
+
+The single forward-bend image is the pose the app actually instructs, and it is
+the worst case in the set. Raw shoulder tilts from its framings:
+
+| framing | tilt |
+|---|---|
+| 0 | 83.2° |
+| +3% | 87.1° |
+| −5% | 23.6° |
+
+Those are not tilted shoulders, they are a mis-fitted skeleton. For comparison,
+the largest genuine reading anywhere in the set is 8.3° and the result ruler tops
+out at 8°.
+
+The app refuses the case, correctly, but it was closer than it looks. The
+implausibility guard was 25°, so the 23.6° mis-fit was **kept**, and the reading
+was withheld only because too few other framings survived to reach `minPasses`.
+Three framings agreeing near 23° would have been reported as a confident
+`refer` with the needle pinned off the end of the scale.
+
+Sweeping that guard from 25° down to 8° changes no outcome anywhere on the
+benchmark, so it has been moved to 15° — above double any real reading observed,
+below every mis-fit observed. It is defence in depth for a region this set cannot
+test, and explicitly not a score improvement.
+
+**n = 1.** One forward-bend photograph cannot establish that the app fails on
+forward bends generally. It does establish that mis-fits happen on the pose the
+app asks for, and that they are large when they happen.
+
+### 8. The burst wrapper is a no-op on a single frame
+
+`combineBurst` now wraps every scan, including single-frame ones. Checked against
+all 17 cases with real detections rather than only in unit tests: usable flag,
+tilt, spread and band are identical with and without the wrapper, and sway
+reports `null` rather than `0` on every one.
+
 ## Where the current detector lands
 
 Full pipeline, latest run:
@@ -143,9 +226,13 @@ The bands in `src/config.js` (2° monitor, 3.5° refer) come from this distribut
 
 Not much, and the app says so. Nine reported cases is a demonstration, not a
 validation: the confidence interval on 0.83 sensitivity at n=6 spans most of the
-range. Detection is also not bit-identical between runs — the same sweep gave
-sensitivity 0.86 with 10 reported on an earlier pass — which is itself part of why
-the spread is reported alongside every number.
+range.
+
+Detection *is* reproducible — twelve runs, bit-identical — which an earlier
+version of this file wrongly denied. That is a statement about the model on this
+machine and nothing more. It does not make nine cases into evidence, and the
+reason every number still carries its spread is that re-cropping one photograph
+moves the reading by more than the signal, which section 3 measures directly.
 
 What the benchmark does establish is narrower and still worth having: the depth
 metric was measurably invalid and is gone, the surviving metric has a known error
