@@ -122,9 +122,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.38;
-  filter: grayscale(1) contrast(1.15);
-  mix-blend-mode: screen;
+  /* Plain alpha, deliberately. mix-blend-mode: screen was tried first and is
+     wrong here: screen adds light, so against a dark scene — which a photo of a
+     back usually is — the reference outshone the live subject and became the
+     thing you looked at. Tracing-paper alpha recedes whatever the exposure.
+     Greyscale keeps the ghost readable as "not the live image". */
+  opacity: 0.3;
+  filter: grayscale(1) contrast(1.3);
   pointer-events: none;
 }
 .capture__ghost[data-facing='user'] { transform: scaleX(-1); }
