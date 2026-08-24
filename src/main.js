@@ -6,7 +6,9 @@ import { showScreen, initTabs, onEnter } from './router.js';
 import { initCapture } from './screens/capture.js';
 import { initAdjust } from './screens/adjust.js';
 import { initDoctors } from './screens/doctors.js';
+import { initIntake } from './screens/intake.js';
 import { renderHistory } from './screens/history.js';
+import { rerenderResult } from './screens/result.js';
 
 /* Carry anything stored under the pre-rename namespace across first. Must run
    before any screen reads storage. */
@@ -15,6 +17,9 @@ migrateLegacyStorage();
 initCapture();
 initAdjust();
 initDoctors();
+/* Answering the intake redraws the result underneath it — a red flag has to be
+   able to appear above a verdict that was already on screen. */
+initIntake(rerenderResult);
 onEnter('history', renderHistory);
 
 initTabs((tab) => showScreen(tab));

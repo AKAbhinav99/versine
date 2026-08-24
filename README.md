@@ -75,6 +75,26 @@ re-cropped. It was removed rather than caveated. A segmentation-mask silhouette
 measure was tried as a replacement and did not separate the groups either. See
 [bench/README.md](bench/README.md) for the numbers.
 
+## Intake
+
+Growth remaining, family history, and symptoms decide as much about a curve as its
+size does, and none of them are visible in a photograph. Eight questions capture
+them, kept on the device with the scans.
+
+The answers do exactly two things, and deliberately not a third:
+
+- **Red flags** — night pain, leg numbness or weakness, new bladder or bowel
+  trouble, or a back that has visibly changed in months — raise a block that sits
+  *above* the verdict on the result screen. A reassuring number should not be the
+  first thing read by someone who has just reported leg weakness.
+- **Risk factors** are carried onto the referral summary as context.
+
+They never move the screening bands, and they are never combined into a risk
+score. There is no data here to support one, and inventing a number that looks
+authoritative is the exact failure this app already corrected once, when the
+depth-derived rotation estimate turned out to be noise. `tests/intake.test.mjs`
+exists mostly to make breaking that rule a deliberate act.
+
 ## Finding care
 
 Two provider chains, each trying the next when one fails. Everything is optional:
@@ -174,7 +194,7 @@ The map is Leaflet with CARTO tiles.
 
 ```
 index.html              app shell, all screens, resources copy
-styles/                 tokens, base, capture, result, care
+styles/                 tokens, base, capture, result, care, intake
 src/
   config.js             model URLs, thresholds, places config
   router.js             screen switching with enter/leave hooks
@@ -183,6 +203,7 @@ src/
     screening.js        quality checks, banding, next steps
     pose.js             MediaPipe Pose wrapper
     storage.js          scan history in localStorage
+    intake.js           the questions a photo cannot ask, and what they mean
     dom.js              small DOM helpers
   screens/
     capture.js          camera, framing guide, self-timer, camera switch, upload
@@ -190,6 +211,7 @@ src/
     analyze.js          the analysis pipeline and its progress log
     overlay.js          landmark/measurement drawing on the photo
     result.js           verdict, readouts, threshold ruler
+    intake.js           growth, family history, and symptom questions
     doctors.js          map, filters, clinic cards
     history.js          trend chart and scan log
     consensus.js        multi-framing measurement and the reliability gate
@@ -209,9 +231,11 @@ tests/                  unit tests for the math and the consensus
 cd ~/spinecheck && node --test tests/
 ```
 
-21 tests: the angle math and its aspect-ratio correction, the pose quality
-warnings, and the consensus reduction — median selection, the spread as an error
-bar, the reliability gate, warning deduplication, and the threshold bands.
+31 tests: the angle math and its aspect-ratio correction, the pose quality
+warnings, the consensus reduction — median selection, the spread as an error bar,
+the reliability gate, warning deduplication, and the threshold bands — and the
+intake derivations, which exist mainly to keep answers from ever reaching the
+measurement.
 
 Beyond unit tests there is [bench/](bench/README.md), which runs the whole pipeline
 over labelled clinical photographs and reports a confusion matrix. That benchmark

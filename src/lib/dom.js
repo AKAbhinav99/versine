@@ -19,6 +19,10 @@ export function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+/* Node.append() turns null into the literal text "null" — el() drops falsy
+   children, append() does not. Anywhere a block is conditional, go through here. */
+export const append = (parent, ...nodes) => parent.append(...nodes.filter(Boolean));
+
 export function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (ch) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]

@@ -5,30 +5,42 @@
  * uncertainty — the benchmark that shaped this app (bench/README.md) showed a
  * single-framing measurement is not reliable enough to present as a fact. */
 
-import { $, el, formatDate, prefersReducedMotion } from '../lib/dom.js';
+import { $, el, append, formatDate, prefersReducedMotion } from '../lib/dom.js';
 import { THRESHOLDS, RELIABILITY } from '../config.js';
 import { showScreen } from '../router.js';
 import { nextSteps, shortSide } from '../lib/screening.js';
+import { highestUrgency } from '../lib/intake.js';
+import { intakeState, openIntake } from './intake.js';
 import { prepareCanvas, drawOverlay } from './overlay.js';
 
 const REVEAL_MS = 1200;
 
-export function renderResult({ reading, verdict, entry, adjustments = null }) {
+/* The last thing rendered here, so answering the intake can redraw the screen
+   underneath it rather than sending someone back to re-scan. */
+let current = null;
+
+export function renderResult(payload) {
+  const { reading, verdict, entry, adjustments = null } = payload;
+  current = payload;
+
   const body = $('#result-body');
   body.replaceChildren();
 
   const pass = reading.primary;
+  const intake = intakeState();
 
-  body.append(
+  append(body,
+    intake.flags.length ? redFlagBlock(intake.flags) : null,
     verdictBlock(verdict),
     pass ? plate(pass, entry, reading) : null,
     reading.usable ? tiltReadout(reading) : null,
     reading.usable ? metricGrid(reading) : null,
     reliabilityPanel(reading),
-    ...(adjustments?.rotationDeg ? [rotationNote(adjustments.rotationDeg)] : []),
+    adjustments?.rotationDeg ? rotationNote(adjustments.rotationDeg) : null,
     methodPanel(),
-    ...(reading.warnings?.length ? [qualityNote(reading.warnings)] : []),
+    reading.warnings?.length ? qualityNote(reading.warnings) : null,
     nextStepsBlock(verdict.level),
+    intake.answered ? null : intakePrompt(),
     actions(),
     disclaimer(),
   );
@@ -38,10 +50,16 @@ export function renderResult({ reading, verdict, entry, adjustments = null }) {
   }
 }
 
+/** Redraw with whatever was last shown — used after the intake is answered. */
+export function rerenderResult() {
+  if (current) renderResult(current);
+}
+
 /** Shown when the model or the network failed outright. */
 export function renderFailure({ headline, body: message, photo }) {
   const body = $('#result-body');
-  body.replaceChildren(
+  body.replaceChildren();
+  append(body,
     el('div', { class: 'verdict', 'data-level': 'unclear' },
       el('div', { class: 'label verdict__kicker' }, 'No reading'),
       el('h2', { class: 'verdict__headline' }, headline),
@@ -54,6 +72,35 @@ export function renderFailure({ headline, body: message, photo }) {
 }
 
 /* ------------------------------------------------------------------ parts --- */
+
+/* Sits above the verdict, deliberately. A reassuring number should never be the
+   first thing read by someone who has just reported leg weakness — the ordering
+   on the page is the whole point of this block. */
+function redFlagBlock(flags) {
+  const urgency = highestUrgency(flags);
+
+  return el('div', { class: 'redflag', 'data-urgency': urgency },
+    el('div', { class: 'label redflag__kicker' },
+      urgency === 'urgent' ? 'See a clinician this week' : 'Raise this with a clinician'),
+    el('p', { class: 'redflag__body' },
+      `You told Versine about ${flags.length === 1 ? 'a symptom' : 'symptoms'} that a photograph does not screen for. Whatever the reading below says, ${urgency === 'urgent'
+        ? 'this needs a person to examine you, and soon — it can indicate the nerves or spinal cord rather than the shape of the spine.'
+        : 'ordinary idiopathic scoliosis usually does not cause it, so it is worth asking about directly.'}`),
+    el('ul', { class: 'redflag__list' }, ...flags.map((flag) => el('li', {}, flag.label))),
+    el('button', {
+      class: 'btn btn--ghost',
+      style: 'margin-top:var(--space-3)',
+      onClick: () => openIntake('result'),
+    }, 'Review answers'));
+}
+
+function intakePrompt() {
+  return el('div', { class: 'intake-prompt' },
+    el('div', { class: 'intake-prompt__text' },
+      el('b', {}, 'Eight questions this photo cannot answer'),
+      el('span', {}, 'Growth, family history, and symptoms decide as much as the curve does. Answering them adds context to your referral summary — and none of it changes the measurement above.')),
+    el('button', { class: 'btn', onClick: () => openIntake('result') }, 'Answer them'));
+}
 
 function verdictBlock(verdict) {
   return el('div', { class: 'verdict', 'data-level': verdict.level },

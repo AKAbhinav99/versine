@@ -1,0 +1,177 @@
+/* Intake form — clinical intake sheet, not a settings page.
+   Questions read as a numbered form on paper; flagged answers pick up the
+   marker red used everywhere else in the app for a signal rather than a mood. */
+
+.intake__section { margin-bottom: var(--space-6); }
+
+.intake__q {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-top: var(--hair);
+}
+
+.intake__q[data-flagged] {
+  border-top-color: var(--marker);
+  border-left: 2px solid var(--marker);
+  padding-left: var(--space-3);
+  margin-left: calc(var(--space-3) * -1);
+  background: linear-gradient(90deg, var(--marker-wash), transparent 60%);
+}
+
+.intake__prompt {
+  padding: 0;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--ink-700);
+  line-height: 1.35;
+}
+
+.intake__help {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--ink-500);
+}
+
+.intake__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+/* The input stays in the accessibility tree and keeps keyboard and screen-reader
+   behaviour; the label is what gets drawn. */
+.intake__options input[type='radio'] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.intake__options label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  border: var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink-700);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+
+.intake__options label:hover { border-color: var(--ink-300); }
+
+.intake__options input:focus-visible + label {
+  outline: 2px solid var(--scrub);
+  outline-offset: 2px;
+}
+
+.intake__options input:checked + label {
+  border-color: var(--scrub);
+  background: var(--scrub-wash);
+  color: var(--scrub-dim);
+  font-weight: 600;
+}
+
+.intake__options input:checked + label[data-flag] {
+  border-color: var(--marker);
+  background: var(--marker-wash);
+  color: var(--marker);
+}
+
+.intake__clear {
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--ink-300);
+  font-family: var(--font-num);
+  font-size: var(--text-xs);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.intake__clear:hover { color: var(--ink-500); }
+
+.intake__number {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.intake__number input {
+  width: 5.5rem;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  color: var(--ink-700);
+  font-size: var(--text-lg);
+}
+
+.intake__number input:focus-visible {
+  outline: 2px solid var(--scrub);
+  outline-offset: 1px;
+}
+
+/* ------------------------------------------------------------- red flags --- */
+
+.redflag {
+  margin-bottom: var(--space-5);
+  padding: var(--space-4);
+  border: 1px solid var(--amber);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  background: var(--amber-wash);
+}
+
+.redflag[data-urgency='urgent'] {
+  border-color: var(--marker);
+  background: var(--marker-wash);
+}
+
+.redflag__kicker { color: var(--amber); margin-bottom: var(--space-2); }
+.redflag[data-urgency='urgent'] .redflag__kicker { color: var(--marker); }
+
+.redflag__body {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  color: var(--ink-700);
+}
+
+.redflag__list {
+  margin: var(--space-3) 0 0;
+  padding-left: 1.1rem;
+  font-size: var(--text-sm);
+  color: var(--ink-700);
+}
+.redflag__list li { margin-bottom: var(--space-1); }
+
+/* The prompt on the result screen that leads here. */
+.intake-prompt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: 1px dashed var(--rule);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+
+.intake-prompt__text { flex: 1 1 14rem; }
+.intake-prompt__text b { display: block; color: var(--ink-700); margin-bottom: 2px; }
+.intake-prompt__text span { font-size: var(--text-sm); color: var(--ink-500); line-height: 1.5; }
+.intake-prompt .btn { flex: 0 0 auto; }

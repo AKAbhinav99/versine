@@ -1,9 +1,10 @@
 /* Scan log: a trend line of estimated trunk rotation over time, then the entries.
  * The trend is the point — one reading is noise, a direction is information. */
 
-import { el, $, formatDate } from '../lib/dom.js';
+import { el, $, append, formatDate } from '../lib/dom.js';
 import { THRESHOLDS } from '../config.js';
 import { listScans, clearScans, deleteScan } from '../lib/storage.js';
+import { intakeState, openIntake } from './intake.js';
 import { showScreen } from '../router.js';
 
 const TREND_POINTS = 12;
@@ -14,16 +15,18 @@ export function renderHistory() {
   body.replaceChildren();
 
   if (!scans.length) {
-    body.append(
+    append(body,
       el('div', { class: 'empty' },
         el('p', {}, 'No scans logged yet.'),
-        el('button', { class: 'btn', onClick: () => showScreen('capture') }, 'Run your first scan')));
+        el('button', { class: 'btn', onClick: () => showScreen('capture') }, 'Run your first scan')),
+      intakeRow());
     return;
   }
 
   const chronological = [...scans].reverse().slice(-TREND_POINTS);
-  body.append(
+  append(body,
     trendChart(chronological),
+    intakeRow(),
     ...scans.map(entryRow),
     el('div', { style: 'margin-top:var(--space-5)' },
       el('button', {
@@ -36,6 +39,24 @@ export function renderHistory() {
         },
       }, 'Clear all scans')),
   );
+}
+
+/* The intake belongs on the log rather than only in the scan flow: it is
+   answered once and then mostly re-read, and it changes far less often than the
+   thing it sits beside. */
+function intakeRow() {
+  const { answered, flags } = intakeState();
+
+  return el('div', { class: 'intake-prompt', style: 'margin-top:var(--space-4)' },
+    el('div', { class: 'intake-prompt__text' },
+      el('b', {}, 'Growth, family history, and symptoms'),
+      el('span', {}, answered
+        ? `Answered${flags.length ? ` · ${flags.length} symptom${flags.length > 1 ? 's' : ''} flagged` : ''}. Carried onto every referral summary you print.`
+        : 'Eight questions a clinician will ask that a photograph cannot answer.')),
+    el('button', {
+      class: answered ? 'btn btn--ghost' : 'btn',
+      onClick: () => openIntake('history'),
+    }, answered ? 'Review' : 'Answer'));
 }
 
 function trendChart(entries) {
