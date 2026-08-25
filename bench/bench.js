@@ -37,6 +37,24 @@ export const CASES = [
   { file: 'ctl-pair-male.jpg', label: 'ctl' },
 ];
 
+/* Paired cases: the same patient photographed standing and bent forward in the
+ * same session. The 17-case set is entirely standing views, which cannot say how
+ * the detector behaves on the pose the app actually instructs. Pairing removes
+ * the subject as a variable — anything that differs between the two rows is the
+ * pose or the photograph, not the person.
+ *
+ * Only three such pairs exist in what is publicly available, and all three are
+ * positives. Posterior forward-bend photographs of people without scoliosis are
+ * essentially not published: searches of Wikimedia Commons and the PMC
+ * open-access subset returned illustrations, plots, lateral yoga views and
+ * trunk-only close-ups, but no usable control. Specificity on the bend pose
+ * therefore cannot be measured from public sources at all. */
+export const POSE_PAIRS = [
+  { subject: 'adams', label: 'pos', standing: 'pos-adams-standing.jpg', bent: 'pos-adams-bend.jpg' },
+  { subject: 'kyphoscoliosis', label: 'pos', standing: 'stand-pos-kyphoscoliosis.jpg', bent: 'bend-pos-kyphoscoliosis.jpg' },
+  { subject: 'schroth3cp', label: 'pos', standing: 'stand-pos-schroth3cp.jpg', bent: 'bend-pos-schroth3cp.jpg' },
+];
+
 function loadImage(url) {
   return new Promise((resolve, reject) => {
     const image = new Image();
@@ -111,6 +129,44 @@ export function score(rows) {
   };
 }
 
+/** Standing against bent, same subject. Reports both readings plus the raw
+ *  per-framing tilts, because the interesting failure is a mis-fitted skeleton
+ *  producing a large number rather than no number. */
+export async function runPairedPose() {
+  const rows = [];
+  for (const pair of POSE_PAIRS) {
+    for (const pose of ['standing', 'bent']) {
+      const image = await loadImage(`${IMAGE_ROOT}/${pair[pose]}`);
+      const photo = toCanvas(image);
+      const reading = await measureWithConsensus(photo);
+
+      /* Every framing's raw tilt, including the ones the pipeline discarded as
+         anatomically impossible — that discard is the whole story on bend photos. */
+      const raw = [];
+      for (const inset of [0, 0.03, 0.06, -0.05, -0.1]) {
+        try {
+          const canvas = reframe(photo, inset);
+          const pose2 = await detectPose(canvas);
+          const m = measureAsymmetry(pose2.landmarks, { width: canvas.width, height: canvas.height });
+          raw.push(round(m.shoulders.tiltDeg, 1));
+        } catch { raw.push(null); }
+      }
+
+      rows.push({
+        subject: pair.subject, pose, label: pair.label,
+        size: `${image.naturalWidth}x${image.naturalHeight}`,
+        usable: reading.usable,
+        passes: `${reading.passes}/${reading.totalFramings}`,
+        shoulder: round(reading.shoulderTiltDeg),
+        spread: round(reading.shoulderSpreadDeg),
+        level: classifyReading(reading).level,
+        rawTilts: raw.map((t) => (t === null ? 'no-pose' : t)).join(', '),
+      });
+    }
+  }
+  return rows;
+}
+
 /** Mirroring must flip the named side and leave the magnitude alone; a rolled
  *  camera must move both tilts together and raise the camera-angle warning. */
 export async function runInvariance(files = ['pos-panel4.jpg', 'ctl-male-anatomy.jpg']) {
@@ -157,4 +213,4 @@ export async function runSingleFraming(file = 'pos-panel1.jpg') {
   return out;
 }
 
-window.__bench = { runBench, score, runInvariance, runSingleFraming, CASES };
+window.__bench = { runBench, score, runInvariance, runSingleFraming, runPairedPose, CASES, POSE_PAIRS };

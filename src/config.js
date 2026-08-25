@@ -51,22 +51,24 @@ export const POSE_CHECK = {
    framings exceeded ~3.5 degrees came from detections that had gone wrong.
  *
  * implausibleTiltDeg discards a single framing whose geometry cannot be a real
- * shoulder line. It is a guard against the pose model mis-fitting the subject
- * rather than a screening threshold, and it sits between two measured
- * populations: across the whole labelled set the largest genuine reading is
- * 8.3 degrees and the ruler tops out at 8, while observed mis-fits on the
- * forward-bend photograph came in at 23.6, 83.2 and 87.1 degrees.
+ * shoulder line — a guard against the pose model mis-fitting the subject.
  *
- * It was 25, which let that 23.6 through — it was discarded only because too few
- * other framings survived to meet minPasses. Moving it to 15 keeps roughly
- * double the headroom over any real reading and still excludes every mis-fit
- * seen. Sweeping the value from 25 down to 8 changes no outcome anywhere on the
- * benchmark, so this buys defence in depth for a region the set cannot test, and
- * is explicitly not a score improvement. */
+ * It was briefly lowered to 15 on the reasoning that the largest genuine reading
+ * anywhere in the labelled set was 8.3 degrees while observed mis-fits ran to 83.
+ * That reasoning was wrong, and adding a severe congenital kyphoscoliosis case to
+ * the bench proved it: that subject measures 17.3 degrees, from five framings
+ * agreeing within 2.1, with every landmark at full visibility and the skeleton
+ * visibly fitted to the right shoulders. A cutoff of 15 threw away a correct
+ * reading of an obvious deformity. The old set simply had no case that severe.
+ *
+ * Magnitude does not separate a real reading from a mis-fit. Consistency does,
+ * and that is already measured: the genuine 17.3 clusters within 2.1 degrees,
+ * while the bend mis-fits scatter across 83, 87 and 23.6. maxShoulderSpreadDeg
+ * and minPasses were doing this job correctly all along. */
 export const RELIABILITY = {
   minPasses: 3,
   maxShoulderSpreadDeg: 3.5,
-  implausibleTiltDeg: 15,
+  implausibleTiltDeg: 25,
 };
 
 /* Clinician finder. Providers and their keys live in lib/keys.js, lib/clinics.js

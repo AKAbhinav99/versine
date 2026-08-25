@@ -21,6 +21,7 @@ Open `http://localhost:4321/bench/` and call from the console:
 ```js
 await __bench.runBench()          // full pipeline over every case
 __bench.score(rows)               // confusion matrix over the reported cases
+await __bench.runPairedPose()     // same subjects, standing vs bent forward
 await __bench.runInvariance()     // mirror and camera-roll behaviour
 await __bench.runSingleFraming()  // the instability that motivated the consensus
 ```
@@ -35,6 +36,11 @@ await __bench.runSingleFraming()  // the instability that motivated the consensu
 - **8 controls** — ordinary posterior standing photographs of people with no known
   scoliosis. A weak label, but curves over 10° affect roughly 2–3% of people, so an
   unselected photograph is negative with high probability.
+
+Plus three **paired** subjects photographed standing and bent forward in the same
+session, listed as `POSE_PAIRS` and kept out of the 17-case score so the headline
+numbers stay comparable with earlier runs. Provenance and licence for each is in
+`scratchpad/bench/set/SOURCES-bend.txt`.
 
 The images live outside the repo (`scratchpad/bench/set/`) and are not
 redistributed. Several are clinical photographs of patients; they were used for
@@ -194,7 +200,9 @@ test, and explicitly not a score improvement.
 
 **n = 1.** One forward-bend photograph cannot establish that the app fails on
 forward bends generally. It does establish that mis-fits happen on the pose the
-app asks for, and that they are large when they happen.
+app asks for, and that they are large when they happen. Section 9 revisits this
+with more bend photographs, and section 10 corrects the threshold change made
+here.
 
 ### 8. The burst wrapper is a no-op on a single frame
 
@@ -202,6 +210,73 @@ app asks for, and that they are large when they happen.
 all 17 cases with real detections rather than only in unit tests: usable flag,
 tilt, spread and band are identical with and without the wrapper, and sway
 reports `null` rather than `0` on every one.
+
+### 9. Forward-bend photographs: the hunt, and what it found
+
+Section 7 ended by saying one bend photograph cannot establish anything. So more
+were collected. Wikimedia Commons and the PMC open-access subset were searched
+for posterior forward-bend views; eight candidate figures were fetched and
+inspected individually.
+
+Most were unusable, and the reasons are worth recording so nobody repeats the
+search: trunk-only close-ups with a scoliometer and an examiner's hand in frame
+and no shoulders or hips visible; line illustrations rather than photographs;
+lateral views; and figures cropped above the shoulders. Two yielded panels of
+the pose the app actually asks for.
+
+**Controls in the bend position do not appear to exist publicly.** The literature
+photographs patients, not healthy volunteers, and yoga imagery of the same
+posture is shot laterally rather than from behind. Specificity on the forward
+bend cannot be measured from public sources. That is a limit on this benchmark,
+not a finding about the app.
+
+Two new subjects were added, each photographed standing and bent in the same
+session, joining the pair already in the set. Same person in both rows, so
+anything that differs is the pose or the photograph rather than the subject.
+
+| subject | standing | bent forward |
+|---|---|---|
+| adams | monitor, 2.23° ±2.73, 4/5 | **withheld** — raw framings 83.2, 87.1, 23.6 |
+| kyphoscoliosis | **refer, 16.98° ±2.13, 5/5** | monitor, 2.01° ±2.69, 5/5 |
+| schroth3cp | withheld, spread 17.8°, 3/5 | **withheld** — no pose found at any framing |
+
+Two things fall out of this.
+
+**Bend photographs are not categorically broken.** The kyphoscoliosis bend gave
+five framings out of five agreeing within 2.7°, which is as clean as anything in
+the standing set. The earlier n=1 conclusion was too pessimistic. But two of the
+three still fail — one mis-fitted outright, one undetectable because the panel is
+very dark — so the pose is clearly harder than standing.
+
+**The reading drops by 15° between the two poses.** Same patient, same session:
+16.98° standing, 2.01° bent. That is not noise, it is anatomy. Bending forward
+lets the shoulders hang and levels them, which is precisely why the forward bend
+is used clinically to look at the *rib hump* rather than shoulder height. The app
+measures shoulder tilt and instructs the pose in which shoulder tilt largely
+disappears — and it cannot measure the rotation that the bend is actually for.
+n = 1 for the paired comparison, since only this subject produced a usable
+reading in both poses, but the anatomical argument does not depend on n.
+
+### 10. A guard I tightened, and the data caught
+
+Section 7 lowered `implausibleTiltDeg` from 25 to 15, reasoning that the largest
+genuine reading anywhere was 8.3° while mis-fits ran to 83°. Adding the
+kyphoscoliosis subject showed that reasoning was wrong.
+
+That subject measures **17.3°**, from five framings agreeing within 2.1°, with
+every landmark at full visibility. The overlay was drawn and checked by eye: the
+skeleton is fitted to the correct shoulders, and the asymmetry is plainly visible
+in the photograph. It is a severe congenital kyphoscoliosis, and a cutoff of 15
+threw away a correct reading of an obvious deformity. The old set simply
+contained no case that severe, so 8.3° looked like a ceiling when it was only the
+largest value in a small sample.
+
+Magnitude does not separate a real reading from a mis-fit. **Consistency does**,
+and it was already being measured: the genuine 17.3° clusters within 2.1°, while
+the bend mis-fits scatter across 83°, 87° and 23.6°. `maxShoulderSpreadDeg` and
+`minPasses` were doing the job correctly the whole time. The cutoff is back at
+25 and the reasoning is recorded in `src/config.js` so it does not get
+"tightened" again.
 
 ## Where the current detector lands
 
