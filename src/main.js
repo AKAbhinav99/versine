@@ -85,7 +85,16 @@ function loadFailed(container, failures, retry) {
         : el('button', { class: 'btn', onClick: retry }, 'Try again')));
 }
 
-initTabs((tab) => showScreen(tab));
+/* Belt-and-suspenders alongside router.js hiding the tab bar during the intro
+   screen: that removes the buttons from layout so nothing can click or tab to
+   them, but a `.click()` dispatched straight at a hidden button still fires its
+   listener. Refusing here means even a synthetic event, or a future call site
+   that shows the tab bar early, cannot land on a gated screen before the
+   disclaimer has actually been accepted. */
+initTabs((tab) => {
+  if (!localStorage.getItem(INTRO_KEY)) { showScreen('intro'); return; }
+  showScreen(tab);
+});
 
 /* The analysis cluster is not on the critical path, but it is needed the moment
    someone accepts a photo — so it is fetched once the browser is otherwise idle

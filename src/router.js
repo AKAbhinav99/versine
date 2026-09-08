@@ -27,6 +27,15 @@ export function showScreen(name, payload) {
     tab.setAttribute('aria-selected', String(tab.dataset.tab === TAB_OF[name]));
   });
 
+  /* The disclaimer gate has nothing to gate if the tab bar sits underneath it
+     offering a way around it. `.hidden` (not the `hidden` attribute) because
+     .tabbar already carries `display: grid` in base.css, and only a rule with
+     `!important` reliably beats that (the same reason print.css force-hides it
+     with `!important` rather than relying on the cascade). Hidden this way the
+     buttons have no layout box, so they take no click, tap, or Tab focus. */
+  const tabbar = $('.tabbar');
+  if (tabbar) tabbar.classList.toggle('hidden', name === 'intro');
+
   active = name;
   window.scrollTo({ top: 0 });
   if (enterHooks.has(name)) enterHooks.get(name)(payload);
