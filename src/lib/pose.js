@@ -15,14 +15,23 @@ export function loadPoseLandmarker() {
       /* @vite-ignore */ POSE_MODEL.visionBundle
     );
     const fileset = await FilesetResolver.forVisionTasks(POSE_MODEL.wasmRoot);
-    return PoseLandmarker.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: POSE_MODEL.asset, delegate: 'GPU' },
+    const create = (delegate) => PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: POSE_MODEL.asset, delegate },
       runningMode: 'IMAGE',
       numPoses: 1,
       minPoseDetectionConfidence: 0.4,
       minPosePresenceConfidence: 0.4,
       outputSegmentationMasks: false,
     });
+    /* The GPU delegate needs WebGL2 that MediaPipe accepts, which some phones
+       and locked-down browsers do not give it. The CPU path is slower but
+       runs anywhere WebAssembly does. */
+    try {
+      return await create('GPU');
+    } catch (error) {
+      console.warn('[Versine] GPU pose model unavailable, using CPU', error);
+      return create('CPU');
+    }
   })().catch((error) => {
     landmarkerPromise = null; // let a later attempt retry a transient CDN failure
     throw error;

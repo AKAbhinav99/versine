@@ -22,8 +22,10 @@ export async function runAnalysis(burst, adjustments = null) {
   $('#analyze-preview').src = frames[0].toDataURL('image/jpeg', 0.55);
   resetLog();
 
+  let step = 'model';
   try {
     await runStep('model', () => loadPoseLandmarker());
+    step = 'measure';
 
     /* Each frame is measured at several framings because one framing is not
        reliable on its own, and several frames are measured because one frame
@@ -45,13 +47,13 @@ export async function runAnalysis(burst, adjustments = null) {
     const verdict = await runStep('compare', () => classifyReading(reading));
 
     const entry = reading.usable
-      ? saveScan({ reading, verdict, adjustments, thumbnail: makeThumbnail(photoCanvas) })
+      ? saveScan({ reading, verdict, adjustments, thumbnail: makeThumbnail(frames[0]) })
       : null;
 
     showScreen('result');
     renderResult({ reading, verdict, entry, adjustments });
   } catch (error) {
-    reportFailure(error, frames[0]);
+    reportFailure(error, frames[0], step);
   }
 }
 
@@ -64,13 +66,22 @@ function detailFor(reading) {
     : framings;
 }
 
-function reportFailure(error, photoCanvas) {
+/* Only a failure in the model step is a download problem. Anything later used
+   to be reported the same way, which hid a bug in saving the scan behind
+   "the pose model failed to load". */
+function reportFailure(error, photoCanvas, step) {
   console.error('[Versine] analysis failed', error);
-  renderFailure({
-    photo: photoCanvas,
-    headline: 'The pose model failed to load',
-    body: 'Versine downloads its landmark model the first time you scan, so this step needs a network connection. Check you are online and try the scan again.',
-  });
+  renderFailure(step === 'model'
+    ? {
+      photo: photoCanvas,
+      headline: 'The pose model failed to load',
+      body: 'Versine downloads its landmark model the first time you scan, so this step needs a network connection. Check you are online and try the scan again.',
+    }
+    : {
+      photo: photoCanvas,
+      headline: 'This photo could not be measured',
+      body: 'The model loaded, but measuring the photo stopped partway. Try the scan again; if it keeps happening, reloading the page usually clears it.',
+    });
 }
 
 /* ---------------------------------------------------------------- the log --- */

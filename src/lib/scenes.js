@@ -65,12 +65,22 @@ export function initScenes() {
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
 }
 
-/* Lenis gives the wheel weight on a desktop pointer. Touch keeps native
-   scrolling, which is already smooth and which people expect. Anything marked
-   data-lenis-prevent (the map) keeps its own wheel behaviour. */
+/* Lenis carries every scroll, wheel and touch alike, at two thirds of the
+   native distance: the page is meant to be read slowly, and the scenes play
+   out over more of each gesture. Touch goes through syncTouch so a finger
+   drag is scaled too, with Lenis's own inertia in place of the browser's.
+   Anything marked data-lenis-prevent (the map) keeps its own behaviour. */
+const SCROLL_SPEED = 1 / 1.5;
+
 function initSmoothScroll(gsap, ScrollTrigger) {
-  if (!window.Lenis || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  lenis = new window.Lenis({ lerp: 0.11, wheelMultiplier: 1, smoothWheel: true });
+  if (!window.Lenis) return;
+  lenis = new window.Lenis({
+    lerp: 0.08,
+    smoothWheel: true,
+    wheelMultiplier: SCROLL_SPEED,
+    syncTouch: true,
+    touchMultiplier: SCROLL_SPEED,
+  });
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add((time) => lenis.raf(time * 1000));
   gsap.ticker.lagSmoothing(0);
