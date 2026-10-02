@@ -430,8 +430,10 @@ clean surface with a plumb line hanging through it, the vertical reference the
 whole test measures against. Page `#F2F5F6`, white cards, ink `#0E2230`, scrub
 blue `#1F6E8C` for measurement and action, marker red-orange `#D6402A` reserved
 for signals. Schibsted Grotesk for headings only (it replaced Bricolage
-Grotesque, whose ink-trap quirks read as a generated-site default), Archivo for UI, IBM Plex
-Mono for every number.
+Grotesque, whose ink-trap quirks read as a generated-site default), Archivo for UI
+and numbers (tabular figures only on readouts, since tabular punctuation spaces
+out commas in headings). Labels float as sentence-case text with a short accent
+tick, never as chips; uppercase mono labels read as a template default.
 
 That board is the page itself: one fixed canvas behind every screen
 ([`src/lib/field.js`](src/lib/field.js)). Each dot sits on a slightly
