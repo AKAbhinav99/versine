@@ -282,7 +282,7 @@ function buildStats(gsap) {
   const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: 'top 80%' } });
   tl.fromTo(stats, { rotationX: -75, y: 80, autoAlpha: 0, transformOrigin: '50% 100%' }, {
     rotationX: 0, y: 0, autoAlpha: 1,
-    duration: 2.2, ease: 'power3.out', stagger: 0.22,
+    duration: 3.2, ease: 'power3.out', stagger: 0.35,
   });
   stats.forEach((stat, i) => {
     const number = stat.querySelector('[data-count]');
@@ -291,9 +291,9 @@ function buildStats(gsap) {
     const counter = { value: Number(number.dataset.from ?? 0) };
     number.textContent = String(counter.value);
     tl.to(counter, {
-      value: to, duration: 2.6, ease: 'power2.out',
+      value: to, duration: 3.6, ease: 'power2.out',
       onUpdate: () => { number.textContent = String(Math.round(counter.value)); },
-    }, 0.3 + i * 0.22);
+    }, 0.4 + i * 0.35);
   });
 }
 
@@ -369,7 +369,7 @@ function buildHow(gsap, ScrollTrigger) {
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: () => `+=${Math.round(window.innerHeight * 4.2)}`,
+      end: () => `+=${Math.round(window.innerHeight * 3.5)}`,
       pin,
       scrub: 1.2,
       invalidateOnRefresh: true,
