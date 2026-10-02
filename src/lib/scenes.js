@@ -65,12 +65,12 @@ export function initScenes() {
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
 }
 
-/* Lenis carries every scroll, wheel and touch alike, at a little over half
-   the native distance: the page is meant to be read slowly, and the scenes play
+/* Lenis carries every scroll, wheel and touch alike, at two thirds of the
+   native distance: the page is meant to be read slowly, and the scenes play
    out over more of each gesture. Touch goes through syncTouch so a finger
    drag is scaled too, with Lenis's own inertia in place of the browser's.
    Anything marked data-lenis-prevent (the map) keeps its own behaviour. */
-const SCROLL_SPEED = 1 / 1.75;
+const SCROLL_SPEED = 1 / 1.5;
 
 function initSmoothScroll(gsap, ScrollTrigger) {
   if (!window.Lenis) return;
@@ -99,15 +99,15 @@ function buildIntro(gsap, ScrollTrigger) {
 
   if (window.SplitText && title) {
     const split = window.SplitText.create(title, { type: 'lines,words', mask: 'lines', linesClass: 'split-line' });
-    entrance.from(split.words, { yPercent: 115, duration: 1.1, stagger: 0.06 }, 0.1);
+    entrance.from(split.words, { yPercent: 115, duration: 1.6, stagger: 0.09 }, 0.1);
   } else if (title) {
     entrance.from(title, { y: 30, autoAlpha: 0, duration: 1 }, 0.1);
   }
 
   entrance
-    .from(hero.querySelector('.hero__lede'), { y: 22, autoAlpha: 0, duration: 1 }, 0.45)
-    .from(hero.querySelector('.hero__cta'), { y: 22, autoAlpha: 0, duration: 1 }, 0.6)
-    .from(hero.querySelector('.hero__cue'), { autoAlpha: 0, duration: 1 }, 1.1);
+    .from(hero.querySelector('.hero__lede'), { y: 22, autoAlpha: 0, duration: 1.3 }, 0.7)
+    .from(hero.querySelector('.hero__cta'), { y: 22, autoAlpha: 0, duration: 1.3 }, 0.9)
+    .from(hero.querySelector('.hero__cue'), { autoAlpha: 0, duration: 1.2 }, 1.5);
 
   /* Scrolling away, the copy drifts up and fades a little faster than the page. */
   gsap.to(hero.querySelector('.hero__copy'), {
@@ -258,8 +258,8 @@ function buildJourney(gsap, ScrollTrigger) {
       trigger: section,
       pin,
       start: 'top top',
-      end: () => `+=${Math.round(distance() * 1.15)}`,
-      scrub: 0.7,
+      end: () => `+=${Math.round(distance() * 1.8)}`,
+      scrub: 1,
       invalidateOnRefresh: true,
       onUpdate: (self) => gsap.set(bar, { scaleX: 0.2 + self.progress * 0.8 }),
       onRefresh: turn,
@@ -282,7 +282,7 @@ function buildStats(gsap) {
   const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: 'top 80%' } });
   tl.fromTo(stats, { rotationX: -75, y: 80, autoAlpha: 0, transformOrigin: '50% 100%' }, {
     rotationX: 0, y: 0, autoAlpha: 1,
-    duration: 1.1, ease: 'expo.out', stagger: 0.1,
+    duration: 2.2, ease: 'power3.out', stagger: 0.22,
   });
   stats.forEach((stat, i) => {
     const number = stat.querySelector('[data-count]');
@@ -291,9 +291,9 @@ function buildStats(gsap) {
     const counter = { value: Number(number.dataset.from ?? 0) };
     number.textContent = String(counter.value);
     tl.to(counter, {
-      value: to, duration: 1.4, ease: 'power3.out',
+      value: to, duration: 2.6, ease: 'power2.out',
       onUpdate: () => { number.textContent = String(Math.round(counter.value)); },
-    }, 0.15 + i * 0.1);
+    }, 0.3 + i * 0.22);
   });
 }
 
@@ -369,9 +369,9 @@ function buildHow(gsap, ScrollTrigger) {
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: () => `+=${Math.round(window.innerHeight * 2.6)}`,
+      end: () => `+=${Math.round(window.innerHeight * 4.2)}`,
       pin,
-      scrub: 0.8,
+      scrub: 1.2,
       invalidateOnRefresh: true,
       onUpdate: (self) => setStep(Math.min(steps.length - 1, Math.floor(self.progress * steps.length * 0.999))),
     },
@@ -436,8 +436,8 @@ function buildLimits(gsap) {
 
   gsap.utils.toArray('.limits__list > li').forEach((row) => {
     gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 86%' } })
-      .fromTo(row, { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.9, ease: 'expo.out' })
-      .fromTo(row.querySelector('.claim-list__key'), { scale: 0.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, ease: 'back.out(3)' }, 0.25);
+      .fromTo(row, { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 1.4, ease: 'expo.out' })
+      .fromTo(row.querySelector('.claim-list__key'), { scale: 0.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.8, ease: 'back.out(3)' }, 0.4);
   });
 }
 
