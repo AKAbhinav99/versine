@@ -196,11 +196,35 @@
 }
 .how__art { position: relative; }
 .how__svg { width: 100%; height: auto; max-height: 52svh; margin: 0 auto; overflow: visible; }
-.how__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.how__canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  cursor: grab;
+  touch-action: pan-y;   /* sideways drags orbit; up and down still scroll the page */
+  -webkit-user-select: none;
+  user-select: none;
+}
+.how__art.is-dragging .how__canvas { cursor: grabbing; }
+.how__hint {
+  position: absolute;
+  left: 50%; bottom: var(--space-2);
+  z-index: 1;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.how__art.is-3d:not(.was-dragged) .how__hint { opacity: 1; transform: translate(-50%, 0); }
 /* Once the 3D figure is up, the SVG keeps the box its size and steps aside. */
 .how__art.is-3d .how__svg { visibility: hidden; }
 .how__svg * { vector-effect: non-scaling-stroke; }
-.how__frames rect { fill: none; stroke: var(--scrub); stroke-width: 1; opacity: 0.45; }
+.how__fan line { stroke: var(--scrub); stroke-width: 1.4; stroke-linecap: round; opacity: 0.4; }
 .how__plumb { stroke: var(--marker); stroke-width: 1.2; }
 .how__figure * { vector-effect: none; fill: #000; stroke: none; }
 .how__figure .how__limb { fill: none; stroke: #000; stroke-width: 15; stroke-linecap: round; }
@@ -300,7 +324,11 @@ html:not(.gsap) .journey__progress { display: none; }
 .jart__photo path { stroke: var(--ink-500); stroke-width: 1.5; stroke-linecap: round; }
 .jart__photo { transform-box: fill-box; transform-origin: center; transform: rotate(-9deg); }
 .jart__rotate, .jart__rotate-head { fill: none; stroke: var(--scrub); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.jart-frames rect { fill: none; stroke: var(--scrub); stroke-width: 1.3; opacity: 0.55; }
+.jart__clay { fill: #DCE6EB; stroke: #B9CBD4; stroke-width: 1; }
+.jart__fan line { stroke: var(--scrub); stroke-width: 1.6; stroke-linecap: round; opacity: 0.45; }
+.jart__fan line:nth-child(3) { opacity: 1; stroke-width: 2.4; }
+.jart__hipline { stroke: var(--scrub); stroke-width: 2; stroke-linecap: round; }
+.jart__fan { transform-box: fill-box; transform-origin: center; }
 .jart__pt { fill: var(--marker); stroke: #fff; stroke-width: 1.5; }
 .jart__num { font-family: var(--font-num); font-size: 44px; font-weight: 500; fill: var(--ink-900); letter-spacing: -2px; }
 .jart__pm { font-family: var(--font-num); font-size: 12px; fill: var(--ink-500); }
@@ -317,16 +345,14 @@ html:not(.gsap) .journey__progress { display: none; }
 
 /* The card in the middle plays its little scene; scenes.js marks it. */
 .motion .jcard[data-active] .jart__photo { animation: jart-level 1.6s var(--ease-out) both; }
-.motion .jcard[data-active] .jart-frames rect { animation: jart-jitter 2.4s ease-in-out infinite; }
-.motion .jcard[data-active] .jart-frames rect:nth-child(2n) { animation-delay: -0.8s; }
-.motion .jcard[data-active] .jart-frames rect:nth-child(3n) { animation-delay: -1.5s; }
+.motion .jcard[data-active] .jart__fan { animation: jart-fan 1.2s var(--ease-out) both; }
 .motion .jcard[data-active] .jart__pin { animation: jart-drop 0.8s var(--ease-spring) both; }
 .motion .jcard[data-active] .jart__pin:nth-of-type(2) { animation-delay: 0.15s; }
 .motion .jcard[data-active] .jart__pin:nth-of-type(3) { animation-delay: 0.3s; }
 .motion .jcard[data-active] .jart__needle { animation: jart-needle 1.4s var(--ease-out) both; }
 .motion .jcard[data-active] .jart__shutter { animation: jart-pulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes jart-level { from { transform: rotate(-9deg); } to { transform: rotate(0deg); } }
-@keyframes jart-jitter { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(2px, -1.5px); } 66% { transform: translate(-1.5px, 2px); } }
+@keyframes jart-fan { from { transform: scaleY(0); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes jart-drop { 0% { transform: translateY(-26px) scale(0.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
 @keyframes jart-needle { from { transform: translateX(-80px); } to { transform: none; } }
 @keyframes jart-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
@@ -463,11 +489,11 @@ html:not(.gsap) .journey__progress { display: none; }
   pointer-events: none;
   filter: drop-shadow(0 0 1.2px rgba(14,34,48,0.7)) drop-shadow(0 0 6px rgba(14,34,48,0.18));
 }
-/* The figure's parts are drawn solid white and turned by the SVG filter into
-   one faint body with one outline. Limbs are thick round strokes. */
-.capture__guide .guide-figure { fill: #fff; stroke: none; }
-.capture__guide .guide-limb { fill: none; stroke: #fff; stroke-width: 15; stroke-linecap: round; }
-.capture__guide .guide-limb--leg { stroke-width: 22; }
+/* Clay parts: shaded fills with a crisp light edge, and white glints where
+   the light catches, so the flat shapes read as the rounded 3D figure. */
+.capture__guide .clay { fill: url(#clay-shade); stroke: rgba(255, 255, 255, 0.92); stroke-width: 1.4; }
+.capture__guide .clay--round { fill: url(#clay-round); }
+.capture__guide .guide-glints ellipse { fill: #fff; opacity: 0.85; }
 .capture__guide .guide-plumb { stroke: var(--marker); stroke-width: 1.5; }
 .capture__guide .guide-plumb-pin,
 .capture__guide .guide-plumb-bob { fill: var(--marker); }

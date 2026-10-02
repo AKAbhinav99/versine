@@ -433,8 +433,12 @@ The "how a reading is made" figure is a clay model in three.js
 clearcoat, a drifting key light so the glints move, a contact shadow. The
 scroll scrub assembles it, drops the plumb line, lands the four landmarks and
 draws the measuring lines as tubes in space while the camera swings from
-three-quarters to square on. It always finishes square on, because the
-reading it illustrates is a straight-on measurement. The landmarks and lines
+three-quarters to square on, and finally fans out the four other framings'
+shoulder lines around the reading (their spread is the error bar, drawn four
+times life size so it shows). Dragging orbits the camera; let go and it eases
+back, because it always finishes square on: the reading it illustrates is a
+straight-on measurement. The capture guide draws the same clay figure as
+shaded flat shapes, so the overlay costs nothing to render over the camera. The landmarks and lines
 sit on one plane just behind the back, nearer the camera than the body, so
 the pelvis never swallows the hip line.
 

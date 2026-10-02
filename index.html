@@ -43,6 +43,27 @@
 <link rel="stylesheet" href="styles/care.css" />
 </head>
 <body>
+  <!-- Shared SVG paint, referenced by the capture guide and its copy in the
+       adjust step. Kept out of any screen, since a gradient inside a hidden
+       screen does not paint in every browser. -->
+  <svg class="svg-defs" aria-hidden="true" focusable="false">
+    <defs>
+      <!-- Clay, lit from the upper left: bright on the near side, falling off
+           to a soft edge, translucent throughout. -->
+      <linearGradient id="clay-shade" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.34" />
+        <stop offset="0.32" stop-color="#ffffff" stop-opacity="0.62" />
+        <stop offset="0.7" stop-color="#E6EEF2" stop-opacity="0.42" />
+        <stop offset="1" stop-color="#C9D8E0" stop-opacity="0.26" />
+      </linearGradient>
+      <radialGradient id="clay-round" cx="0.36" cy="0.32" r="0.78">
+        <stop offset="0" stop-color="#ffffff" stop-opacity="0.72" />
+        <stop offset="0.55" stop-color="#EEF3F6" stop-opacity="0.46" />
+        <stop offset="1" stop-color="#C9D8E0" stop-opacity="0.24" />
+      </radialGradient>
+    </defs>
+  </svg>
+
 <!-- The page's dot field: reacts to the cursor, ripples on click, drifts on
      scroll (src/lib/field.js). Purely decorative. -->
 <canvas class="field" aria-hidden="true"></canvas>
@@ -118,14 +139,9 @@
           <!-- The SVG is the complete drawing. figure3d.js lays a 3D version over it
                when WebGL and the library load; otherwise this is what shows. -->
           <div class="how__art">
+            <p class="how__hint" aria-hidden="true">Drag to turn it</p>
           <svg class="how__svg" viewBox="0 0 300 400" role="img" aria-label="Illustration: a figure bent forward, seen from behind, with its shoulder and hip points marked and the shoulder tilt measured against horizontal">
-            <g class="how__frames">
-              <rect x="36" y="44" width="226" height="322" rx="12" />
-              <rect x="46" y="36" width="214" height="334" rx="12" />
-              <rect x="40" y="48" width="222" height="318" rx="12" />
-              <rect x="32" y="38" width="232" height="330" rx="12" />
-              <rect x="44" y="42" width="218" height="326" rx="12" />
-            </g>
+
             <line class="how__plumb" x1="150" y1="8" x2="150" y2="392" />
             <defs>
               <!-- Same silhouette as the capture guide, in ink: the filter fills
@@ -158,6 +174,14 @@
             <line class="how__measure" x1="120" y1="128" x2="180" y2="123.6" />
             <line class="how__measure how__measure--hip" x1="122" y1="306" x2="178" y2="304" />
             <path class="how__arc" d="M162 128 A 42 42 0 0 0 161.89 124.93" />
+            <!-- The self-check: five framings measure the shoulders at slightly
+                 different angles; their spread is the error bar. -->
+            <g class="how__fan">
+              <line x1="106.0" y1="126.6" x2="194.0" y2="125.0" />
+              <line x1="106.1" y1="127.9" x2="193.9" y2="123.7" />
+              <line x1="106.2" y1="130.2" x2="193.8" y2="121.4" />
+              <line x1="106.3" y1="131.3" x2="193.7" y2="120.3" />
+            </g>
             <g class="how__points">
               <circle cx="120" cy="128" r="5.5" />
               <circle cx="180" cy="123.6" r="5.5" />
@@ -213,11 +237,11 @@
             </div></li>
             <li class="jcard"><div class="jcard__inner">
               <svg class="jcard__art jart-frames" viewBox="0 0 240 150" aria-hidden="true">
-                <rect x="78" y="16" width="84" height="118" rx="10" />
-                <rect x="72" y="12" width="96" height="126" rx="10" />
-                <rect x="84" y="20" width="76" height="112" rx="10" />
-                <rect x="70" y="18" width="92" height="120" rx="10" />
-                <rect x="80" y="10" width="86" height="128" rx="10" />
+                <ellipse class="jart__clay" cx="120" cy="28" rx="11" ry="12" />
+                <rect class="jart__clay" x="98" y="44" width="44" height="66" rx="18" />
+                <rect class="jart__clay" x="104" y="104" width="13" height="40" rx="6.5" /><rect class="jart__clay" x="123" y="104" width="13" height="40" rx="6.5" />
+                <g class="jart__fan"><line x1="96.0" y1="55.1" x2="144.0" y2="53.9" /><line x1="96.0" y1="55.9" x2="144.0" y2="53.1" /><line x1="96.1" y1="56.6" x2="143.9" y2="52.4" /><line x1="96.2" y1="57.3" x2="143.8" y2="51.7" /><line x1="96.3" y1="58.0" x2="143.7" y2="51.0" /></g>
+                <line class="jart__hipline" x1="103" y1="100" x2="137" y2="99" />
                 <circle class="jart__pt" cx="102" cy="56" r="4.5" /><circle class="jart__pt" cx="138" cy="53" r="4.5" />
                 <circle class="jart__pt" cx="103" cy="100" r="4.5" /><circle class="jart__pt" cx="137" cy="99" r="4.5" />
               </svg>
@@ -317,34 +341,33 @@
 
       <!-- Framing guide: bent-forward figure seen from behind, with the plumb reference -->
       <svg class="capture__guide" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <defs>
-          <!-- One silhouette from overlapping parts: the filter fills the union
-               faintly and traces a single clean outline around it, so the parts
-               never show their seams. Legible over a bright or a dark scene. -->
-          <filter id="guide-silhouette" x="-10%" y="-10%" width="120%" height="120%">
-            <feMorphology in="SourceAlpha" operator="dilate" radius="1.6" result="grown" />
-            <feComposite in="grown" in2="SourceAlpha" operator="out" result="edge" />
-            <feFlood flood-color="#ffffff" result="white" />
-            <feComposite in="white" in2="edge" operator="in" result="outline" />
-            <feComposite in="white" in2="SourceAlpha" operator="in" result="body" />
-            <feColorMatrix in="body" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.2 0" result="tint" />
-            <feMerge><feMergeNode in="tint" /><feMergeNode in="outline" /></feMerge>
-          </filter>
-        </defs>
         <line class="guide-plumb" x1="150" y1="14" x2="150" y2="384" />
         <circle class="guide-plumb-pin" cx="150" cy="14" r="3" />
         <path class="guide-plumb-bob" d="M150 380 L156 389 L150 398 L144 389 Z" />
-        <!-- Seen from behind and above: hips nearest the camera at the bottom,
-             the back receding upward, shoulders and the hanging head at the top,
-             arms hanging close along the trunk. -->
-        <g class="guide-figure" filter="url(#guide-silhouette)">
-          <ellipse cx="150" cy="86" rx="19" ry="22" />
-          <rect x="141" y="100" width="18" height="24" rx="6" />
-          <path d="M118 134 C 118 121, 132 116, 150 116 C 168 116, 182 121, 182 134 L 184 210 C 185 252, 184 286, 180 304 C 176 318, 163 324, 150 324 C 137 324, 124 318, 120 304 C 116 286, 115 252, 116 210 Z" />
-          <path class="guide-limb" d="M123 134 C 111 180, 104 236, 103 284" />
-          <path class="guide-limb" d="M177 134 C 189 180, 196 236, 197 284" />
-          <path class="guide-limb guide-limb--leg" d="M135 318 L 133 396" />
-          <path class="guide-limb guide-limb--leg" d="M165 318 L 167 396" />
+        <!-- The same clay figure as the intro's 3D model, as flat shapes shaded
+             to look rounded: seen from behind, hips nearest the camera at the
+             bottom, shoulders and the hanging head at the top. Translucent, so
+             the person in frame shows through it. Gradients live in the shared
+             defs at the top of the body. -->
+        <g class="guide-figure">
+          <rect class="clay" x="124" y="312" width="24" height="100" rx="12" />
+          <rect class="clay" x="152" y="312" width="24" height="100" rx="12" />
+          <ellipse class="clay" cx="150" cy="306" rx="34" ry="20" />
+          <rect class="clay" x="118" y="118" width="64" height="196" rx="30" />
+          <rect class="clay" x="99" y="124" width="18" height="160" rx="9" transform="rotate(4 108 126)" />
+          <rect class="clay" x="183" y="124" width="18" height="160" rx="9" transform="rotate(-4 192 126)" />
+          <circle class="clay clay--round" cx="97" cy="285" r="10" />
+          <circle class="clay clay--round" cx="203" cy="285" r="10" />
+          <rect class="clay" x="108" y="113" width="84" height="26" rx="13" />
+          <rect class="clay" x="141" y="98" width="18" height="22" rx="8" />
+          <circle class="clay clay--round" cx="150" cy="82" r="21" />
+          <g class="guide-glints">
+            <ellipse cx="142" cy="73" rx="6.5" ry="4" transform="rotate(-32 142 73)" />
+            <ellipse cx="116" cy="119.5" rx="5" ry="2.4" />
+            <ellipse cx="128" cy="158" rx="3.5" ry="16" />
+            <ellipse cx="133" cy="299" rx="7" ry="3" transform="rotate(-12 133 299)" />
+            <ellipse cx="104" cy="160" rx="2.2" ry="12" transform="rotate(4 104 160)" />
+          </g>
         </g>
         <!-- Shoulder and hip marks: brackets either side, with a dot where each
              landmark should land. Unlabelled on purpose: the hint bar above

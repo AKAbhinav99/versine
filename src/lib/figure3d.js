@@ -63,6 +63,7 @@ export async function mountFigure(host, timelineDuration) {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   const canvas = renderer.domElement;
   canvas.className = 'how__canvas';
+  canvas.setAttribute('title', 'Drag to turn the figure');
   canvas.setAttribute('aria-hidden', 'true');
   host.append(canvas);
 
@@ -263,23 +264,16 @@ export async function mountFigure(host, timelineDuration) {
   const shoulderLine = tube(shoulderL, shoulderR, 0.011, scrubMat);
   const hipLine = tube(hipL, hipR, 0.009, scrubMat);
 
-  /* Five framings: rounded frames standing behind the figure, each a little
-     off from the others, the way five crops of one photo are. */
-  const frames = [
-    [0, 0, 1], [0.035, -0.02, 0.97], [-0.03, 0.025, 1.03], [0.02, 0.03, 0.95], [-0.02, -0.03, 1.02],
-  ].map(([dx, dy, s], i) => {
-    const shape = new THREE.Shape();
-    const w = 0.92 * s; const h = 1.96 * s; const r = 0.09;
-    shape.moveTo(-w / 2 + r, -h / 2);
-    shape.lineTo(w / 2 - r, -h / 2); shape.quadraticCurveTo(w / 2, -h / 2, w / 2, -h / 2 + r);
-    shape.lineTo(w / 2, h / 2 - r); shape.quadraticCurveTo(w / 2, h / 2, w / 2 - r, h / 2);
-    shape.lineTo(-w / 2 + r, h / 2); shape.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - r);
-    shape.lineTo(-w / 2, -h / 2 + r); shape.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
-    const geometry = new THREE.BufferGeometry().setFromPoints(shape.getPoints(12));
-    const line = new THREE.LineLoop(geometry, new THREE.LineBasicMaterial({ color: COLORS.scrub, transparent: true, opacity: 0 }));
-    line.position.set(dx, 0.98 + dy, -0.42 - i * 0.04);
-    scene.add(line);
-    return { line, at: 3.05 + i * 0.14 };
+  /* The self-check: the same shoulders measured at five framings come out at
+     slightly different angles. They fan out around the reading as faint
+     lines, and that spread is the error bar in the readout. */
+  const fanMat = new THREE.MeshPhysicalMaterial({ color: COLORS.scrub, roughness: 0.3, clearcoat: 1, transparent: true, opacity: 0.4 });
+  const middle = shoulderL.clone().add(shoulderR).multiplyScalar(0.5);
+  const half = shoulderL.distanceTo(shoulderR) / 2 + 0.12;
+  const fan = [-0.8, -0.35, 0.4, 0.75].map((spreadDeg, i) => {
+    const angle = tilt(SHOULDER_TILT_DEG + spreadDeg * 4);   // spread drawn four times life size so it reads
+    const offset = new THREE.Vector3(Math.cos(angle) * half, Math.sin(angle) * half, 0.004 * (i + 1));
+    return { line: tube(middle.clone().sub(offset), middle.clone().add(offset), 0.006, fanMat), at: 3.05 + i * 0.14 };
   });
 
   /* ------------------------------------------------------------ camera --- */
@@ -288,12 +282,17 @@ export async function mountFigure(host, timelineDuration) {
   const target = new THREE.Vector3(0, 0.98, 0);
   const FINAL_DISTANCE = 5.7;
 
+  /* Dragging orbits the camera on top of wherever the scroll has put it. Let
+     go, and a moment later it eases back, because the reading only means
+     anything square on. */
+  const orbit = { yaw: 0, pitch: 0, dragging: false, x: 0, y: 0, releasedAt: 0, id: null, used: false };
+
   const placeCamera = (t) => {
     /* Three-quarters and a little above, swinging to square on by the time
        the lines are measured, and holding there. */
     const k = easeInOut(span(t, 0, 2.6));
-    const azimuth = (1 - k) * 0.72;
-    const elevation = (1 - k) * 0.3 + 0.015;
+    const azimuth = (1 - k) * 0.72 + orbit.yaw;
+    const elevation = Math.max(-0.2, Math.min(0.95, (1 - k) * 0.3 + 0.015 + orbit.pitch));
     const distance = FINAL_DISTANCE * (1 + (1 - k) * 0.12);
     camera.position.set(
       target.x + distance * Math.sin(azimuth) * Math.cos(elevation),
@@ -319,8 +318,17 @@ export async function mountFigure(host, timelineDuration) {
     render();
   };
 
+  let lastNow = performance.now();
+
   function render(now = performance.now()) {
     const t = progress * timelineDuration;
+    const dt = Math.min(0.05, Math.max(0, (now - lastNow) / 1000));
+    lastNow = now;
+    if (!orbit.dragging && now - orbit.releasedAt > 1100) {
+      const settle = 1 - Math.exp(-dt * 3.2);
+      orbit.yaw -= orbit.yaw * settle;
+      orbit.pitch -= orbit.pitch * settle;
+    }
 
     for (const part of parts) {
       const k = span(t, part.at, part.at + 0.38);
@@ -339,12 +347,12 @@ export async function mountFigure(host, timelineDuration) {
     level.draw(span(t, 2.0, 2.5));
     shoulderLine.draw(span(t, 2.2, 2.75));
     hipLine.draw(span(t, 2.35, 2.9));
-    for (const frame of frames) frame.line.material.opacity = 0.55 * span(t, frame.at, frame.at + 0.3);
+    for (const ray of fan) ray.line.draw(span(t, ray.at, ray.at + 0.3));
 
     /* The key light drifts slowly, so the glints travel over the clay. */
     const drift = now / 1000;
-    key.position.x = -2.4 + Math.sin(drift * 0.5) * 0.8;
-    key.position.z = 3.4 + Math.cos(drift * 0.4) * 0.6;
+    key.position.x = -1.8 + Math.sin(drift * 0.5) * 0.8;
+    key.position.z = 2.6 + Math.cos(drift * 0.4) * 0.6;
 
     placeCamera(t);
     renderer.render(scene, camera);
@@ -363,6 +371,37 @@ export async function mountFigure(host, timelineDuration) {
     if (visible && !loop) loop = requestAnimationFrame(tick);
   });
   io.observe(host);
+
+  canvas.addEventListener('pointerdown', (event) => {
+    orbit.dragging = true;
+    orbit.id = event.pointerId;
+    orbit.x = event.clientX;
+    orbit.y = event.clientY;
+    try { canvas.setPointerCapture(event.pointerId); } catch { /* synthetic or already-ended pointer */ }
+    host.classList.add('is-dragging');
+    if (!orbit.used) { orbit.used = true; host.classList.add('was-dragged'); }
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (!orbit.dragging || event.pointerId !== orbit.id) return;
+    orbit.yaw = Math.max(-1.9, Math.min(1.9, orbit.yaw - (event.clientX - orbit.x) * 0.009));
+    /* Touch keeps vertical drags for scrolling the page (touch-action: pan-y),
+       so only a mouse or pen tips the camera up and down. */
+    if (event.pointerType !== 'touch') orbit.pitch = Math.max(-0.2, Math.min(0.8, orbit.pitch + (event.clientY - orbit.y) * 0.006));
+    orbit.x = event.clientX;
+    orbit.y = event.clientY;
+    if (!loop) render();
+  });
+  const release = () => {
+    if (!orbit.dragging) return;
+    orbit.dragging = false;
+    orbit.releasedAt = performance.now();
+    host.classList.remove('is-dragging');
+    if (!loop) loop = requestAnimationFrame(tick);
+  };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+  canvas.addEventListener('lostpointercapture', release);
+
   const ro = new ResizeObserver(resize);
   ro.observe(host);
   resize();
@@ -379,7 +418,7 @@ export async function mountFigure(host, timelineDuration) {
       cancelAnimationFrame(loop);
       io.disconnect();
       ro.disconnect();
-      host.classList.remove('is-3d');
+      host.classList.remove('is-3d', 'is-dragging', 'was-dragged');
       canvas.remove();
       scene.traverse((node) => {
         node.geometry?.dispose?.();

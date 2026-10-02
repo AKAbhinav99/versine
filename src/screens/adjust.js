@@ -58,13 +58,7 @@ function cloneGuide() {
   const source = document.querySelector('.capture__guide');
   const host = $('#adjust-guide');
   host.replaceChildren();
-  if (!source) return;
-  const copy = source.cloneNode(true);
-  /* The silhouette filter needs an id of its own here: a reference to the
-     capture screen's copy would resolve into a hidden screen. */
-  copy.querySelector('#guide-silhouette')?.setAttribute('id', 'guide-silhouette-adjust');
-  copy.querySelector('.guide-figure')?.setAttribute('filter', 'url(#guide-silhouette-adjust)');
-  host.append(copy);
+  if (source) host.append(source.cloneNode(true));
 }
 
 /* ----------------------------------------------------------------- draw --- */

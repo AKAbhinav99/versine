@@ -303,7 +303,7 @@ function buildHow(gsap, ScrollTrigger) {
   const arc = section.querySelector('.how__arc');
   const plumbLine = section.querySelector('.how__plumb');
   const points = [...section.querySelectorAll('.how__points circle')];
-  const frames = [...section.querySelectorAll('.how__frames rect')];
+  const fan = [...section.querySelectorAll('.how__fan line')];
 
   [...measures, level, arc, plumbLine].forEach((node) => {
     gsap.set(node, { strokeDashoffset: strokeLength(node) });
@@ -347,8 +347,8 @@ function buildHow(gsap, ScrollTrigger) {
       angle: 4.2, duration: 0.6, ease: 'power1.out',
       onUpdate: () => { angle.textContent = counter.angle.toFixed(1); },
     }, 2.3)
-  /* 4. Five framings jitter in around it, and their spread becomes the ±. */
-    .from(frames, { autoAlpha: 0, scale: 1.06, transformOrigin: '50% 50%', duration: 0.3, stagger: 0.14, ease: 'power3.out' }, 3.05)
+  /* 4. Four more measurements fan out around it, and their spread becomes the ±. */
+    .from(fan, { autoAlpha: 0, duration: 0.3, stagger: 0.14, ease: 'power3.out' }, 3.05)
     .to(counter, {
       pm: 0.8, duration: 0.6, ease: 'power1.out',
       onUpdate: () => { pm.textContent = counter.pm.toFixed(1); },
