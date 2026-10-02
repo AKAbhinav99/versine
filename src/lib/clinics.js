@@ -172,6 +172,90 @@ async function searchGeoapify(center, radiusM, signal) {
   return dedupe(results);
 }
 
+/* ------------------------------------------------------------------ Photon --- */
+
+/* Photon is komoot's OpenStreetMap search engine. Same data as Overpass, but it
+ * answers from a prebuilt search index rather than running a database query, so
+ * it comes back in well under a second where Overpass takes five to twenty and
+ * regularly 504s. It is the keyless default for that reason.
+ *
+ * Two kinds of request, all small and run in parallel:
+ *  - "nearest N with this tag" for the practice types OpenStreetMap tags
+ *    explicitly (physiotherapists, rehabilitation). Capped at 50 by Photon,
+ *    which is why it is one request per tag rather than one for all of them.
+ *  - name searches inside the search box for orthopedic and spine practices,
+ *    which OpenStreetMap mostly tags as plain "doctors" with the specialty only
+ *    in the name.
+ *
+ * Measured on the same 15 km circle in Denver: a comparable set to Overpass, in
+ * 0.6 s per request. No phone numbers, which Photon does not return; Overpass
+ * stays below it in the chain and is tried when Photon finds nothing. */
+const PHOTON = 'https://photon.komoot.io';
+const PHOTON_TAGS = ['healthcare:physiotherapist', 'healthcare:rehabilitation'];
+const PHOTON_TERMS = ['orthopedic', 'orthopaedic', 'spine', 'sports medicine', 'physical therapy', 'physiotherapy'];
+/* Anything else that matches a name search (a massage shop called "Spine
+   Align", an apartment block) is not a practice. */
+const PHOTON_PRACTICE = new Set([
+  'physiotherapist', 'rehabilitation', 'doctors', 'doctor', 'clinic', 'hospital', 'therapist',
+]);
+
+function bboxAround(center, radiusM) {
+  const dLat = radiusM / 111320;
+  const dLng = radiusM / (111320 * Math.cos((center.lat * Math.PI) / 180));
+  return [center.lng - dLng, center.lat - dLat, center.lng + dLng, center.lat + dLat].map((v) => v.toFixed(5)).join(',');
+}
+
+async function searchPhoton(center, radiusM, signal) {
+  const radius = Math.min(radiusM, 50000);
+  const near = { lat: String(center.lat), lon: String(center.lng) };
+  const urls = [
+    ...PHOTON_TAGS.map((tag) => `${PHOTON}/reverse?${new URLSearchParams({ ...near, radius: String(radius / 1000), limit: '50', osm_tag: tag })}`),
+    ...PHOTON_TERMS.map((q) => `${PHOTON}/api/?${new URLSearchParams({ ...near, q, bbox: bboxAround(center, radius), limit: '50' })}`),
+  ];
+
+  const settled = await Promise.allSettled(
+    urls.map(async (url) => readJson(await fetchWithTimeout(url, {}, 12000, signal), 'Photon')),
+  );
+  if (signal?.aborted) throw new CancelledError();
+  const answered = settled.filter((outcome) => outcome.status === 'fulfilled');
+  /* Some requests failing is fine; all of them failing is the service being down. */
+  if (!answered.length) throw settled[0].reason;
+
+  const results = answered.flatMap((outcome) => outcome.value.features || []).map((feature) => {
+    const p = feature.properties || {};
+    if (!p.name || !PHOTON_PRACTICE.has(p.osm_value)) return null;
+
+    const haystack = `${p.name} ${p.osm_value}`;
+    if (p.osm_value !== 'physiotherapist' && !RELEVANT.test(haystack)) return null;
+
+    const [lng, lat] = feature.geometry?.coordinates || [];
+    if (!lat || !lng) return null;
+    const distanceM = haversineMeters(center, { lat, lng });
+    if (distanceM > radius) return null;
+
+    const specialty = classify(haystack);
+    const street = [p.housenumber, p.street].filter(Boolean).join(' ');
+    return {
+      id: `photon-${p.osm_type}-${p.osm_id}`,
+      name: p.name,
+      address: [street, p.city, p.postcode].filter(Boolean).join(', '),
+      lat, lng,
+      distanceM,
+      rating: null,
+      reviewCount: null,
+      phone: null,
+      openNow: null,
+      specialty,
+      tags: buildTags([], specialty),
+      website: null,
+      directionsUrl: directionsFor(lat, lng),
+      source: 'photon',
+    };
+  }).filter(Boolean);
+
+  return dedupe(results);
+}
+
 /* ---------------------------------------------------------------- Overpass --- */
 
 /* Every clause leads with an indexed tag. Regex or name matching inside the query
@@ -188,8 +272,17 @@ const overpassQuery = (center, radiusM) => {
 out center 200;`;
 };
 
-const OVERPASS_ATTEMPTS = 3;
-const OVERPASS_BACKOFF_MS = [0, 1500, 4000];
+/* overpass-api.de is a load balancer over several backends, and a 504 usually
+   means the request landed on a busy one. Retrying the same address three times
+   kept landing there. Alternating with the mail.ru mirror (separate hardware,
+   CORS-enabled, slower but steadier) gives each retry a real second chance. */
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass-api.de/api/interpreter',
+];
+const OVERPASS_ATTEMPTS = OVERPASS_ENDPOINTS.length;
+const OVERPASS_BACKOFF_MS = [0, 500, 3000];
 
 /* Overpass answers 429 when its per-IP slots are full and 504 when its gateway
    gives up, and both clear on their own within seconds — so they are retried
@@ -202,7 +295,7 @@ async function searchOverpass(center, radiusM, signal) {
     if (OVERPASS_BACKOFF_MS[attempt]) await delay(OVERPASS_BACKOFF_MS[attempt], signal);
 
     try {
-      return await overpassAttempt(center, radiusM, signal);
+      return await overpassAttempt(OVERPASS_ENDPOINTS[attempt], center, radiusM, signal);
     } catch (error) {
       if (error instanceof CancelledError) throw error;
       if (!error.transient) throw error;
@@ -212,14 +305,14 @@ async function searchOverpass(center, radiusM, signal) {
   throw new Error(`${lastError.message} Tried ${OVERPASS_ATTEMPTS} times.`);
 }
 
-async function overpassAttempt(center, radiusM, signal) {
-  const response = await fetchWithTimeout('https://overpass-api.de/api/interpreter', {
+async function overpassAttempt(endpoint, center, radiusM, signal) {
+  const response = await fetchWithTimeout(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `data=${encodeURIComponent(overpassQuery(center, Math.min(radiusM, 50000)))}`,
-  }, 30000, signal);
+  }, 25000, signal);
 
-  const data = await readJson(response, 'OpenStreetMap');
+  const data = await readJson(response, 'Overpass');
   if (data.remark && /timed out|error/i.test(data.remark)) {
     throw Object.assign(new Error('The OpenStreetMap query timed out.'), { transient: true });
   }
@@ -272,11 +365,16 @@ async function overpassAttempt(center, radiusM, signal) {
  * all. Measured on the same 15km circle: OpenStreetMap returned 27 practices that
  * actually treat backs, Geoapify returned 59 general clinics and hospitals and no
  * specialists. Geoapify is the fallback beneath it — hospitals are a real route to
- * a referral, and they are labelled as general rather than dressed up. */
+ * a referral, and they are labelled as general rather than dressed up.
+ *
+ * OpenStreetMap is asked through Photon first and Overpass second. Same data;
+ * Photon is the fast, steady way in, and Overpass is kept beneath it because it
+ * also returns phone numbers and catches practices Photon's name search misses. */
 const PROVIDERS = [
   { id: 'local', label: 'Local index', ratings: false, live: false, available: () => true, search: (c, r) => localSearch(c, r) },
   { id: 'google', label: 'Google Places', ratings: true, live: true, available: () => hasKey('google'), search: searchGoogle },
-  { id: 'osm', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchOverpass },
+  { id: 'photon', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchPhoton },
+  { id: 'osm', label: 'OpenStreetMap (Overpass)', ratings: false, live: true, available: () => true, search: searchOverpass },
   { id: 'geoapify', label: 'Geoapify', ratings: false, live: true, available: () => hasKey('geoapify'), search: searchGeoapify },
 ];
 

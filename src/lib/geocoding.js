@@ -1,8 +1,8 @@
 /* Turning a typed place into coordinates, and coordinates back into a place name.
  *
- * Four providers, tried in order. Nominatim is keyless so it goes first and costs
- * nobody a quota; the keyed services below it are the fallback when Nominatim is
- * rate-limited or down. Each one is skipped entirely when it has no key. */
+ * Five providers, tried in order. Nominatim and Photon are keyless so they go
+ * first and cost nobody a quota; the keyed services below them are the fallback
+ * when both are rate-limited or down. Each one is skipped entirely when it has no key. */
 
 import { fetchWithTimeout, readJson, runChain } from './net.js';
 import { getKey, hasKey } from './keys.js';
@@ -137,10 +137,47 @@ function countryName(code) {
   }
 }
 
+/* ------------------------------------------------------------------ Photon --- */
+
+/* komoot's OpenStreetMap search, keyless like Nominatim but separate
+   infrastructure, so it stays up when Nominatim rate-limits. It has no country
+   filter, so it is asked for several matches and the first one in the chosen
+   country wins. */
+async function photonSearch(query, country, signal) {
+  const params = new URLSearchParams({ q: query, limit: country ? '10' : '1' });
+  const data = await readJson(
+    await fetchWithTimeout(`https://photon.komoot.io/api/?${params}`, {}, TIMEOUT_MS, signal),
+    'Photon',
+  );
+  const features = data.features || [];
+  const match = country
+    ? features.find((f) => f.properties?.countrycode?.toUpperCase() === country.toUpperCase())
+    : features[0];
+  if (!match) return null;
+  const [lng, lat] = match.geometry.coordinates;
+  return { lat, lng, label: photonLabel(match.properties) };
+}
+
+async function photonReverse({ lat, lng }, signal) {
+  const params = new URLSearchParams({ lat: String(lat), lon: String(lng), limit: '1' });
+  const data = await readJson(
+    await fetchWithTimeout(`https://photon.komoot.io/reverse?${params}`, {}, TIMEOUT_MS, signal),
+    'Photon',
+  );
+  const [match] = data.features || [];
+  return match ? photonLabel(match.properties) : null;
+}
+
+function photonLabel(p = {}) {
+  const place = p.city || p.town || p.village || p.name;
+  return [place, p.state, p.country].filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).join(', ') || null;
+}
+
 /* ------------------------------------------------------------------- chain --- */
 
 const PROVIDERS = [
   { id: 'nominatim', label: 'OpenStreetMap', available: () => true, search: nominatimSearch, reverse: nominatimReverse },
+  { id: 'photon', label: 'Photon', available: () => true, search: photonSearch, reverse: photonReverse },
   { id: 'geoapify', label: 'Geoapify', available: () => hasKey('geoapify'), search: geoapifySearch, reverse: geoapifyReverse },
   { id: 'maptiler', label: 'MapTiler', available: () => hasKey('maptiler'), search: maptilerSearch, reverse: maptilerReverse },
   { id: 'mapsco', label: 'Geocode.maps.co', available: () => hasKey('mapsco'), search: mapscoSearch, reverse: mapscoReverse },

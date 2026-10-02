@@ -170,7 +170,8 @@ with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 |---|---|---|
 | Local index | none | instant, offline, cannot fail — see below |
 | Google Places | required | ratings, review counts, opening hours |
-| OpenStreetMap / Overpass | none | the best data for this niche, and the flakiest service |
+| OpenStreetMap / Photon | none | the same OpenStreetMap data from a search index: under a second, rarely down |
+| OpenStreetMap / Overpass | none | the same data again, plus phone numbers; slow and often overloaded |
 | Geoapify Places | required | general clinics and hospitals, as a last resort |
 
 OpenStreetMap sits **above** Geoapify despite being far less reliable, because the
@@ -226,10 +227,15 @@ button calls the endpoint Versine actually uses it for, since provider dashboard
 hand out several keys and rarely say which is which.
 
 **Geocoding** ([`src/lib/geocoding.js`](src/lib/geocoding.js)) — keyless first, so no
-quota is spent while the free service is healthy: Nominatim → Geoapify → MapTiler
-→ Geocode.maps.co.
+quota is spent while the free services are healthy: Nominatim → Photon → Geoapify
+→ MapTiler → Geocode.maps.co.
 
-Overpass is deliberately last. It is free, shared and volunteer-run, and it is the
+Overpass now sits behind Photon, komoot's OpenStreetMap search engine, which
+answers the same questions from a prebuilt index in about 0.6 s per request.
+Overpass is the backstop, and its retries alternate between overpass-api.de and
+the maps.mail.ru mirror, because overpass-api.de is a load balancer and retrying
+it tends to land on the same overloaded backend. Overpass is deliberately last
+of the keyless services. It is free, shared and volunteer-run, and it is the
 service that made the chain necessary — it answers 429 when its per-IP slots fill,
 504 when its gateway gives up, and sometimes drops connections outright, which a
 browser reports only as `TypeError: Failed to fetch`. It gets three attempts with
