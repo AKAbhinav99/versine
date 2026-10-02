@@ -194,13 +194,25 @@ export const geocodingProviders = () => PROVIDERS.filter((p) => p.available()).m
  */
 export async function geocode(query, { country = '', signal = null } = {}) {
   const trimmed = query.trim();
-
-  try {
+  const search = async (scope) => {
     const { value, provider } = await runChain(
-      PROVIDERS, (p) => p.search(trimmed, country, signal), { signal },
+      PROVIDERS, (p) => p.search(trimmed, scope, signal), { signal },
     );
     return { ...value, source: provider.label };
+  };
+
+  try {
+    return await search(country);
   } catch (error) {
+    /* The country picker defaults from the browser's language, so on an en-US
+       browser "Pune, India" or "Leeds" was searched inside the US only, found
+       nothing, and read as OpenStreetMap failing. The country is a preference
+       for disambiguating, not a wall: anything other than a bare number is
+       tried worldwide before giving up. A bare number stays inside the country,
+       because worldwide it would land on whichever country answers first. */
+    if (country && !signal?.aborted && !/^[\d\s-]+$/.test(trimmed)) {
+      try { return await search(''); } catch { /* fall through to the message below */ }
+    }
     throw new Error(country
       ? `Nothing found for “${trimmed}” in the selected country. Check the country, or try a city name. (${error.message})`
       : `Nothing found for “${trimmed}”. Try adding a city, or pick a country. (${error.message})`);

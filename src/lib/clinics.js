@@ -214,7 +214,7 @@ async function searchPhoton(center, radiusM, signal) {
   ];
 
   const settled = await Promise.allSettled(
-    urls.map(async (url) => readJson(await fetchWithTimeout(url, {}, 12000, signal), 'Photon')),
+    urls.map(async (url) => readJson(await fetchWithTimeout(url, {}, 9000, signal), 'Photon')),
   );
   if (signal?.aborted) throw new CancelledError();
   const answered = settled.filter((outcome) => outcome.status === 'fulfilled');
@@ -254,6 +254,109 @@ async function searchPhoton(center, radiusM, signal) {
   }).filter(Boolean);
 
   return dedupe(results);
+}
+
+/* --------------------------------------------------------------- Nominatim --- */
+
+/* OpenStreetMap's own geocoder, asked for practices by name and category inside
+   a bounded box. It is a separate server from Photon, run by the OSM
+   Foundation, and answers in well under two seconds where Photon (shared,
+   rate-limited per address) can take ten or refuse outright. Its usage policy
+   allows one request a second, so the terms go out one at a time. "hospital"
+   is the one general term: a hospital is a real route to a referral, and it is
+   labelled general rather than dressed up as a specialist. */
+const NOMINATIM = 'https://nominatim.openstreetmap.org/search';
+const NOMINATIM_TERMS = ['physical therapy', 'orthopedic', 'spine', 'physiotherapy', 'hospital'];
+const NOMINATIM_GAP_MS = 1100;
+
+async function searchNominatim(center, radiusM, signal) {
+  const radius = Math.min(radiusM, 50000);
+  const [west, south, east, north] = bboxAround(center, radius).split(',');
+  const answered = [];
+  let lastError = null;
+
+  for (let i = 0; i < NOMINATIM_TERMS.length; i += 1) {
+    if (i) await delay(NOMINATIM_GAP_MS, signal);
+    const url = `${NOMINATIM}?${new URLSearchParams({
+      q: NOMINATIM_TERMS[i], format: 'jsonv2', limit: '40', addressdetails: '1', extratags: '1',
+      viewbox: [west, north, east, south].join(','), bounded: '1',
+    })}`;
+    try {
+      answered.push(...await readJson(await fetchWithTimeout(url, {}, 8000, signal), 'Nominatim'));
+    } catch (error) {
+      if (error instanceof CancelledError || signal?.aborted) throw new CancelledError();
+      lastError = error;
+    }
+  }
+  if (!answered.length && lastError) throw lastError;
+
+  const results = answered.map((place) => {
+    const type = place.type;
+    const isPractice = ['healthcare', 'amenity'].includes(place.category)
+      && (PHOTON_PRACTICE.has(type) || type === 'hospital');
+    if (!place.name || !isPractice) return null;
+
+    const haystack = `${place.name} ${type}`;
+    const relevant = type === 'physiotherapist' || RELEVANT.test(haystack);
+    if (!relevant && type !== 'hospital') return null;
+
+    const lat = Number(place.lat);
+    const lng = Number(place.lon);
+    if (!lat || !lng) return null;
+    const distanceM = haversineMeters(center, { lat, lng });
+    if (distanceM > radius) return null;
+
+    const specialty = relevant ? classify(haystack) : 'general';
+    const a = place.address || {};
+    const street = [a.house_number, a.road].filter(Boolean).join(' ');
+    const extra = place.extratags || {};
+    return {
+      id: `nominatim-${place.osm_type}-${place.osm_id}`,
+      name: place.name,
+      address: [street, a.city || a.town || a.village || a.suburb, a.postcode].filter(Boolean).join(', '),
+      lat, lng,
+      distanceM,
+      rating: null,
+      reviewCount: null,
+      phone: extra.phone || extra['contact:phone'] || null,
+      openNow: null,
+      specialty,
+      tags: buildTags([extra['healthcare:speciality']], specialty),
+      website: extra.website || extra['contact:website'] || null,
+      directionsUrl: directionsFor(lat, lng),
+      source: 'nominatim',
+    };
+  }).filter(Boolean);
+
+  return dedupe(results);
+}
+
+/* Photon and Nominatim at once: two independent servers over the same map
+   data. Either one answering is an answer; both are merged when both do. This
+   is what makes the keyless path dependable, where asking them in turn meant
+   waiting out Photon's timeout before Nominatim was even tried. */
+const OSM_GRACE_MS = 1500;
+
+async function searchOpenStreetMap(center, radiusM, signal) {
+  const collected = [];
+  const searches = [searchPhoton, searchNominatim].map((search) => search(center, radiusM, signal)
+    .then((results) => { collected.push(...results); return results; }));
+
+  /* Answer once the first useful reply lands, giving the other a moment to
+     add to it rather than waiting out its whole timeout. */
+  try {
+    await Promise.any(searches.map((search) => search.then((results) => {
+      if (!results.length) throw new Error('nothing found');
+    })));
+    await Promise.race([Promise.allSettled(searches), delay(OSM_GRACE_MS, signal).catch(() => {})]);
+  } catch (error) {
+    if (signal?.aborted) throw new CancelledError();
+    const settled = await Promise.allSettled(searches);
+    const failure = settled.find((outcome) => outcome.status === 'rejected');
+    if (!collected.length && failure) throw failure.reason;
+  }
+  if (signal?.aborted) throw new CancelledError();
+  return dedupe(collected);
 }
 
 /* ---------------------------------------------------------------- Overpass --- */
@@ -367,13 +470,13 @@ async function overpassAttempt(endpoint, center, radiusM, signal) {
  * specialists. Geoapify is the fallback beneath it, hospitals are a real route to
  * a referral, and they are labelled as general rather than dressed up.
  *
- * OpenStreetMap is asked through Photon first and Overpass second. Same data;
- * Photon is the fast, steady way in, and Overpass is kept beneath it because it
- * also returns phone numbers and catches practices Photon's name search misses. */
+ * OpenStreetMap is asked through Photon and Nominatim together first, and
+ * Overpass second. Same data; the first two are the fast ways in, and Overpass
+ * is kept beneath them because it catches practices a name search misses. */
 const PROVIDERS = [
   { id: 'local', label: 'Local index', ratings: false, live: false, available: () => true, search: (c, r) => localSearch(c, r) },
   { id: 'google', label: 'Google Places', ratings: true, live: true, available: () => hasKey('google'), search: searchGoogle },
-  { id: 'photon', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchPhoton },
+  { id: 'photon', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchOpenStreetMap },
   { id: 'osm', label: 'OpenStreetMap (Overpass)', ratings: false, live: true, available: () => true, search: searchOverpass },
   { id: 'geoapify', label: 'Geoapify', ratings: false, live: true, available: () => hasKey('geoapify'), search: searchGeoapify },
 ];
