@@ -65,12 +65,12 @@ export function initScenes() {
   document.fonts?.ready.then(() => ScrollTrigger.refresh());
 }
 
-/* Lenis carries every scroll, wheel and touch alike, at two thirds of the
-   native distance: the page is meant to be read slowly, and the scenes play
+/* Lenis carries every scroll, wheel and touch alike, at a little over half
+   the native distance: the page is meant to be read slowly, and the scenes play
    out over more of each gesture. Touch goes through syncTouch so a finger
    drag is scaled too, with Lenis's own inertia in place of the browser's.
    Anything marked data-lenis-prevent (the map) keeps its own behaviour. */
-const SCROLL_SPEED = 1 / 1.5;
+const SCROLL_SPEED = 1 / 1.75;
 
 function initSmoothScroll(gsap, ScrollTrigger) {
   if (!window.Lenis) return;
