@@ -274,15 +274,21 @@ function buildJourney(gsap, ScrollTrigger) {
   });
 }
 
-/* Numbers that flip up out of the page in perspective and count as they come. */
+/* Numbers that flip up out of the page in perspective and count as they come.
+   Scrubbed, not played: on a timer the flip was still running after a quick
+   scroll had carried the cards off screen, so they only faced the reader once
+   nobody was looking. Tied to the scroll, they are flat and counted by the
+   time the row reaches the middle of the window. */
 function buildStats(gsap) {
   const section = document.querySelector('[data-gsap="stats"]');
   if (!section) return;
   const stats = [...section.querySelectorAll('.stat')];
-  const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: 'top 80%' } });
+  const tl = gsap.timeline({
+    scrollTrigger: { trigger: section, start: 'top 92%', end: 'center 52%', scrub: 0.8 },
+  });
   tl.fromTo(stats, { rotationX: -75, y: 80, autoAlpha: 0, transformOrigin: '50% 100%' }, {
     rotationX: 0, y: 0, autoAlpha: 1,
-    duration: 3.2, ease: 'power3.out', stagger: 0.35,
+    duration: 3.2, ease: 'power1.out', stagger: 0.35,
   });
   stats.forEach((stat, i) => {
     const number = stat.querySelector('[data-count]');
@@ -291,7 +297,7 @@ function buildStats(gsap) {
     const counter = { value: Number(number.dataset.from ?? 0) };
     number.textContent = String(counter.value);
     tl.to(counter, {
-      value: to, duration: 3.6, ease: 'power2.out',
+      value: to, duration: 3.6, ease: 'none',
       onUpdate: () => { number.textContent = String(Math.round(counter.value)); },
     }, 0.4 + i * 0.35);
   });
