@@ -336,14 +336,17 @@ ES modules resolve their imports only after each file is fetched and parsed, so
 a module graph costs one round trip per level of depth, not one for the whole
 thing. The graph was 26 modules and four levels deep, every one of them blocking
 the first screen — on a high-latency connection that alone is over a second of
-nothing happening. It is now seven modules, all named in `<link
-rel="modulepreload">` so they fetch in parallel as a single round.
+nothing happening. It is now ten modules (the seven of the capture flow plus the
+three that run the page's motion), all named in `<link rel="modulepreload">` so
+they fetch in parallel as a single round.
 
 Everything else arrives when it is wanted:
 
 | cluster | when |
 |---|---|
 | capture flow — router, capture, adjust, storage | at load, 7 modules |
+| motion: motion, field, scenes | at load, 3 modules |
+| GSAP, ScrollTrigger, SplitText, Lenis (jsDelivr) | deferred classic scripts, about 55 KB gzipped; the page is complete without them |
 | analysis — pose, consensus, screening, result, report | on idle after first paint |
 | clinician finder — clinics, geocoding, index, keys, MapLibre | first time the Care tab is opened |
 
@@ -406,19 +409,44 @@ blue `#1F6E8C` for measurement and action, marker red-orange `#D6402A` reserved
 for signals. Bricolage Grotesque for headings only, Archivo for UI, IBM Plex
 Mono for every number.
 
-The intro opens on that board, live ([`src/lib/dotfield.js`](src/lib/dotfield.js)):
-the plumb line follows the pointer on a spring, swings, and settles back to true
-vertical, and the readout under it reports the angle in the same units the app
-measures shoulders in. Elsewhere the dots are texture in a few deliberate places
-(screen corners, the empty viewfinder, empty states), not a background on
-everything.
+That board is the page itself: one fixed canvas behind every screen
+([`src/lib/field.js`](src/lib/field.js)). Each dot sits on a slightly
+under-damped spring, so whatever moves it wobbles home like a pin rather than
+snapping like a pixel. The cursor acts as a lens (dots swell, turn scrub blue and
+part around it, and a fast cursor drags a wake), a click sends a shockwave,
+scrolling sends a wave across the columns, and a slow swell rolls across the
+field at rest. It halves its frame rate after a few seconds untouched and stops
+with the tab hidden.
 
-Motion lives in [`src/lib/motion.js`](src/lib/motion.js): blocks reveal as they
-scroll into view, staggered when they arrive together; cards carry a soft
-spotlight under the cursor; primary buttons lean slightly toward it. The hidden
-starting state only exists once that script runs, a safety net reveals anything
-on screen that a paused observer missed, the pointer effects only run on a real
-mouse, and `prefers-reduced-motion` turns all of it off.
+The intro's hero is a spine standing in that field: 17 vertebrae on a sacrum, a
+plumb line dropped from the top one. The pointer (or a sideways drag on a touch
+screen) bends it into the compensated S of a double curve, the Cobb lines are
+drawn along the end plates, and the readout gives the curve's angle, which turns
+red at 10°, the angle at which a curve is called scoliosis. It is the subject
+explained in one gesture, before a word of copy is read. The geometry is honest
+to itself (the angle shown is the angle drawn) but it is a model, not a
+measurement, and the copy around it says what the app actually measures.
+
+Scroll storytelling uses GSAP and ScrollTrigger
+([`src/lib/scenes.js`](src/lib/scenes.js)), and only on the two read-once pages:
+the intro (a word-by-word headline, a band of type that slides with the scroll
+and leans with its speed, a pinned sequence that draws how a reading is made
+stage by stage, rows that land one by one, a closing line that fills in as it
+is read) and the Learn article (a reading-progress rule, the Cobb diagram drawing
+itself, headings rising out of their lines). Lenis smooths the wheel on desktop
+pointers only. Each screen's scenes live in a `gsap.context` that is reverted
+when the screen is left, so no hidden screen keeps a pin or a trigger alive. The
+screens used again and again stay crisp: blocks reveal as they scroll into view
+([`src/lib/motion.js`](src/lib/motion.js)), cards carry a spotlight under the
+cursor, primary buttons lean toward it, the tab highlight slides between tabs,
+and a reading counts up the first time it appears.
+
+All of it is optional. The markup is the finished state; GSAP blocked, or
+`prefers-reduced-motion`, leaves a complete static page (the field draws one
+still frame, spine straight). One trap when changing this: the tab highlight's
+observer must not watch `class` or `style`, because the highlight lives inside
+what it observes, and its own writes would re-trigger it forever, hanging the
+page.
 
 Nothing is written over a photograph or the live camera: the measurement legend
 sits under the result photo and coaching sits above the viewfinder, because text

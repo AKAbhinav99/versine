@@ -4,8 +4,8 @@
 
 /* The intro is the one long, read-once page in the app, so it is laid out as
    one: a hero, a pinned sequence showing how a reading is made, the limits,
-   and a closing call to action. The plumb line in the hero is drawn by the
-   page's dot field (field.js) inside .hero__plumb. */
+   and a closing call to action. The spine in the hero is drawn by the page's
+   dot field (field.js) inside .hero__plumb. */
 
 .intro { padding: 0 var(--gutter); }
 .screen[data-active].intro { display: block; }
@@ -39,15 +39,34 @@
 .hero__cta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-5); }
 .hero__note { font-size: var(--text-sm); color: var(--ink-500); }
 
-/* Where the plumb line hangs. Empty: the field canvas draws into this box. On
-   a phone it is its own band under the copy, so the string never crosses text;
-   on a wide screen it takes the empty right-hand column. */
+/* Where the spine stands. Empty: the field canvas draws into this box. On a
+   phone it is its own band under the copy, so the spine never crosses text;
+   on a wide screen it takes the empty right-hand column. It takes pointer
+   events only so a sideways drag on a touch screen bends the spine; vertical
+   drags still scroll the page. */
 .hero__plumb {
   position: relative;
   width: 100%;
-  height: 30svh;
-  min-height: 180px;
-  pointer-events: none;
+  height: 46svh;
+  min-height: 300px;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.hero__hint {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  margin: 0 auto;
+  max-width: 19rem;
+  text-align: center;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+.hero__hint-touch { display: none; }
+@media (hover: none) {
+  .hero__hint-pointer { display: none; }
+  .hero__hint-touch { display: inline; }
 }
 .plumb-readout {
   position: absolute;
@@ -91,6 +110,33 @@
   animation: cue 1.8s var(--ease) infinite;
 }
 @keyframes cue { to { top: 100%; } }
+
+/* --- Type band ------------------------------------------------------------ */
+
+/* Bleeds to both edges of the window. Without GSAP the rows simply sit, cropped. */
+.band {
+  width: 100vw;
+  margin: var(--space-6) 0 var(--space-4) calc(50% - 50vw);
+  padding: var(--space-5) 0;
+  overflow: hidden;
+}
+.band__row {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 1.6rem + 6vw, 8.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.02;
+  white-space: nowrap;
+  color: var(--ink-900);
+  will-change: transform;
+}
+.band__row i { font-style: normal; font-weight: 400; color: var(--scrub); padding: 0 0.12em; }
+.band__row--outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--ink-900);
+}
+.band__row--outline i { -webkit-text-stroke: 0; color: var(--marker); }
 
 /* --- How a reading is made ------------------------------------------------ */
 
@@ -596,7 +642,7 @@
      sequence splits text and drawing; the limits keep their heading in view
      while the list scrolls. */
   .hero { grid-template-rows: 1fr auto; }
-  .hero__plumb { position: absolute; top: 0; right: 0; width: 44%; height: 82%; }
+  .hero__plumb { position: absolute; top: 2%; right: 0; width: 44%; height: 92%; min-height: 0; }
   .how__pin { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); align-items: center; gap: var(--space-8); }
   .how__svg { max-height: 62svh; }
   .limits { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: var(--space-8); align-items: start; }

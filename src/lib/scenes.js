@@ -102,12 +102,64 @@ function buildIntro(gsap, ScrollTrigger) {
     scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
   });
 
+  /* The spine sinks a little slower than the page as the hero leaves, for
+     depth. The field draws it from this box, so the canvas follows. */
+  gsap.to(hero.querySelector('.hero__plumb'), {
+    yPercent: 16,
+    ease: 'none',
+    scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
+  });
+
+  buildBand(gsap, ScrollTrigger);
   buildHow(gsap, ScrollTrigger);
   buildLimits(gsap);
+  buildCloser(gsap, ScrollTrigger);
+}
 
-  gsap.from('.closer > *', {
-    y: 30, autoAlpha: 0, duration: 1, stagger: 0.12, ease: 'expo.out',
-    scrollTrigger: { trigger: '.closer', start: 'top 80%' },
+/* Two rows of type travelling in opposite directions with the scroll, leaning
+   into it in proportion to how fast the page is moving. */
+function buildBand(gsap, ScrollTrigger) {
+  const band = document.querySelector('[data-gsap="band"]');
+  if (!band) return;
+  const rows = [...band.querySelectorAll('.band__row')];
+  const scroll = { trigger: band, start: 'top bottom', end: 'bottom top', scrub: 0.4 };
+  gsap.fromTo(rows[0], { xPercent: 0 }, { xPercent: -32, ease: 'none', scrollTrigger: scroll });
+  if (rows[1]) gsap.fromTo(rows[1], { xPercent: -36 }, { xPercent: -4, ease: 'none', scrollTrigger: { ...scroll } });
+
+  const lean = gsap.quickTo(rows, 'skewX', { duration: 0.5, ease: 'power3' });
+  ScrollTrigger.create({
+    trigger: band,
+    start: 'top bottom',
+    end: 'bottom top',
+    onUpdate: (self) => lean(gsap.utils.clamp(-14, 14, self.getVelocity() / -260)),
+    onLeave: () => lean(0),
+    onLeaveBack: () => lean(0),
+  });
+}
+
+/* The closing card grows into place, then its sentence fills in word by word
+   as it is scrolled through, like a line being read. It is the last thing on
+   the page and never reaches the middle of the window, so everything here ends
+   at the bottom of the page rather than at a point in the window. */
+function buildCloser(gsap, ScrollTrigger) {
+  const closer = document.querySelector('.closer');
+  if (!closer) return;
+  const pageEnd = () => ScrollTrigger.maxScroll(window);
+  gsap.from(closer, {
+    scale: 0.9, y: 60, borderRadius: 64, ease: 'none',
+    scrollTrigger: { trigger: closer, start: 'top bottom', end: 'bottom bottom', scrub: 0.6, invalidateOnRefresh: true },
+  });
+  const line = closer.querySelector('.closer__line');
+  if (window.SplitText && line) {
+    const split = window.SplitText.create(line, { type: 'words' });
+    gsap.fromTo(split.words, { opacity: 0.14 }, {
+      opacity: 1, ease: 'none', stagger: 0.12,
+      scrollTrigger: { trigger: closer, start: 'top 95%', end: () => pageEnd() - 40, scrub: true, invalidateOnRefresh: true },
+    });
+  }
+  gsap.from(closer.querySelector('.btn'), {
+    y: 24, autoAlpha: 0, duration: 0.9, ease: 'expo.out',
+    scrollTrigger: { trigger: closer, start: 'top 85%' },
   });
 }
 
@@ -138,6 +190,12 @@ function buildHow(gsap, ScrollTrigger) {
 
   [...figure, ...measures, level, arc, plumbLine].forEach((node) => {
     gsap.set(node, { strokeDashoffset: strokeLength(node) });
+  });
+
+  /* Before it pins, the drawing board rises into place. */
+  gsap.from(section.querySelector('.how__stage'), {
+    y: 120, scale: 0.9, rotate: -2, ease: 'none',
+    scrollTrigger: { trigger: section, start: 'top bottom', end: 'top top', scrub: 0.6 },
   });
 
   const counter = { angle: 0, pm: 0 };
@@ -182,14 +240,26 @@ function buildHow(gsap, ScrollTrigger) {
   pm.textContent = '0.0';
 }
 
-/* The limits: the heading holds while the list scrolls; each row slides in. */
+/* The limits: the heading rises out of its lines and holds while the list
+   scrolls; each row slides in, and its DOES or NO key lands after it. */
 function buildLimits(gsap) {
-  const rows = gsap.utils.toArray('.limits__list > li');
-  rows.forEach((row) => {
-    gsap.from(row, {
-      x: 40, autoAlpha: 0, duration: 0.9, ease: 'expo.out',
-      scrollTrigger: { trigger: row, start: 'top 85%' },
+  const title = document.querySelector('.limits__title');
+  if (window.SplitText && title) {
+    const split = window.SplitText.create(title, { type: 'lines', mask: 'lines', linesClass: 'split-line' });
+    gsap.from(split.lines, {
+      yPercent: 110, duration: 1, ease: 'expo.out', stagger: 0.1,
+      scrollTrigger: { trigger: title, start: 'top 85%' },
     });
+  }
+  gsap.from('.limits__lede', {
+    y: 20, autoAlpha: 0, duration: 0.9, ease: 'expo.out', delay: 0.2,
+    scrollTrigger: { trigger: '.limits__lede', start: 'top 88%' },
+  });
+
+  gsap.utils.toArray('.limits__list > li').forEach((row) => {
+    gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 86%' } })
+      .from(row, { x: 60, autoAlpha: 0, duration: 0.9, ease: 'expo.out' })
+      .from(row.querySelector('.claim-list__key'), { scale: 0.4, autoAlpha: 0, duration: 0.5, ease: 'back.out(3)' }, 0.25);
   });
 }
 

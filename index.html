@@ -66,9 +66,9 @@
   <!-- ============================ 00 · DISCLAIMER GATE ==================== -->
   <section class="screen intro" id="screen-intro" aria-labelledby="intro-title">
 
-    <!-- Hero. The plumb line on the right is drawn by the page's own dot field
-         (src/lib/field.js), anchored to [data-plumb-zone]: it follows the pointer
-         and settles back to true vertical. -->
+    <!-- Hero. The spine on the right is drawn by the page's own dot field
+         (src/lib/field.js), anchored to [data-plumb-zone]: the pointer bends it,
+         and the readout follows its curve. -->
     <header class="hero" data-gsap="hero">
       <div class="hero__copy">
         <p class="step-label hero__eyebrow">The Adam's forward bend test, on your phone</p>
@@ -80,10 +80,18 @@
         </div>
       </div>
       <div class="hero__plumb" data-plumb-zone aria-hidden="true">
-        <span class="plumb-readout mono" data-plumb-readout>0.0° off vertical</span>
+        <span class="plumb-readout mono" data-plumb-readout>0.0° curve</span>
+        <p class="hero__hint"><span class="hero__hint-pointer">Move across the spine to bend it.</span><span class="hero__hint-touch">Drag sideways across the spine to bend it.</span> From 10°, a curve counts as scoliosis.</p>
       </div>
       <p class="hero__cue" aria-hidden="true"><span class="hero__cue-line"></span>Scroll to see how a reading is made</p>
     </header>
+
+    <!-- A band of type that slides with the scroll and leans with its speed
+         (src/lib/scenes.js). Decorative: it repeats what the page says below. -->
+    <div class="band" data-gsap="band" aria-hidden="true">
+      <p class="band__row">Shoulders <i>/</i> hips <i>/</i> five framings <i>/</i> one error bar <i>/</i> Shoulders <i>/</i> hips <i>/</i> five framings <i>/</i> one error bar <i>/</i></p>
+      <p class="band__row band__row--outline">Measured on your phone <i>/</i> nothing uploaded <i>/</i> Measured on your phone <i>/</i> nothing uploaded <i>/</i></p>
+    </div>
 
     <!-- How a reading is made. Pinned and scrubbed by scroll (src/lib/scenes.js).
          The markup is the finished drawing, so without GSAP, or with reduced

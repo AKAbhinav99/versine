@@ -19,6 +19,9 @@ body {
   background-color: var(--paper);
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  /* Full-bleed pieces (the intro's type band) are 100vw, which counts the
+     scrollbar. clip, not hidden, so position: sticky still works. */
+  overflow-x: clip;
 }
 
 img, svg, video, canvas { display: block; max-width: 100%; }
