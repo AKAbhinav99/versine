@@ -59,7 +59,12 @@ p:last-child { margin-bottom: 0; }
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  /* The field thins out toward the masthead instead of being cut off by it. */
+  --field-fade: linear-gradient(to bottom, transparent 0, transparent calc(var(--masthead-h) * 0.6), rgba(0, 0, 0, 0.35) calc(var(--masthead-h) + 40px), #000 calc(var(--masthead-h) + 200px));
+  -webkit-mask-image: var(--field-fade);
+  mask-image: var(--field-fade);
 }
+.field--front { -webkit-mask-image: none; mask-image: none; }
 
 .app {
   max-width: 560px;
@@ -113,27 +118,57 @@ html.lenis, html.lenis body { height: auto; }
   visibility: hidden;
 }
 
-.masthead__mark { width: 16px; height: 26px; flex: none; }
+.masthead__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: -6px;
+  padding: 6px;
+  border-radius: var(--radius);
+  color: inherit;
+  text-decoration: none;
+}
+.masthead__home:focus-visible { outline: 2px solid var(--scrub); outline-offset: 2px; }
+
+.masthead__mark { width: 30px; height: 30px; flex: none; overflow: visible; }
+.mark__tile { fill: var(--ink-900); transition: fill var(--dur) var(--ease); }
+.mark__chord { stroke: rgba(255, 255, 255, 0.32); stroke-width: 1.4; stroke-linecap: round; }
+.mark__arc { fill: none; stroke: #fff; stroke-width: 2.4; stroke-linecap: round; }
+.mark__line { stroke: var(--marker); stroke-width: 1.6; stroke-linecap: round; }
+.mark__bob { fill: var(--marker); }
+.mark__plumb { transform-origin: 16px 12.9px; transform-box: view-box; }
+.masthead__home:hover .mark__tile { fill: var(--scrub-dim); }
+.masthead__home:hover .mark__plumb { animation: mark-swing 1.4s var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .masthead__home:hover .mark__plumb { animation: none; } }
+
+/* On load the arc draws over its chord and the plumb drops into place. */
+.motion .mark__arc { stroke-dasharray: 26; animation: mark-draw 1s var(--ease-out) 0.25s both; }
+.motion .mark__plumb { animation: mark-drop 0.9s var(--ease-out) 0.85s both; }
+@keyframes mark-draw { from { stroke-dashoffset: 26; } to { stroke-dashoffset: 0; } }
+@keyframes mark-drop {
+  0% { opacity: 0; transform: translateY(-5px) rotate(14deg); }
+  45% { opacity: 1; transform: translateY(0) rotate(-9deg); }
+  70% { transform: rotate(5deg); }
+  88% { transform: rotate(-2deg); }
+  100% { transform: none; }
+}
+@keyframes mark-swing {
+  0% { transform: rotate(0); }
+  20% { transform: rotate(16deg); }
+  42% { transform: rotate(-11deg); }
+  62% { transform: rotate(6deg); }
+  80% { transform: rotate(-2.5deg); }
+  100% { transform: rotate(0); }
+}
 
 .masthead__name {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--ink-900);
 }
 
-.masthead__tag {
-  margin-left: auto;
-  padding: 3px 10px;
-  border: var(--hair);
-  border-radius: var(--radius-pill);
-  background: var(--paper-raised);
-  font-family: var(--font-num);
-  font-size: var(--text-xs);
-  letter-spacing: 0.04em;
-  color: var(--ink-500);
-}
 
 .screen { display: none; flex: 1; position: relative; isolation: isolate; }
 .screen[data-active] { display: block; animation: fade-in var(--dur-slow) var(--ease) both; }
@@ -378,7 +413,6 @@ html.pointer-fine .spot {
   .app { max-width: none; }
 
   .masthead { padding-inline: max(var(--gutter), calc((100vw - var(--content-max)) / 2)); }
-  .masthead__tag { margin-left: var(--space-2); }
 
   .tabbar {
     top: 10px;

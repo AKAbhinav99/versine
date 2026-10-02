@@ -11,7 +11,7 @@
  *
  * That spread answers "how much does re-cropping change the answer". It does not
  * answer "how much does the person change the answer", and the second question is
- * the larger one — people breathe, sway, and bend a little differently from one
+ * the larger one, people breathe, sway, and bend a little differently from one
  * second to the next. A scan is therefore a burst of a few frames, and the two
  * sources of variance are kept apart rather than pooled:
  *
@@ -19,7 +19,7 @@
  *                the reliability gate has always used. Unchanged.
  *
  *   sway         spread across the per-frame medians. Real uncertainty that was
- *                previously invisible — and deliberately NOT gated on, because
+ *                previously invisible, and deliberately NOT gated on, because
  *                no threshold for it has been calibrated against anything.
  *                Inventing one would be the same mistake as the depth-derived
  *                rotation this app already deleted.
@@ -33,7 +33,7 @@ import { RELIABILITY } from '../config.js';
 
 /* Two mild crops and two mild pads. Small enough that a human would call it the
    same photo, large enough to expose an unstable detection.
-   Mirrored framings were tried too — the pose model is not mirror-equivariant, so
+   Mirrored framings were tried too, the pose model is not mirror-equivariant, so
    the idea was to average out its handedness prior. Measured, it made things
    worse: pooling flipped and unflipped readings mixes two differently-biased
    distributions, which roughly doubled the spread and cost sensitivity. Crops and
@@ -124,7 +124,7 @@ export function combineBurst(frames) {
   }
 
   if (usable.length === 1) {
-    /* One frame is the old behaviour exactly. Sway is unknown, not zero — saying
+    /* One frame is the old behaviour exactly. Sway is unknown, not zero, saying
        zero would claim the person held perfectly still, which was never tested. */
     return { ...usable[0], frames: frames.length, usableFrames: 1, swayDeg: null };
   }
@@ -153,7 +153,7 @@ export function combineBurst(frames) {
   };
 }
 
-/** Reduce the per-framing passes to one reading. Pure — exported for testing. */
+/** Reduce the per-framing passes to one reading. Pure, exported for testing. */
 export function summariseReading(passes, photo = null) {
   if (passes.length < RELIABILITY.minPasses) {
     return {

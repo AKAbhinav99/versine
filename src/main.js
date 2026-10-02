@@ -23,7 +23,7 @@ initMotion();
 initField();
 
 /* Only the capture flow is loaded up front. The other screens are whole
-   subtrees — the clinician finder alone pulls eight modules and Leaflet — and
+   subtrees, the clinician finder alone pulls eight modules and Leaflet, and
    none of them is needed to show a viewfinder. Each arrives the first time its
    tab is opened, and the router shows the empty screen immediately so the tap
    still feels instant. */
@@ -31,14 +31,14 @@ initField();
  *
  * Clearing our own cached promise is the obvious half: one tap made offline
  * should not leave that tab dead for the session. The other half is not obvious
- * and cost a round of testing to find — the browser's module map remembers a
+ * and cost a round of testing to find, the browser's module map remembers a
  * module whose fetch failed, so importing the same specifier again returns the
  * cached failure without going near the network. Measured directly: with the
  * server back up and the file returning 200, a plain re-import still rejected
  * while the identical file behind a fresh query string resolved.
  *
  * So each retry needs a URL the module map has not seen. This recovers the case
- * that actually happens — the whole subtree failing because the network was
+ * that actually happens, the whole subtree failing because the network was
  * down. It cannot recover a partial failure deeper in the graph, since those
  * modules keep their canonical specifiers; a reload is the only cure for that,
  * and the message says so once a retry has already failed. */
@@ -85,7 +85,7 @@ function loadFailed(container, failures, retry) {
   const stubborn = failures > 1;
   host.replaceChildren(
     el('div', { class: 'empty' },
-      el('p', {}, 'This section could not load — it is fetched the first time you open it, and the request did not get through. Your scans are safe on this device.'),
+      el('p', {}, 'This section could not load. It is fetched the first time you open it, and the request did not get through. Your scans are safe on this device.'),
       stubborn
         ? el('p', { class: 'small muted' }, 'It failed again. Reloading the page clears what the browser cached about the failure, which a retry on its own cannot always do.')
         : null,
@@ -106,7 +106,7 @@ initTabs((tab) => {
 });
 
 /* The analysis cluster is not on the critical path, but it is needed the moment
-   someone accepts a photo — so it is fetched once the browser is otherwise idle
+   someone accepts a photo, so it is fetched once the browser is otherwise idle
    rather than at load or at the tap. */
 /* Failing here costs nothing: accepting a photo imports it again, and that path
    reports its own failure. Swallowed so it does not surface as an unhandled
@@ -134,6 +134,14 @@ document.querySelectorAll('[data-intro-accept]').forEach((button) => button.addE
 }));
 
 /* The disclaimer gate shows once; after that the app opens on the capture screen. */
+/* The logo goes home: back to the intro and its scroll story. A real link, so
+   it still works (as a reload) if this script never runs. */
+$('[data-home]')?.addEventListener('click', (event) => {
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return;
+  event.preventDefault();
+  showScreen('intro');
+});
+
 showScreen(localStorage.getItem(INTRO_KEY) ? 'capture' : 'intro');
 
 /* ?demo renders the result screen from a hand-written fixture, for showing the

@@ -9,7 +9,7 @@ import { classifyReading } from '../lib/screening.js';
 import { saveScan, makeThumbnail } from '../lib/storage.js';
 import { renderResult, renderFailure } from './result.js';
 
-/* Each stage holds long enough to be readable — the log is there so a slow first
+/* Each stage holds long enough to be readable, the log is there so a slow first
    load looks like progress rather than a hang. */
 const MIN_STEP_MS = 380;
 
@@ -27,7 +27,7 @@ export async function runAnalysis(burst, adjustments = null) {
 
     /* Each frame is measured at several framings because one framing is not
        reliable on its own, and several frames are measured because one frame
-       cannot show whether the person was still — see lib/consensus.js. */
+       cannot show whether the person was still, see lib/consensus.js. */
     const reading = await runStep('detect', async () => {
       const measured = [];
       for (const [index, frame] of frames.entries()) {

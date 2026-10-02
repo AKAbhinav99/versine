@@ -1,7 +1,7 @@
 /* Print, which is how the referral summary actually reaches a clinician.
  *
  * "Save as PDF" lives in every print dialog including iOS Safari's, so this
- * stylesheet is the whole export feature — no PDF library, no bundle cost, and
+ * stylesheet is the whole export feature, no PDF library, no bundle cost, and
  * nothing leaves the device to produce it.
  *
  * Loaded with media="print", so none of it applies on screen. */
@@ -103,5 +103,5 @@ html, body {
   background: transparent;
 }
 
-/* A URL after every link is noise here — there is exactly one, and it is us. */
+/* A URL after every link is noise here, there is exactly one, and it is us. */
 a { color: #000; text-decoration: none; }

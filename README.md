@@ -31,7 +31,7 @@ Then open `http://localhost:4321`. A few notes:
 ## The measurement
 
 All of it is trigonometry on pose landmarks, in [`src/lib/geometry.js`](src/lib/geometry.js).
-There is no classifier and no model inference beyond landmark detection — the same
+There is no classifier and no model inference beyond landmark detection, the same
 landmarks always produce the same numbers.
 
 | Function | What it computes |
@@ -39,21 +39,21 @@ landmarks always produce the same numbers.
 | `calculateShoulderAsymmetry` | Angle between the shoulder line and horizontal, in pixel space so the image aspect ratio doesn't skew it. |
 | `calculateHipAsymmetry` | Same, for the hip line. |
 | `assessPoseQuality` | Landmark confidence, framing, forward-bend sanity check, and a "was the phone held level" check. |
-| `RELIABILITY.implausibleTiltDeg` | Discards a framing whose geometry cannot be a real shoulder line. A mis-fit guard, not a screening threshold — see bench/README.md section 7. |
-| `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent — a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
+| `RELIABILITY.implausibleTiltDeg` | Discards a framing whose geometry cannot be a real shoulder line. A mis-fit guard, not a screening threshold, see bench/README.md section 7. |
+| `POSE_CHECK` | Photographed from behind, shoulders sit higher in the frame than hips whether standing or bent, a camera at chest height looks down at both. What bending changes is foreshortening, so the check is the shoulder-to-hip distance against shoulder width, not their vertical order. |
 | `measureWithConsensus` | Runs the above at five framings of one photo and reduces them to a median, a spread, and a usable/withheld verdict. |
 | `combineBurst` | Reduces the frames of one burst to a single reading, keeping the two kinds of uncertainty apart. |
 
 **A scan is a burst, not a photograph.** The spread across five re-croppings
 answers *how much does re-cropping change the answer*. It does not answer *how
-much does the person change the answer*, and the second is the bigger one —
+much does the person change the answer*, and the second is the bigger one,
 people breathe and sway, and two photographs a second apart disagree by more
 than five crops of one photograph do. So the shutter takes three frames about a
 second apart, and the two sources are reported separately:
 
-- **crop spread** — across framings of one frame. This is what the reliability
+- **crop spread**, across framings of one frame. This is what the reliability
   gate has always used, and it keeps using exactly that.
-- **sway** — across the per-frame readings. Reported on the result and on the
+- **sway**, across the per-frame readings. Reported on the result and on the
   referral summary, and **never gated on**, because no threshold for it has been
   calibrated against anything.
 
@@ -67,7 +67,7 @@ by unit tests and the capture path is verified, but whether the sway figure is
 *accurate* needs real people photographed over time, which has not been done.
 
 **The previous scan can be shown over the viewfinder.** Framing variance is the
-largest error in the pipeline — it is literally what `measureWithConsensus`
+largest error in the pipeline, it is literally what `measureWithConsensus`
 quantifies by re-cropping the same photo five times, and what the reliability gate
 withholds readings for. It is also the part the person holding the phone actually
 controls. So once a scan exists, the last one is drawn faintly over the live
@@ -78,7 +78,7 @@ captured frame does not, so the ghost mirrors with it.
 
 **The photo can be lined up first.** Capture hands off to an adjust step where
 the shot can be panned, zoomed and rotated onto the framing guide. Pan and zoom
-are free — neither changes an angle. Rotation is not: it moves the measured
+are free, neither changes an angle. Rotation is not: it moves the measured
 shoulder tilt one degree for one degree, which the benchmark confirmed directly
 (a 6° image roll shifted the reading by ~6.5°). So it is capped at 20°, the screen
 draws horizontal rules and tells you to level the room rather than your shoulders,
@@ -103,7 +103,7 @@ trigger anything: in the benchmark it did not separate the two groups.
 
 Trunk rotation. An earlier version estimated an angle of trunk rotation from the
 depth values MediaPipe reports, and compared it against the 7° scoliometer referral
-threshold. Benchmarked against clinical photographs it turned out to be noise — the
+threshold. Benchmarked against clinical photographs it turned out to be noise, the
 depth estimate moved by more than a rib hump's worth when the same photo was
 re-cropped. It was removed rather than caveated. A segmentation-mask silhouette
 measure was tried as a replacement and did not separate the groups either. See
@@ -117,8 +117,8 @@ them, kept on the device with the scans.
 
 The answers do exactly two things, and deliberately not a third:
 
-- **Red flags** — night pain, leg numbness or weakness, new bladder or bowel
-  trouble, or a back that has visibly changed in months — raise a block that sits
+- **Red flags**, night pain, leg numbness or weakness, new bladder or bowel
+  trouble, or a back that has visibly changed in months, raise a block that sits
   *above* the verdict on the result screen. A reassuring number should not be the
   first thing read by someone who has just reported leg weakness.
 - **Risk factors** are carried onto the referral summary as context.
@@ -131,7 +131,7 @@ exists mostly to make breaking that rule a deliberate act.
 
 ## The referral summary
 
-Any logged scan prints a one-page summary to hand a clinician — from the result
+Any logged scan prints a one-page summary to hand a clinician, from the result
 screen, or from any row in the log.
 
 The honest version of "a report of what is wrong" is not a narrative. This app
@@ -142,7 +142,7 @@ what was not, and what the number is worth.
 
 So the page carries the reading with its error bar, the annotated photograph, a
 **how this was taken** block, an explicit **not measured** list, the self-reported
-history, previous readings, and blank fields for the examining clinician —
+history, previous readings, and blank fields for the examining clinician,
 scoliometer ATR, Adam's test, imaging, Cobb angle, follow-up interval.
 
 Two things it refuses to leave implicit. Any hand-applied rotation is printed
@@ -155,8 +155,8 @@ The limitations are not a disclaimer at the end; they are what makes the page
 usable. A summary claiming less gets read. One announcing a finding gets
 dismissed, correctly.
 
-Printing goes through `window.print()` and [`styles/print.css`](styles/print.css)
-— no PDF library, no bundle cost, and "Save as PDF" is already in every print
+Printing goes through `window.print()` and [`styles/print.css`](styles/print.css):
+no PDF library, no bundle cost, and "Save as PDF" is already in every print
 dialog including iOS Safari's. Nothing is uploaded to produce it.
 
 ## Finding care
@@ -164,11 +164,11 @@ dialog including iOS Safari's. Nothing is uploaded to produce it.
 Two provider chains, each trying the next when one fails. Everything is optional:
 with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 
-**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)) — local first, then richest:
+**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)), local first, then richest:
 
 | | key | gives |
 |---|---|---|
-| Local index | none | instant, offline, cannot fail — see below |
+| Local index | none | instant, offline, cannot fail, see below |
 | Google Places | required | ratings, review counts, opening hours |
 | OpenStreetMap / Photon | none | the same OpenStreetMap data from a search index: under a second, rarely down |
 | OpenStreetMap / Overpass | none | the same data again, plus phone numbers; slow and often overloaded |
@@ -179,8 +179,8 @@ ordering is by how useful the answer is, not how dependable the service is.
 Measured on the same 15 km circle in Cambridge MA: OpenStreetMap returned 28
 practices that actually treat backs (25 physical therapy, 3 orthopedic); Geoapify
 returned 59 general clinics and hospitals and no specialists at all. Geoapify has
-no physiotherapy category — `healthcare.physiotherapist` does not exist and 400s
-the whole request — so it cannot find the single most common practice type this
+no physiotherapy category, `healthcare.physiotherapist` does not exist and 400s
+the whole request, so it cannot find the single most common practice type this
 app is looking for. It stays as the bottom of the chain because a hospital is a
 real route to a referral, and those results are labelled "General clinic" rather
 than dressed up as specialists.
@@ -190,18 +190,18 @@ than dressed up as specialists.
 The most reliable network call is the one you don't make. Clinics are looked up
 first in a local index held on the device, and only when that has nothing does the
 app go to a server. A search of a covered area makes **zero** clinic network
-requests — typing an address geocodes it, moves the map, and filters data already
+requests, typing an address geocodes it, moves the map, and filters data already
 present.
 
 Two things fill it, in [`src/lib/clinic-index.js`](src/lib/clinic-index.js):
 
-- **bundled** — regions built offline by
+- **bundled**, regions built offline by
   [`tools/build-clinic-index.mjs`](tools/build-clinic-index.mjs) and shipped as
   static JSON under `data/clinics/`. Same origin, no key, no rate limit.
-- **learned** — every live lookup is folded back in and kept, so an area searched
+- **learned**, every live lookup is folded back in and kept, so an area searched
   once is local from then on. The index fills in wherever it is actually used.
 
-Local results are offered only for areas known to be covered — a bundled region,
+Local results are offered only for areas known to be covered, a bundled region,
 or an area a live search has already swept. Otherwise a half-populated corner
 would suppress the live lookup that would have found the rest.
 
@@ -216,17 +216,17 @@ GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs
 ```
 
 Geoapify answers in about a second per region, but bear the coverage caveat above
-in mind — an index built from it will be hospitals rather than physiotherapists.
+in mind, an index built from it will be hospitals rather than physiotherapists.
 Overpass gives better data for this purpose and is the default, but it is slow and
 will start refusing connections if pushed, which is why it runs one request at a
 time with pauses. `data/clinics/` currently ships Boston and New York (231
 clinics, 28 KB); the rest of the configured regions are yours to build.
 
-Each provider's key can be checked in place from the Care tab — the **Test**
+Each provider's key can be checked in place from the Care tab, the **Test**
 button calls the endpoint Versine actually uses it for, since provider dashboards
 hand out several keys and rarely say which is which.
 
-**Geocoding** ([`src/lib/geocoding.js`](src/lib/geocoding.js)) — keyless first, so no
+**Geocoding** ([`src/lib/geocoding.js`](src/lib/geocoding.js)), keyless first, so no
 quota is spent while the free services are healthy: Nominatim → Photon → Geoapify
 → MapTiler → Geocode.maps.co.
 
@@ -236,14 +236,14 @@ Overpass is the backstop, and its retries alternate between overpass-api.de and
 the maps.mail.ru mirror, because overpass-api.de is a load balancer and retrying
 it tends to land on the same overloaded backend. Overpass is deliberately last
 of the keyless services. It is free, shared and volunteer-run, and it is the
-service that made the chain necessary — it answers 429 when its per-IP slots fill,
+service that made the chain necessary, it answers 429 when its per-IP slots fill,
 504 when its gateway gives up, and sometimes drops connections outright, which a
 browser reports only as `TypeError: Failed to fetch`. It gets three attempts with
 backoff before the chain moves on.
 
 Keys are entered in the Care tab, stored in `localStorage` on the device, and each
 is sent only to the service it belongs to. Every provider that fails is named in
-the UI, with the reason — an invalid key reports as "rejected the API key (401)"
+the UI, with the reason, an invalid key reports as "rejected the API key (401)"
 rather than disappearing into a silent fallback.
 
 **Postal codes get a country.** "2000" is a valid postcode in Australia, Belgium,
@@ -313,7 +313,7 @@ ratio; a second pass checks target sizes and accessible names. Seven colour pair
 failed AA on the first run.
 
 The fix was not to darken the palette. `--marker`, `--amber` and `--clear` are
-tuned for 1px rules, strokes and fills, where the bar is 3:1 — they only fail when
+tuned for 1px rules, strokes and fills, where the bar is 3:1, they only fail when
 they carry words. So there are now text-weight variants (`--marker-text`,
 `--amber-text`, `--clear-text`) used wherever the colour is type, and `--ink-400`
 for tertiary text, since `--ink-300` reads at 2.66:1 on paper. The mirror of that
@@ -325,7 +325,7 @@ Also fixed: a `role="radiogroup"` that contained a button (invalid, and redundan
 beside the fieldset and legend already naming the group), an `h1` rendered beneath
 a hidden `h2`, missing `scope` on the trend table's column headers, four identical
 "Get a free key" links, "Summary"/"Remove" buttons that named no scan, a camera
-error that was announced to sighted users only, and two empty tab stops — the
+error that was announced to sighted users only, and two empty tab stops, the
 video preview and the hidden file input.
 
 ## Load
@@ -335,7 +335,7 @@ The app opens on a viewfinder, so that is all the first load fetches.
 ES modules resolve their imports only after each file is fetched and parsed, so
 a module graph costs one round trip per level of depth, not one for the whole
 thing. The graph was 26 modules and four levels deep, every one of them blocking
-the first screen — on a high-latency connection that alone is over a second of
+the first screen, on a high-latency connection that alone is over a second of
 nothing happening. It is now ten modules (the seven of the capture flow plus the
 three that run the page's motion), all named in `<link rel="modulepreload">` so
 they fetch in parallel as a single round.
@@ -344,11 +344,11 @@ Everything else arrives when it is wanted:
 
 | cluster | when |
 |---|---|
-| capture flow — router, capture, adjust, storage | at load, 7 modules |
+| capture flow, router, capture, adjust, storage | at load, 7 modules |
 | motion: motion, field, scenes | at load, 3 modules |
 | GSAP, ScrollTrigger, SplitText, Lenis (jsDelivr) | deferred classic scripts, about 55 KB gzipped; the page is complete without them |
-| analysis — pose, consensus, screening, result, report | on idle after first paint |
-| clinician finder — clinics, geocoding, index, keys, MapLibre | first time the Care tab is opened |
+| analysis, pose, consensus, screening, result, report | on idle after first paint |
+| clinician finder, clinics, geocoding, index, keys, MapLibre | first time the Care tab is opened |
 
 The map library mattered most. It was Leaflet then, 46 KB across two files on a
 third origin, loaded from the document head on every visit for a screen most
@@ -359,13 +359,13 @@ fails to load the list still works. MapLibre, which replaced Leaflet, is heavier
 until the Care tab opens. It is pinned to 5.x because 6.x ships ES modules only.
 
 Measured on a cold load: 20 requests before the app is interactive, no contact
-with unpkg at all, and four font files rather than five — `Archivo 500` was
+with unpkg at all, and four font files rather than five, `Archivo 500` was
 declared and used by nothing.
 
 One thing worth knowing if you touch the lazy loading: **a failed dynamic import
 is cached by the browser itself.** Clearing your own promise is not enough. The
 module map records a module whose fetch failed, and importing the same specifier
-again returns that cached failure without going near the network — verified with
+again returns that cached failure without going near the network, verified with
 the server back up and the file returning 200, where a plain re-import still
 rejected and the identical file behind a fresh query string resolved. Retries
 therefore import `path?retry=N`. That recovers the case that actually happens, a
@@ -389,8 +389,8 @@ cd ~/spinecheck && node --test tests/*.mjs
 anything, so the glob is spelled out.)
 
 42 tests: the angle math and its aspect-ratio correction, the pose quality
-warnings, the consensus reduction — median selection, the spread as an error bar,
-the reliability gate, warning deduplication, and the threshold bands — the burst
+warnings, the consensus reduction, median selection, the spread as an error bar,
+the reliability gate, warning deduplication, and the threshold bands, the burst
 reduction, which exists mainly to keep sway out of the calibrated gate, and the
 intake derivations, which exist mainly to keep answers from ever reaching the
 measurement.
@@ -469,7 +469,7 @@ produces the frames the pose model measures and the benchmark ran with it.
 - **Detection needs the whole body in frame with a margin.** Roughly half the
   benchmark images were refused for this reason. The capture guide asks for it, but
   a tight crop will simply get no reading.
-- **A phone can measure trunk rotation properly — just not from a photo.** Held
+- **A phone can measure trunk rotation properly, just not from a photo.** Held
   flat across the back in the forward bend, a phone's inclinometer is a scoliometer.
   That is the natural next feature, and it is deliberately not shipped unverified.
 - Camera height and roll move the numbers. The app warns when shoulders and hips
@@ -477,7 +477,7 @@ produces the frames the pose model measures and the benchmark ran with it.
   angle.
 - **Overpass is a free, shared, volunteer-run service and it is often
   overloaded.** It answers 429 when its per-IP slots are full and 504 when its
-  gateway gives up, and it sometimes drops connections outright — which a browser
+  gateway gives up, and it sometimes drops connections outright, which a browser
   reports only as `TypeError: Failed to fetch`. Lookups retry three times with
   backoff, cancel any request they supersede so slots are not wasted, name the
   host and the cause when they finally fail, and offer a retry. A Google Places

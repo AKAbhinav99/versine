@@ -8,11 +8,11 @@
  * Prefer the Geoapify path if you have a key. It is built for bulk queries,
  * answers in a second, and a whole index costs a few dozen of a 3,000-a-day free
  * allowance. Overpass works but is slow, easily overloaded, and will start
- * refusing connections if you push it — which is exactly what it is for.
+ * refusing connections if you push it, which is exactly what it is for.
  *
  * The point is to move the clinic lookup off the network entirely for covered
  * areas. Overpass is a free, shared, volunteer-run service that is frequently
- * overloaded — asking it a question every time a user searches is both fragile
+ * overloaded, asking it a question every time a user searches is both fragile
  * and rude. Asking it once per region, offline, and shipping the answer is
  * neither.
  *
@@ -42,7 +42,7 @@ const USER_AGENT = 'versine-clinic-index/1.0 (scoliosis screening aid; one-off i
 const PAUSE_MS = 2500;      // between requests, always
 const RETRIES = 4;
 
-/* bbox is [south, west, north, east]. Keep each under roughly half a degree —
+/* bbox is [south, west, north, east]. Keep each under roughly half a degree,
    larger boxes make Overpass time out rather than answer slowly. */
 const REGIONS = [
   { id: 'boston', name: 'Boston', bbox: [42.20, -71.30, 42.55, -70.95] },
@@ -108,7 +108,7 @@ function classify(text) {
   return 'ortho';
 }
 
-/** Compact tuple per clinic — this ships to every phone, so every byte counts.
+/** Compact tuple per clinic, this ships to every phone, so every byte counts.
  *  [name, lat, lng, specialty, phone|0, address|0] */
 function toRecord(element) {
   const tags = element.tags || {};
@@ -199,7 +199,7 @@ async function buildRegion(region) {
 async function main() {
   console.log(GEOAPIFY_KEY
     ? 'Source: Geoapify (GEOAPIFY_KEY set)\n'
-    : 'Source: Overpass. Slow and easily overloaded — set GEOAPIFY_KEY for a faster, kinder build.\n');
+    : 'Source: Overpass. Slow and easily overloaded, set GEOAPIFY_KEY for a faster, kinder build.\n');
 
   const wanted = process.argv.slice(2);
   const regions = wanted.length ? REGIONS.filter((r) => wanted.includes(r.id)) : REGIONS;

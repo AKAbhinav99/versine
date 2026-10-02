@@ -1,6 +1,6 @@
 /* Benchmark harness: runs the real pipeline over a labelled image set and reports
  * the numbers, so the detector and its thresholds rest on measurements rather than
- * intuition. This is what removed the depth-based rotation estimate — see
+ * intuition. This is what removed the depth-based rotation estimate, see
  * bench/README.md for the results.
  *
  * The image set is served separately (scratchpad/serve-bench.py) and is not part
@@ -40,7 +40,7 @@ export const CASES = [
 /* Paired cases: the same patient photographed standing and bent forward in the
  * same session. The 17-case set is entirely standing views, which cannot say how
  * the detector behaves on the pose the app actually instructs. Pairing removes
- * the subject as a variable — anything that differs between the two rows is the
+ * the subject as a variable, anything that differs between the two rows is the
  * pose or the photograph, not the person.
  *
  * Only three such pairs exist in what is publicly available, and all three are
@@ -91,7 +91,7 @@ function row(testCase, reading, verdict) {
     shoulder: round(reading.shoulderTiltDeg),
     spread: round(reading.shoulderSpreadDeg),
     hip: round(reading.hipTiltDeg),
-    side: reading.higherShoulder ?? '—',
+    side: reading.higherShoulder ?? ', ',
     agree: round(reading.sideAgreement),
     conf: round(reading.landmarkConfidence),
     level: verdict.level,
@@ -141,7 +141,7 @@ export async function runPairedPose() {
       const reading = await measureWithConsensus(photo);
 
       /* Every framing's raw tilt, including the ones the pipeline discarded as
-         anatomically impossible — that discard is the whole story on bend photos. */
+         anatomically impossible, that discard is the whole story on bend photos. */
       const raw = [];
       for (const inset of [0, 0.03, 0.06, -0.05, -0.1]) {
         try {

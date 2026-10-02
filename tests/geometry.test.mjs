@@ -21,7 +21,7 @@ function landmarkSet(overrides = {}) {
 /* A back photographed from behind and above, bent forward at the waist: head at
    the top, shoulders below it, hips nearest the camera at the bottom. Bending
    points the trunk away from the camera, so the shoulder-to-hip distance in the
-   image is short relative to shoulder width — 144px against 216px here. */
+   image is short relative to shoulder width, 144px against 216px here. */
 const bentForwardImage = (overrides = {}) => landmarkSet({
   [POSE.NOSE]: { x: 0.50, y: 0.14 },
   [POSE.LEFT_SHOULDER]: { x: 0.38, y: 0.30 },
@@ -77,7 +77,7 @@ test('a proper forward bend passes without notes', () => {
   assert.equal(quality.warnings.length, 0);
 });
 
-test('standing upright is flagged — the trunk is not foreshortened', () => {
+test('standing upright is flagged, the trunk is not foreshortened', () => {
   /* Shoulders are still above the hips, as they are in both poses. What gives it
      away is the shoulder-to-hip distance: 360px against 216px of shoulder width. */
   const upright = landmarkSet({

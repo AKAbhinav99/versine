@@ -69,7 +69,7 @@
   color: var(--scrub-dim);
 }
 
-/* Progress and failures live here, next to the controls that caused them —
+/* Progress and failures live here, next to the controls that caused them,
    not in the results list, where a later search would overwrite them. */
 .loc-status {
   display: flex;

@@ -1,5 +1,5 @@
 /* Guided capture: live preview, framing guide, self-timer, and photo upload.
- * Designed for one hand — the shutter is thumb-sized and centred, and the timer
+ * Designed for one hand, the shutter is thumb-sized and centred, and the timer
  * exists because you cannot tap a phone while bent over with arms hanging. */
 
 import { $ } from '../lib/dom.js';
@@ -52,7 +52,7 @@ export function initCapture() {
  * for, and framing is the part the person holding the phone controls. So the last
  * scan is drawn faintly over the viewfinder to stand in the same place again.
  *
- * It is a framing aid and nothing more. It never touches the captured pixels —
+ * It is a framing aid and nothing more. It never touches the captured pixels,
  * matching a previous photo cannot make a curve look better or worse, only make
  * two readings comparable. */
 
@@ -71,7 +71,7 @@ function refreshGhost() {
   const button = $('#capture-ghost-toggle');
   const image = $('#capture-ghost');
 
-  /* Nothing to match against on a first scan — the control would be a dead end. */
+  /* Nothing to match against on a first scan, the control would be a dead end. */
   button.classList.toggle('hidden', !previous);
   if (!previous) {
     image.classList.add('hidden');
@@ -115,20 +115,70 @@ function toggleGhost() {
 
 /* ---------------------------------------------------------------- camera --- */
 
-async function startCamera() {
-  if (stream) return;
+/* Camera start, made to survive the ways it fails in practice. Each one used
+   to read as "no camera" and leave the shutter opening the file picker, which
+   looked like the camera request had simply been ignored:
+   - another app holding the camera (NotReadableError);
+   - a webcam refusing the requested size or facing (OverconstrainedError, and
+     some desktop drivers throw NotReadableError for this too), so any failure
+     that is not a refusal is retried once with no constraints at all;
+   - a page opened over a LAN address, which is not a secure context, so the
+     browser hides navigator.mediaDevices entirely;
+   - autoplay held back (Safari in low power mode), where the stream is fine and
+     only play() was refused, so the stream is kept and the next tap plays it.
+   A request still pending when the screen is left is dropped on arrival, so a
+   late permission grant never leaves the light on behind another screen. */
+let starting = null;
+let generation = 0;
+
+function startCamera() {
+  if (stream) return Promise.resolve();
+  if (starting) return starting;
   showError(null);
-  try {
-    stream = await openStream(facingMode);
+  const mine = ++generation;
+  starting = (async () => {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      showError(window.isSecureContext
+        ? 'This browser cannot open a camera. Use Upload to analyse a photo instead.'
+        : 'The camera only works over a secure connection. Open this page over https (or on localhost), or use Upload.', true);
+      return;
+    }
+    let opened = null;
+    try {
+      opened = await openStream(facingMode);
+    } catch (error) {
+      if (error?.name === 'NotAllowedError' || error?.name === 'SecurityError') {
+        if (mine === generation) showError(cameraMessage(error), true);
+        return;
+      }
+      try {
+        opened = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (retryError) {
+        if (mine === generation) showError(cameraMessage(retryError), true);
+        return;
+      }
+    }
+    if (mine !== generation) { opened.getTracks().forEach((track) => track.stop()); return; }
+    stream = opened;
     await showStream();
     await updateFlipAvailability();
-  } catch (error) {
-    stream = null;
-    showError(
-      error?.name === 'NotAllowedError'
-        ? 'Camera access is blocked. Allow it in your browser settings, or use Upload to analyse a photo someone else took.'
-        : 'No camera available here. Use Upload to analyse a photo taken on another device.',
-    );
+  })().finally(() => { starting = null; });
+  return starting;
+}
+
+function cameraMessage(error) {
+  switch (error?.name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Camera access is blocked for this page. Allow it from the camera icon in the address bar, then try again, or use Upload.';
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'The camera is busy, probably open in another app or tab. Close it there, then try again.';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No camera was found on this device. Use Upload to analyse a photo taken on another one.';
+    default:
+      return 'The camera would not start. Try again, or use Upload.';
   }
 }
 
@@ -142,7 +192,12 @@ async function showStream() {
   const element = video();
   element.srcObject = stream;
   element.dataset.facing = actualFacing();
-  await element.play();
+  try {
+    await element.play();
+  } catch {
+    /* The stream is good; only autoplay was refused. The next tap plays it. */
+    setHint('<b>Tap the shutter once</b> to start the preview.');
+  }
   if (!$('#capture-ghost').classList.contains('hidden')) applyGhostState();
 }
 
@@ -181,7 +236,7 @@ async function flipCamera() {
   const button = $('#capture-flip');
   button.disabled = true;
 
-  /* The old track has to be released first — many devices refuse to open the
+  /* The old track has to be released first, many devices refuse to open the
      second camera while the first one is still held. */
   if (stream) stream.getTracks().forEach((track) => track.stop());
   stream = null;
@@ -211,6 +266,7 @@ async function flipCamera() {
 
 function stopCamera() {
   cancelCountdown();
+  generation += 1;   // a request still in flight is dropped when it lands
   if (!stream) return;
   stream.getTracks().forEach((track) => track.stop());
   stream = null;
@@ -222,7 +278,7 @@ function stopCamera() {
 /* ------------------------------------------------------------------ timer --- */
 
 function restoreTimerChoice() {
-  /* Not Number(getItem(...)) — that turns a missing key into 0, which is itself a
+  /* Not Number(getItem(...)), that turns a missing key into 0, which is itself a
      valid choice, so the default would never have applied. */
   const stored = localStorage.getItem(TIMER_STORAGE);
   const saved = stored === null ? NaN : Number(stored);
@@ -230,7 +286,7 @@ function restoreTimerChoice() {
   renderTimerButton();
 }
 
-/** Tapping cycles the delay — one control, no menu to open one-handed. */
+/** Tapping cycles the delay, one control, no menu to open one-handed. */
 function cycleTimer() {
   cancelCountdown();
   const next = (TIMER_OPTIONS.indexOf(timerSeconds) + 1) % TIMER_OPTIONS.length;
@@ -249,7 +305,7 @@ function renderTimerButton() {
 }
 
 /* You are bent over with your back to the phone when this fires, so the count
-   has to be audible. Vibration where it exists, a short tone where it does not —
+   has to be audible. Vibration where it exists, a short tone where it does not,
    iOS supports one and not the other. */
 let audio = null;
 
@@ -276,7 +332,11 @@ function cue(kind) {
 
 function onShutter() {
   if (countdown) { cancelCountdown(); return; }
-  if (!stream) { $('#capture-file').click(); return; }
+  /* No stream yet: ask for the camera again rather than opening the file
+     picker, which read as the camera request being ignored. Upload has its own
+     button. */
+  if (!stream) { startCamera(); return; }
+  if (video().paused) { video().play().then(resetHint).catch(() => {}); return; }
   if (timerSeconds > 0) startCountdown(); else captureFrame();
 }
 
@@ -288,7 +348,7 @@ function startCountdown() {
   shutter.dataset.armed = 'true';
   readout.classList.remove('hidden');
   readout.textContent = String(remaining);
-  setHint('Get into position — <b>bend forward, arms hanging</b>. Tap again to cancel.');
+  setHint('Get into position: <b>bend forward, arms hanging</b>. Tap again to cancel.');
 
   countdown = setInterval(() => {
     remaining -= 1;
@@ -322,7 +382,7 @@ async function captureFrame() {
   if (!source.videoWidth) { showError('The camera has not started yet. Give it a second and try again.'); return; }
 
   const frames = [grabFrame(source)];
-  setHint('<b>Hold still</b> — taking a few frames.');
+  setHint('<b>Hold still</b> while it takes a few frames.');
 
   /* The gaps are what make the burst worth taking: three frames of the same
      instant would only re-measure the same posture. */
@@ -373,10 +433,20 @@ function canvasFromImage(image) {
 
 /* ------------------------------------------------------------------- ui ---- */
 
-function showError(message) {
+function showError(message, retry = false) {
   const box = $('#capture-error');
   box.classList.toggle('hidden', !message);
-  if (message) box.textContent = message;
+  box.replaceChildren();
+  if (!message) return;
+  box.append(message);
+  if (retry) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn btn--quiet capture__retry';
+    button.textContent = 'Try camera again';
+    button.addEventListener('click', () => startCamera());
+    box.append(button);
+  }
 }
 
 function setHint(html) { $('#capture-hint').innerHTML = html; }

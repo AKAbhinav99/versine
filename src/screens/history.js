@@ -1,5 +1,5 @@
 /* Scan log: a trend line of estimated trunk rotation over time, then the entries.
- * The trend is the point — one reading is noise, a direction is information. */
+ * The trend is the point, one reading is noise, a direction is information. */
 
 import { el, $, append, formatDate } from '../lib/dom.js';
 import { THRESHOLDS } from '../config.js';
@@ -131,7 +131,7 @@ function entryRow(entry) {
         `${entry.shoulderTiltDeg.toFixed(1)}°`,
         el('span', { class: 'log-entry__error' }, ` ±${(entry.shoulderSpreadDeg ?? 0).toFixed(1)}`)),
       el('div', { class: 'small muted' },
-        `Hips ${entry.hipTiltDeg.toFixed(1)}° · ${entry.passes ?? '—'} framings agreed`),
+        `Hips ${entry.hipTiltDeg.toFixed(1)}°${entry.passes == null ? '' : ` · ${entry.passes} framings agreed`}`),
       el('div', { class: 'log-entry__links' },
         el('button', {
           class: 'log-entry__link',

@@ -2,7 +2,7 @@
  *
  * The rule these protect: the two kinds of uncertainty stay apart. The gate is
  * calibrated against the spread across framings of one photograph, and it must
- * keep being fed exactly that quantity — pooling sway into it would push a
+ * keep being fed exactly that quantity, pooling sway into it would push a
  * bigger number against a threshold derived from a smaller one. Sway is
  * reported and never gated, because nothing has calibrated a threshold for it. */
 

@@ -1,4 +1,4 @@
-/* Minimal DOM helpers. No framework — this app is four screens and a canvas. */
+/* Minimal DOM helpers. No framework, this app is four screens and a canvas. */
 
 export const $ = (sel, root = document) => root.querySelector(sel);
 export const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
@@ -19,7 +19,7 @@ export function el(tag, attrs = {}, ...children) {
   return node;
 }
 
-/* Node.append() turns null into the literal text "null" — el() drops falsy
+/* Node.append() turns null into the literal text "null", el() drops falsy
    children, append() does not. Anywhere a block is conditional, go through here. */
 export const append = (parent, ...nodes) => parent.append(...nodes.filter(Boolean));
 
@@ -36,7 +36,7 @@ export function formatDate(timestamp) {
 }
 
 export function formatDistance(meters) {
-  if (meters === null || meters === undefined) return '—';
+  if (meters === null || meters === undefined) return 'n/a';
   if (meters < 1000) return `${Math.round(meters)} m`;
   return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} km`;
 }

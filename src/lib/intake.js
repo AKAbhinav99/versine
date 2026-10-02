@@ -22,7 +22,7 @@ const STORE_KEY = 'versine.intake.v1';
 
 /* `flag` marks an answer that is a red flag, with how fast it needs looking at.
    'urgent' is for symptoms that can mean spinal cord involvement rather than a
-   curve — those are a same-week call, not a note for the next check-up. */
+   curve, those are a same-week call, not a note for the next check-up. */
 export const QUESTIONS = [
   {
     id: 'age',
@@ -58,7 +58,7 @@ export const QUESTIONS = [
   {
     id: 'menarche',
     section: 'growth',
-    prompt: 'If applicable — have periods started?',
+    prompt: 'If applicable, have periods started?',
     help: 'Growth largely finishes about two years after they begin, so this dates how much spine growth is left. Skip it if it does not apply.',
     options: [
       { value: 'yes', label: 'Yes' },
@@ -95,7 +95,7 @@ export const QUESTIONS = [
     id: 'rapidChange',
     section: 'flags',
     prompt: 'Has your back visibly changed shape in the last few months?',
-    help: 'A curve that is moving quickly gets seen sooner than one that has been the same for years — speed matters as much as size.',
+    help: 'A curve that is moving quickly gets seen sooner than one that has been the same for years. Speed matters as much as size.',
     options: [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }],
     flag: { on: 'yes', urgency: 'prompt', label: 'Visible change in back shape over recent months' },
   },
@@ -161,7 +161,7 @@ export const highestUrgency = (flags) =>
 
 /**
  * Context for the referral summary. Only things that are actually informative
- * are returned — "no family history" is worth printing, "not sure" is not.
+ * are returned, "no family history" is worth printing, "not sure" is not.
  */
 export function riskFactorsFrom(answers) {
   const factors = [];
@@ -174,7 +174,7 @@ export function riskFactorsFrom(answers) {
       note: age >= 10 && age <= 15
         ? 'Within the usual window for idiopathic curves to appear.'
         : age < 10
-          ? 'Younger than the usual idiopathic window — early-onset curves are worked up differently.'
+          ? 'Younger than the usual idiopathic window. Early-onset curves are worked up differently.'
           : 'Past the usual window for a curve to first appear.',
     });
   }

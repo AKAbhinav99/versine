@@ -1,6 +1,6 @@
 /* Line the photo up with the framing guide before measuring.
  *
- * Pan and zoom are free — neither changes an angle. Rotation is not: turning the
+ * Pan and zoom are free, neither changes an angle. Rotation is not: turning the
  * photo turns the measured shoulder tilt with it, one degree for one degree. So
  * rotation is capped at a plausible camera roll, is displayed the whole time it
  * is applied, is carried into the scan record, and is shown again on the result.
@@ -58,7 +58,13 @@ function cloneGuide() {
   const source = document.querySelector('.capture__guide');
   const host = $('#adjust-guide');
   host.replaceChildren();
-  if (source) host.append(source.cloneNode(true));
+  if (!source) return;
+  const copy = source.cloneNode(true);
+  /* The silhouette filter needs an id of its own here: a reference to the
+     capture screen's copy would resolve into a hidden screen. */
+  copy.querySelector('#guide-silhouette')?.setAttribute('id', 'guide-silhouette-adjust');
+  copy.querySelector('.guide-figure')?.setAttribute('filter', 'url(#guide-silhouette-adjust)');
+  host.append(copy);
 }
 
 /* ----------------------------------------------------------------- draw --- */
@@ -166,7 +172,7 @@ function onPointerUp(event) {
 /* --------------------------------------------------------------- accept --- */
 
 /** Bake the transform into every frame at full resolution, and measure those.
- *  The analysis cluster — pose model wrapper, consensus, result, report — is
+ *  The analysis cluster, pose model wrapper, consensus, result, report, is
  *  imported here rather than at load, since none of it is needed to show a
  *  viewfinder. main.js warms it on idle so this await is normally already done. */
 async function accept() {
@@ -186,9 +192,9 @@ async function accept() {
     const { runAnalysis } = await import('./analyze.js');
     runAnalysis(baked, { rotationDeg: transform.rotationDeg, scale: transform.scale });
   } catch {
-    /* Without this the tap did nothing at all — no navigation, no message, and a
+    /* Without this the tap did nothing at all, no navigation, no message, and a
        photo the person had just posed for apparently thrown away. */
-    showAcceptError('The measuring code could not be loaded, so this photo has not been analysed yet. Your photo is still here — check your connection and tap again.');
+    showAcceptError('The measuring code could not be loaded, so this photo has not been analysed yet. Your photo is still here. Check your connection and tap again.');
   } finally {
     button.disabled = false;
   }

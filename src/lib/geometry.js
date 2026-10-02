@@ -1,7 +1,7 @@
 /* Asymmetry geometry.
  *
  * Everything here is plain trigonometry on pose landmark coordinates. There is no
- * classifier and no trained model in this file — given the same landmarks you get
+ * classifier and no trained model in this file, given the same landmarks you get
  * the same numbers, and every number shown in the UI comes from one of these
  * functions.
  *

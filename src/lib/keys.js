@@ -1,6 +1,6 @@
 /* API keys for the optional lookup providers.
  *
- * Every one of these is free to obtain and optional — the app works with none of
+ * Every one of these is free to obtain and optional, the app works with none of
  * them, on OpenStreetMap's keyless services. Adding one buys reliability: the
  * keyless services are shared, volunteer-run and frequently overloaded.
  *
@@ -20,7 +20,7 @@ export const PROVIDER_KEYS = [
     label: 'Geoapify',
     storage: 'versine.key.geoapify',
     signup: 'https://myprojects.geoapify.com/',
-    note: 'Geocoding, plus clinic search — though its healthcare data has no physiotherapy category, so it finds fewer relevant practices here than OpenStreetMap does. Free tier is 3,000 requests a day.',
+    note: 'Geocoding, plus clinic search, though its healthcare data has no physiotherapy category, so it finds fewer relevant practices here than OpenStreetMap does. Free tier is 3,000 requests a day.',
   },
   {
     id: 'maptiler',
@@ -118,7 +118,7 @@ export async function testKey(id, key) {
     const response = await fetch(probe.url, probe.options);
 
     if (response.status === 401 || response.status === 403) {
-      return { ok: false, message: `Rejected (${response.status}). This key is not valid for ${byId.get(id).label}'s API — if your dashboard lists several, try the one for Places or Geocoding.` };
+      return { ok: false, message: `Rejected (${response.status}). This key is not valid for ${byId.get(id).label}'s API. If your dashboard lists several, try the one for Places or Geocoding.` };
     }
     if (response.status === 429) {
       return { ok: false, message: 'The key works, but the quota is exhausted right now. Try again later.' };
@@ -129,7 +129,7 @@ export async function testKey(id, key) {
 
     const data = await response.json();
     return probe.ok(data)
-      ? { ok: true, message: `Works — Versine will use it for ${probe.used}.` }
+      ? { ok: true, message: `Works. Versine will use it for ${probe.used}.` }
       : { ok: false, message: 'The service answered, but not in the expected shape. This key may be for a different API.' };
   } catch {
     return { ok: false, message: 'Could not reach the service to check. Check your connection and try again.' };

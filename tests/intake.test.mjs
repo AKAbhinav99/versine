@@ -1,7 +1,7 @@
 /* Tests for the intake derivations.
  *
  * The rule these protect: intake answers never touch the measurement. They can
- * raise a flag and they can add context, and that is the whole contract — if a
+ * raise a flag and they can add context, and that is the whole contract, if a
  * future change starts folding answers into a score, these should be the tests
  * that make that a deliberate act rather than a quiet one. */
 

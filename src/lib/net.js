@@ -17,7 +17,7 @@ export const TRANSIENT_STATUS = [408, 429, 500, 502, 503, 504];
  * fetch with a hard deadline and an optional external cancel.
  *
  * A bare fetch rejects with TypeError("Failed to fetch") for every network-level
- * failure — DNS, refused connection, a server hanging up mid-response — and that
+ * failure, DNS, refused connection, a server hanging up mid-response, and that
  * string tells a user nothing. Everything here comes back named.
  */
 export async function fetchWithTimeout(url, options = {}, ms = 20000, signal = null) {

@@ -1,4 +1,4 @@
-/* Intake form — clinical intake sheet, not a settings page.
+/* Intake form, clinical intake sheet, not a settings page.
    Questions read as a numbered form on paper; flagged answers pick up the
    marker red used everywhere else in the app for a signal rather than a mood. */
 
@@ -59,7 +59,7 @@
   min-height: 44px;
   padding: 0 var(--space-5);
   /* A control's boundary has to clear 3:1 against the page, which --rule does
-     not — it is a drawing hairline, not a control border. */
+     not, it is a drawing hairline, not a control border. */
   border: 1px solid var(--rule-control);
   border-radius: var(--radius-pill);
   background: var(--paper-raised);

@@ -3,11 +3,11 @@
  *
  * Two sources feed it:
  *
- *   bundled — regions built offline by tools/build-clinic-index.mjs and shipped
+ *   bundled, regions built offline by tools/build-clinic-index.mjs and shipped
  *             with the app. Same origin, no key, no rate limit, no failure mode
  *             beyond the page itself failing to load.
  *
- *   learned — every live lookup is folded back in and kept. Search an area once
+ *   learned, every live lookup is folded back in and kept. Search an area once
  *             and it is local from then on, which means the index fills in
  *             wherever it is actually used, without anyone building it.
  *
@@ -26,7 +26,7 @@ const regionCache = new Map();
 
 /* ---------------------------------------------------------------- bundled --- */
 
-/** Reads the shipped manifest once. Absent or malformed is fine — it just means
+/** Reads the shipped manifest once. Absent or malformed is fine, it just means
  *  nothing is bundled yet, and the chain falls through to live lookups. */
 export function loadManifest() {
   if (!manifestPromise) {
@@ -55,7 +55,7 @@ async function loadRegion(id) {
   return regionCache.get(id);
 }
 
-/* [name, lat, lng, specialty, phone|0, address|0] — the compact shipped form. */
+/* [name, lat, lng, specialty, phone|0, address|0], the compact shipped form. */
 function expand([name, lat, lng, specialty, phone, address], idPrefix) {
   return {
     id: `${idPrefix}-${name.toLowerCase().replace(/\W+/g, '')}-${Math.round(lat * 1e4)}`,
@@ -121,7 +121,7 @@ export function remember(results, center, radiusM) {
     ...store.areas.filter((area) => haversineMeters(area, center) > radiusM * 0.4),
   ];
 
-  /* Oldest areas go first when the cap is reached, along with nothing else —
+  /* Oldest areas go first when the cap is reached, along with nothing else,
      records outside every remaining area simply stop being offered. */
   let records = [...byKey.values()];
   if (records.length > MAX_LEARNED) records = records.slice(-MAX_LEARNED);

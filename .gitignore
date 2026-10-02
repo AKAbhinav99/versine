@@ -1,4 +1,4 @@
-# Dependencies (there are none — this app has no build step)
+# Dependencies (there are none, this app has no build step)
 node_modules/
 
 # OS noise
@@ -10,7 +10,7 @@ node_modules/
 # not redistributed. bench/README.md explains how to assemble your own set.
 bench/images/
 bench/set/
-# Bundled clinic index is data, not media — keep it
+# Bundled clinic index is data, not media, keep it
 !data/clinics/*.json
 *.jpg
 *.jpeg

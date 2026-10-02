@@ -4,7 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#F2F5F6" />
-<title>Versine — a scoliosis screening aid</title>
+<title>Versine</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <meta name="description" content="Versine measures how far your shoulders and hips sit off level in a forward-bend photo, reports the number with its error bar, and points you toward real clinical care. Not a diagnosis." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -48,15 +49,21 @@
 <div class="app">
 
   <header class="masthead">
-    <!-- Wordmark glyph: a plumb line and bob — the reference this whole test measures against -->
-    <svg class="masthead__mark" viewBox="0 0 16 26" aria-hidden="true">
-      <line x1="8" y1="0" x2="8" y2="17" stroke="#0E2230" stroke-width="1.4" />
-      <path d="M8 17 L12 21 L8 25 L4 21 Z" fill="#D6402A" />
-      <line x1="0" y1="4" x2="4" y2="4" stroke="#9AAEB9" stroke-width="1.2" />
-      <line x1="12" y1="4" x2="16" y2="4" stroke="#9AAEB9" stroke-width="1.2" />
-    </svg>
-    <span class="masthead__name">Versine</span>
-    <span class="masthead__tag">Screening aid</span>
+    <!-- The mark is the name: a versine is the height of an arc above its chord.
+         Here the arc is also a back bent forward, and the versine drops from it
+         as a plumb line to its bob. It is the way home, to the intro. -->
+    <a class="masthead__home" href="./" data-home aria-label="Versine, back to the start">
+      <svg class="masthead__mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect class="mark__tile" x="0" y="0" width="32" height="32" rx="9" />
+        <path class="mark__chord" d="M7 21.5 H25" />
+        <path class="mark__arc" d="M7 21.5 C 8.5 10, 23.5 10, 25 21.5" />
+        <g class="mark__plumb">
+          <path class="mark__line" d="M16 12.9 V20.6" />
+          <path class="mark__bob" d="M16 19.4 L18.6 22.6 L16 25.8 L13.4 22.6 Z" />
+        </g>
+      </svg>
+      <span class="masthead__name">Versine</span>
+    </a>
     <!-- Reading progress on the Learn screen, scrubbed by scenes.js. -->
     <span class="read-progress" aria-hidden="true"></span>
   </header>
@@ -117,15 +124,32 @@
               <rect x="44" y="42" width="218" height="326" rx="12" />
             </g>
             <line class="how__plumb" x1="150" y1="8" x2="150" y2="392" />
-            <g class="how__figure">
-              <circle cx="150" cy="92" r="22" />
-              <path d="M128 124 Q 150 117 172 124" />
-              <path d="M124 128 C 114 186, 114 248, 118 300" />
-              <path d="M176 128 C 186 186, 186 248, 182 300" />
-              <path d="M118 304 Q 150 326 182 304" />
-              <path d="M126 131 C 108 182, 100 240, 99 288" />
-              <path d="M174 131 C 192 182, 200 240, 201 288" />
-              <path d="M130 328 L 130 392" /><path d="M170 328 L 170 392" />
+            <defs>
+              <!-- Same silhouette as the capture guide, in ink: the filter fills
+                   the union of the parts faintly and outlines it once. -->
+              <filter id="how-silhouette" x="-10%" y="-10%" width="120%" height="120%">
+                <feMorphology in="SourceAlpha" operator="dilate" radius="1.4" result="grown" />
+                <feComposite in="grown" in2="SourceAlpha" operator="out" result="edge" />
+                <feFlood flood-color="#566E7E" result="ink" />
+                <feComposite in="ink" in2="edge" operator="in" result="outline" />
+                <feFlood flood-color="#1F6E8C" result="wash" />
+                <feComposite in="wash" in2="SourceAlpha" operator="in" result="body" />
+                <feColorMatrix in="body" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" result="tint" />
+                <feMerge><feMergeNode in="tint" /><feMergeNode in="outline" /></feMerge>
+              </filter>
+              <!-- The scroll scrub reveals the figure top to bottom (scenes.js). -->
+              <clipPath id="how-reveal"><rect class="how__reveal" x="0" y="0" width="300" height="400" /></clipPath>
+            </defs>
+            <g class="how__figure" clip-path="url(#how-reveal)">
+              <g filter="url(#how-silhouette)">
+                <ellipse cx="150" cy="86" rx="19" ry="22" />
+                <rect x="141" y="100" width="18" height="24" rx="6" />
+                <path d="M118 134 C 118 121, 132 116, 150 116 C 168 116, 182 121, 182 134 L 184 210 C 185 252, 184 286, 180 304 C 176 318, 163 324, 150 324 C 137 324, 124 318, 120 304 C 116 286, 115 252, 116 210 Z" />
+                <path class="how__limb" d="M123 134 C 111 180, 104 236, 103 284" />
+                <path class="how__limb" d="M177 134 C 189 180, 196 236, 197 284" />
+                <path class="how__limb how__limb--leg" d="M135 318 L 133 392" />
+                <path class="how__limb how__limb--leg" d="M165 318 L 167 392" />
+              </g>
             </g>
             <line class="how__level" x1="92" y1="128" x2="212" y2="128" />
             <line class="how__measure" x1="120" y1="128" x2="180" y2="123.6" />
@@ -194,33 +218,52 @@
       <video class="capture__video" id="capture-video" playsinline muted autoplay tabindex="-1"></video>
 
       <!-- Your previous scan, faint, so this one can be taken from the same spot.
-           Framing variance is the largest error this app measures — see consensus.js -->
+           Framing variance is the largest error this app measures, see consensus.js -->
       <img class="capture__ghost hidden" id="capture-ghost" alt="" aria-hidden="true" />
 
       <!-- Framing guide: bent-forward figure seen from behind, with the plumb reference -->
       <svg class="capture__guide" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-        <line class="guide-plumb" x1="150" y1="8" x2="150" y2="392" stroke-dasharray="6 6" />
-        <g class="guide-figure">
-          <!-- Seen from behind and above: hips nearest the camera at the bottom,
-               the back receding upward, shoulders and head toward the top. -->
-          <circle cx="150" cy="92" r="22" />
-          <path d="M128 124 Q 150 117 172 124" />
-          <path d="M124 128 C 114 186, 114 248, 118 300" />
-          <path d="M176 128 C 186 186, 186 248, 182 300" />
-          <path d="M118 304 Q 150 326 182 304" />
-          <!-- arms hanging toward the floor, close along the trunk -->
-          <path d="M126 131 C 108 182, 100 240, 99 288" />
-          <path d="M174 131 C 192 182, 200 240, 201 288" />
-          <!-- legs continuing down out of frame -->
-          <path d="M130 328 L 130 392" /><path d="M170 328 L 170 392" />
+        <defs>
+          <!-- One silhouette from overlapping parts: the filter fills the union
+               faintly and traces a single clean outline around it, so the parts
+               never show their seams. Legible over a bright or a dark scene. -->
+          <filter id="guide-silhouette" x="-10%" y="-10%" width="120%" height="120%">
+            <feMorphology in="SourceAlpha" operator="dilate" radius="1.6" result="grown" />
+            <feComposite in="grown" in2="SourceAlpha" operator="out" result="edge" />
+            <feFlood flood-color="#ffffff" result="white" />
+            <feComposite in="white" in2="edge" operator="in" result="outline" />
+            <feComposite in="white" in2="SourceAlpha" operator="in" result="body" />
+            <feColorMatrix in="body" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.2 0" result="tint" />
+            <feMerge><feMergeNode in="tint" /><feMergeNode in="outline" /></feMerge>
+          </filter>
+        </defs>
+        <line class="guide-plumb" x1="150" y1="14" x2="150" y2="384" />
+        <circle class="guide-plumb-pin" cx="150" cy="14" r="3" />
+        <path class="guide-plumb-bob" d="M150 380 L156 389 L150 398 L144 389 Z" />
+        <!-- Seen from behind and above: hips nearest the camera at the bottom,
+             the back receding upward, shoulders and the hanging head at the top,
+             arms hanging close along the trunk. -->
+        <g class="guide-figure" filter="url(#guide-silhouette)">
+          <ellipse cx="150" cy="86" rx="19" ry="22" />
+          <rect x="141" y="100" width="18" height="24" rx="6" />
+          <path d="M118 134 C 118 121, 132 116, 150 116 C 168 116, 182 121, 182 134 L 184 210 C 185 252, 184 286, 180 304 C 176 318, 163 324, 150 324 C 137 324, 124 318, 120 304 C 116 286, 115 252, 116 210 Z" />
+          <path class="guide-limb" d="M123 134 C 111 180, 104 236, 103 284" />
+          <path class="guide-limb" d="M177 134 C 189 180, 196 236, 197 284" />
+          <path class="guide-limb guide-limb--leg" d="M135 318 L 133 396" />
+          <path class="guide-limb guide-limb--leg" d="M165 318 L 167 396" />
         </g>
-        <!-- Shoulder and hip marks. Unlabelled on purpose: the hint bar above
+        <!-- Shoulder and hip marks: brackets either side, with a dot where each
+             landmark should land. Unlabelled on purpose: the hint bar above
              names them, so no text sits on top of the live image. -->
-        <g>
-          <line class="guide-tick" x1="34" y1="126" x2="88" y2="126" />
-          <line class="guide-tick" x1="212" y1="126" x2="266" y2="126" />
-          <line class="guide-tick" x1="34" y1="306" x2="88" y2="306" />
-          <line class="guide-tick" x1="212" y1="306" x2="266" y2="306" />
+        <g class="guide-marks">
+          <path class="guide-tick" d="M40 126 H 84 M 40 118 V 134" />
+          <path class="guide-tick" d="M216 126 H 260 M 260 118 V 134" />
+          <path class="guide-tick" d="M40 306 H 84 M 40 298 V 314" />
+          <path class="guide-tick" d="M216 306 H 260 M 260 298 V 314" />
+          <circle class="guide-point" cx="122" cy="126" r="4" />
+          <circle class="guide-point" cx="178" cy="126" r="4" />
+          <circle class="guide-point" cx="120" cy="306" r="4" />
+          <circle class="guide-point" cx="180" cy="306" r="4" />
         </g>
       </svg>
 
@@ -259,7 +302,7 @@
       <ol>
         <li>Bare back or a fitted top. Shoes off, feet together.</li>
         <li>Bend forward at the waist until your back is flat, knees straight, arms hanging.</li>
-        <li>Phone behind you at about chest height, angled down at your back — a helper or the timer both work.</li>
+        <li>Phone behind you at about chest height, angled down at your back. A helper or the timer both work.</li>
         <li>Frame your hips at the bottom, shoulders and head toward the top, whole body inside the edges.</li>
       </ol>
     </div>
@@ -281,7 +324,7 @@
 
       <p class="adjust__warn" id="adjust-warn">
         <b>Rotate to level the room, not your body.</b> Turning the photo turns the
-        measurement with it, degree for degree — line up a door frame, a skirting
+        measurement with it, degree for degree, line up a door frame, a skirting
         board, or the horizon. Straightening your shoulders by hand just erases
         the thing this is trying to measure.
       </p>
@@ -338,7 +381,7 @@
   <section class="screen screen--pad" id="screen-intake" aria-labelledby="intake-title">
     <div class="step-label"><span class="step-label__num">03b</span> Intake <span class="step-label__rule"></span></div>
     <h2 id="intake-title" style="margin-bottom:var(--space-2)">What a photo can't ask</h2>
-    <p class="small muted" style="margin-bottom:var(--space-4)">Growth, family history, and symptoms decide as much as the curve itself — and none of them are visible in an image. None of these answers change the measurement.</p>
+    <p class="small muted" style="margin-bottom:var(--space-4)">Growth, family history, and symptoms decide as much as the curve itself, and none of them are visible in an image. None of these answers change the measurement.</p>
     <div id="intake-body"></div>
   </section>
 
@@ -365,7 +408,7 @@
       <select id="loc-country" aria-describedby="loc-country-hint"></select>
       <button class="btn btn--ghost" id="loc-gps">Use my location</button>
     </div>
-    <p class="loc-hint" id="loc-country-hint">A postal code on its own is ambiguous worldwide — set the country and Versine looks it up as a postal code rather than guessing.</p>
+    <p class="loc-hint" id="loc-country-hint">A postal code on its own is ambiguous worldwide. Set the country and Versine looks it up as a postal code rather than guessing.</p>
     <p class="loc-resolved hidden" id="loc-resolved"></p>
     <p class="loc-status hidden" id="loc-status" role="status" aria-live="polite"></p>
 
@@ -383,7 +426,7 @@
     <div class="care__mapcol">
       <div id="map" role="region" aria-label="Map of nearby clinicians" data-lenis-prevent></div>
       <div class="source-line">
-        <span id="places-source">Source: —</span>
+        <span id="places-source">Source:</span>
         <span id="map-count"></span>
         <span id="places-count"></span>
       </div>
@@ -402,16 +445,16 @@
     <div class="step-label"><span class="step-label__num">REF</span> Background reading <span class="step-label__rule"></span></div>
     <h1 id="resources-title" style="margin-bottom:var(--space-4)">What scoliosis actually is</h1>
 
-    <p>A spine is supposed to be straight when you look at someone from behind. Scoliosis means it curves sideways, usually in an S or C shape, and the vertebrae also rotate slightly as they curve. That rotation is why one side of the back can look higher than the other when you bend forward — the ribs get carried along with the twist.</p>
+    <p>A spine is supposed to be straight when you look at someone from behind. Scoliosis means it curves sideways, usually in an S or C shape, and the vertebrae also rotate slightly as they curve. That rotation is why one side of the back can look higher than the other when you bend forward, the ribs get carried along with the twist.</p>
     <p>The most common kind is <b>adolescent idiopathic scoliosis</b>. "Idiopathic" means no one knows the cause. It usually shows up between ages 10 and 15, during the growth spurt, and it's more likely to progress in girls. It is common: roughly 2 to 3 in 100 adolescents have a curve of 10° or more. Most of those curves are small, never progress, and need nothing but a check-up now and then.</p>
 
     <h2>What the forward bend test shows</h2>
-    <p>The Adam's forward bend test is the standard screening move. You bend forward at the waist with your arms hanging, and someone looks along your back from behind. If the spine is rotated, one side of the rib cage or lower back sits higher than the other — a "rib hump."</p>
-    <p>Clinicians measure that hump with a <b>scoliometer</b>, a small level laid across the back. It reads out an <b>angle of trunk rotation (ATR)</b> in degrees. The widely used referral cutoff is <b>7°</b>, which corresponds roughly to a 20° spinal curve — the point where treatment decisions start to matter. Readings between about 5° and 7° usually mean "check again in a few months."</p>
+    <p>The Adam's forward bend test is the standard screening move. You bend forward at the waist with your arms hanging, and someone looks along your back from behind. If the spine is rotated, one side of the rib cage or lower back sits higher than the other, a "rib hump."</p>
+    <p>Clinicians measure that hump with a <b>scoliometer</b>, a small level laid across the back. It reads out an <b>angle of trunk rotation (ATR)</b> in degrees. The widely used referral cutoff is <b>7°</b>, which corresponds roughly to a 20° spinal curve, the point where treatment decisions start to matter. Readings between about 5° and 7° usually mean "check again in a few months."</p>
 
     <h2>What Versine can and can't measure</h2>
     <p>This part is worth being blunt about, because it decides how much weight to give anything the app tells you.</p>
-    <p><b>It measures how level your shoulders and hips look.</b> Those are real screening signs — an uneven shoulder or waistline is often what makes a parent or a school nurse look twice — and they can be measured from a photograph reliably enough to be worth reporting, with an error bar.</p>
+    <p><b>It measures how level your shoulders and hips look.</b> Those are real screening signs: an uneven shoulder or waistline is often what makes a parent or a school nurse look twice, and they can be measured from a photograph reliably enough to be worth reporting, with an error bar.</p>
     <p><b>It does not measure trunk rotation.</b> An earlier version of this app did try to, by reading the depth the pose model estimates for each body point. Tested against clinical photographs of people with confirmed curves, those depth numbers moved further than the rib hump they were supposed to detect when the same photo was simply re-cropped. They looked precise and meant nothing, so they were removed. A rib hump is a centimetre or two of depth across a back; a single phone photo does not carry that information, which is exactly why the scoliometer exists.</p>
     <p><b>Every reading comes with its uncertainty.</b> Each photo is measured five times at slightly different framings. You get the middle value and the spread between them, and if the five disagree too much you get no number at all rather than a confident-looking wrong one.</p>
 
@@ -434,7 +477,7 @@
       </svg>
       <figcaption>A Cobb angle is measured on a standing X-ray, between the most tilted vertebra at the top of the curve and the most tilted one at the bottom. 10° or more is scoliosis. Under 10° is just normal spinal asymmetry.</figcaption>
     </figure>
-    <p>A visit typically includes: a history (growth, family history, pain, any neurological symptoms), the forward bend test with a scoliometer, a check of leg lengths and skin markings, and — if the exam warrants it — a low-dose standing X-ray of the full spine. Growth remaining matters as much as the curve size, because a curve in a still-growing spine is the one likely to get bigger.</p>
+    <p>A visit typically includes: a history (growth, family history, pain, any neurological symptoms), the forward bend test with a scoliometer, a check of leg lengths and skin markings, and, if the exam warrants it, a low-dose standing X-ray of the full spine. Growth remaining matters as much as the curve size, because a curve in a still-growing spine is the one likely to get bigger.</p>
 
     <h2>What treatment actually looks like</h2>
     <table class="path-table">
@@ -442,16 +485,16 @@
       <tbody>
         <tr><td>&lt; 10°</td><td>Not scoliosis. No treatment.</td></tr>
         <tr><td>10–24°</td><td>Observation. Recheck every 4–12 months while growing. Often paired with scoliosis-specific physical therapy (Schroth, SEAS) to work on posture and trunk control.</td></tr>
-        <tr><td>25–45°</td><td>Bracing, if the person is still growing. A brace doesn't straighten the spine — it holds the curve from getting worse until growth finishes. It works better the more hours a day it's worn.</td></tr>
+        <tr><td>25–45°</td><td>Bracing, if the person is still growing. A brace doesn't straighten the spine. It holds the curve from getting worse until growth finishes. It works better the more hours a day it's worn.</td></tr>
         <tr><td>&gt; 45–50°</td><td>Surgery is discussed. Usually spinal fusion, sometimes vertebral body tethering for the right candidates. This is the minority of cases.</td></tr>
       </tbody>
     </table>
-    <p>Most people screened never reach the bracing conversation. The reason early detection matters is that bracing only works while there's growth left — catching a curve at 13 gives options that catching it at 17 does not.</p>
+    <p>Most people screened never reach the bracing conversation. The reason early detection matters is that bracing only works while there's growth left: catching a curve at 13 gives options that catching it at 17 does not.</p>
 
     <h2>Why school screening matters</h2>
     <p>School screening exists because scoliosis peaks exactly when kids stop being examined regularly. It's painless in the early stages, hidden by clothing, and easy for a teenager to not mention. A 30-second forward bend test in a gym catches curves that would otherwise be found years later, past the point where a brace could have helped.</p>
-    <p>Coverage has thinned out. Some U.S. states mandate screening, some recommend it, and others have dropped their programs, generally citing cost, staffing, and the argument that screening produces referrals and X-rays for curves that would never have progressed. The counter-argument from pediatric orthopedic groups is that the cost of a missed curve — a brace-eligible teenager who instead becomes a surgical candidate — is much higher than the cost of some extra referrals.</p>
-    <p>If your school doesn't screen, a forward bend check at home once or twice a year during the growth years is a reasonable substitute. That's what this app is for — not to replace the exam, but to make it likelier that someone who needs one actually gets one.</p>
+    <p>Coverage has thinned out. Some U.S. states mandate screening, some recommend it, and others have dropped their programs, generally citing cost, staffing, and the argument that screening produces referrals and X-rays for curves that would never have progressed. The counter-argument from pediatric orthopedic groups is that the cost of a missed curve, a brace-eligible teenager who instead becomes a surgical candidate, is much higher than the cost of some extra referrals.</p>
+    <p>If your school doesn't screen, a forward bend check at home once or twice a year during the growth years is a reasonable substitute. That's what this app is for: not to replace the exam, but to make it likelier that someone who needs one actually gets one.</p>
 
     <h2>Read further</h2>
     <ul class="link-list">
@@ -468,7 +511,7 @@
         <span class="link-list__name">POSNA OrthoKids</span>
         <span class="link-list__desc">Pediatric Orthopaedic Society of North America's family-facing site, written for parents and kids.</span></a></li>
       <li><a href="https://www.niams.nih.gov/health-topics/scoliosis" target="_blank" rel="noopener noreferrer">
-        <span class="link-list__name">NIH / NIAMS — Scoliosis</span>
+        <span class="link-list__name">NIH / NIAMS: Scoliosis</span>
         <span class="link-list__desc">Government health overview: causes, diagnosis, treatment, and current research.</span></a></li>
       <li><a href="https://www.settingscoliosisstraight.org/" target="_blank" rel="noopener noreferrer">
         <span class="link-list__name">Setting Scoliosis Straight Foundation</span>

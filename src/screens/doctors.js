@@ -1,5 +1,5 @@
 /* Clinician finder: live geolocation plus a real places lookup, drawn on a map
- * and listed with the things you actually need — distance, specialty, phone,
+ * and listed with the things you actually need, distance, specialty, phone,
  * directions. */
 
 import { $, $$, el, formatDistance, escapeHtml } from '../lib/dom.js';
@@ -25,7 +25,7 @@ const state = {
 };
 
 /* Every lookup takes a token. A response is only applied if its token is still
-   the newest — so pressing the button again supersedes the request in flight
+   the newest, so pressing the button again supersedes the request in flight
    instead of being dropped, which is what used to happen. Overpass can take
    fifteen seconds, and for that whole window every press did nothing. */
 let searchToken = 0;
@@ -143,7 +143,7 @@ async function useCurrentLocation() {
 async function useTypedLocation() {
   const query = $('#loc-input').value.trim();
   if (!query) {
-    setStatus('Type a postal code, city, or address first — or use your location.', true);
+    setStatus('Type a postal code, city, or address first, or use your location.', true);
     $('#loc-input').focus();
     return;
   }
@@ -190,7 +190,7 @@ async function search({ skipLocal = false } = {}) {
   const token = ++searchToken;
 
   /* Cancel the request this one supersedes. Ignoring a stale response was not
-     enough — the abandoned request kept holding one of the few per-IP slots the
+     enough, the abandoned request kept holding one of the few per-IP slots the
      free service allows, so repeated presses starved each other. */
   inFlight?.abort();
   const controller = new AbortController();
@@ -217,7 +217,7 @@ async function search({ skipLocal = false } = {}) {
     $('#places-source').textContent = `Source: ${answer.label}`;
     syncRatingFilter();
 
-    /* If earlier providers were tried and failed, say which — silently falling
+    /* If earlier providers were tried and failed, say which, silently falling
        back hides a broken key or an outage the user could fix. */
     renderResults(answer.attempts.length
       ? `Answered by ${answer.label} after ${answer.attempts.join('; ')}.`
@@ -246,7 +246,7 @@ function syncRatingFilter() {
     if (!available) chip.setAttribute('aria-pressed', 'false');
     chip.title = available
       ? 'Filter to practices rated at least this highly'
-      : 'This lookup service does not publish ratings. Only Google Places does — add a key below.';
+      : 'This lookup service does not publish ratings. Only Google Places does. Add a key below.';
   });
 }
 
@@ -285,7 +285,7 @@ function emptyReason() {
   }
   const hidden = state.results.length - visibleResults().length;
   if (state.minRating && providerHasRatings()) {
-    return `All ${hidden} nearby practices were hidden by the ${state.minRating.toFixed(1)}+ rating filter. Many clinics have no rating at all, so this filter is aggressive — turn it off to see them.`;
+    return `All ${hidden} nearby practices were hidden by the ${state.minRating.toFixed(1)}+ rating filter. Many clinics have no rating at all, so this filter is aggressive. Turn it off to see them.`;
   }
   if (state.specs.size) {
     return `All ${hidden} nearby practices were hidden by the specialty filter. Turn one off to widen the search.`;
@@ -343,10 +343,10 @@ function renderNotice(extra) {
     el('p', { class: 'small', id: 'index-coverage' }, 'Checking the local index…'),
 
     el('p', { class: 'small' },
-      "OpenStreetMap's services need no key and cost nothing, but they are shared, volunteer-run and often overloaded — they are the reason a lookup sometimes fails. Any key below is free to obtain and moves that provider ahead of them."),
+      "OpenStreetMap's services need no key and cost nothing, but they are shared, volunteer-run and often overloaded. They are the reason a lookup sometimes fails. Any key below is free to obtain and moves that provider ahead of them."),
 
     el('p', { class: 'small' },
-      'Nobody publishes which insurance a practice accepts, so Versine does not guess at it. Ask when you call — and ask whether they see scoliosis patients, since not every orthopedist does.'),
+      'Nobody publishes which insurance a practice accepts, so Versine does not guess at it. Ask when you call, and ask whether they see scoliosis patients, since not every orthopedist does.'),
 
     ...PROVIDER_KEYS.map(keyRow),
 
@@ -357,7 +357,7 @@ function renderNotice(extra) {
 }
 
 /* The local index is the first thing tried, so say plainly how much of it there
-   is — bundled with the app, and learned from searches on this device. */
+   is, bundled with the app, and learned from searches on this device. */
 async function describeCoverage() {
   const box = $('#index-coverage');
   if (!box) return;
@@ -365,10 +365,10 @@ async function describeCoverage() {
 
   const bundled = c.bundledRegions
     ? `${c.bundledClinics.toLocaleString()} clinics bundled across ${c.bundledRegions} regions (built ${c.builtAt})`
-    : 'nothing bundled yet — run tools/build-clinic-index.mjs';
+    : 'nothing bundled yet (run tools/build-clinic-index.mjs)';
   const learned = c.learnedClinics
     ? `${c.learnedClinics.toLocaleString()} learned from ${c.learnedAreas} searched area${c.learnedAreas === 1 ? '' : 's'} on this device`
-    : 'nothing learned yet — every live search adds to it';
+    : 'nothing learned yet; every live search adds to it';
 
   box.replaceChildren(
     el('span', {}, `Local index: ${bundled}; ${learned}. `),

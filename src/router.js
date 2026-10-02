@@ -1,12 +1,13 @@
 /* Screen switching. Screens are sections in index.html; only one is active. */
 
 import { $, $$ } from './lib/dom.js';
+import { INTRO_KEY } from './config.js';
 
 const enterHooks = new Map();
 const leaveHooks = new Map();
 let active = null;
 
-/* Which bottom tab lights up for each screen — the scan flow keeps "Scan" lit. */
+/* Which bottom tab lights up for each screen, the scan flow keeps "Scan" lit. */
 const TAB_OF = {
   intro: 'capture', capture: 'capture', adjust: 'capture', analyze: 'capture', result: 'capture',
   intake: 'capture', report: 'capture',
@@ -33,8 +34,12 @@ export function showScreen(name, payload) {
      `!important` reliably beats that (the same reason print.css force-hides it
      with `!important` rather than relying on the cascade). Hidden this way the
      buttons have no layout box, so they take no click, tap, or Tab focus. */
+  /* Once the disclaimer has been accepted, the intro is just a page to revisit
+     (from the logo), and the tabs are the way back out of it. */
+  let accepted = false;
+  try { accepted = Boolean(localStorage.getItem(INTRO_KEY)); } catch { /* storage blocked */ }
   const tabbar = $('.tabbar');
-  if (tabbar) tabbar.classList.toggle('hidden', name === 'intro');
+  if (tabbar) tabbar.classList.toggle('hidden', name === 'intro' && !accepted);
 
   const previous = active;
   active = name;

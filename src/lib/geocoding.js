@@ -106,7 +106,7 @@ async function maptilerReverse({ lat, lng }, signal) {
 
 /* ---------------------------------------------------------- Geocode.maps.co --- */
 
-/* A hosted Nominatim, so the response shape matches — but it takes free text
+/* A hosted Nominatim, so the response shape matches, but it takes free text
    only, which is why the country is appended to the query rather than filtered. */
 async function mapscoSearch(query, country, signal) {
   const text = country ? `${query}, ${countryName(country)}` : query;
@@ -188,8 +188,8 @@ export const geocodingProviders = () => PROVIDERS.filter((p) => p.available()).m
 /**
  * Typed place to coordinates, trying each provider until one answers.
  *
- * A bare postal code is ambiguous worldwide — "2000" is valid in a dozen
- * countries — so it is sent as a postal code, constrained to the chosen country,
+ * A bare postal code is ambiguous worldwide, "2000" is valid in a dozen
+ * countries, so it is sent as a postal code, constrained to the chosen country,
  * wherever the provider supports saying so.
  */
 export async function geocode(query, { country = '', signal = null } = {}) {

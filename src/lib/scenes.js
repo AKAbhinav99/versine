@@ -180,7 +180,7 @@ function buildHow(gsap, ScrollTrigger) {
   const angle = section.querySelector('[data-how-angle]');
   const pm = section.querySelector('[data-how-pm]');
 
-  const figure = [...section.querySelectorAll('.how__figure > *')];
+  const reveal = section.querySelector('.how__reveal');
   const measures = [...section.querySelectorAll('.how__measure')];
   const level = section.querySelector('.how__level');
   const arc = section.querySelector('.how__arc');
@@ -188,7 +188,7 @@ function buildHow(gsap, ScrollTrigger) {
   const points = [...section.querySelectorAll('.how__points circle')];
   const frames = [...section.querySelectorAll('.how__frames rect')];
 
-  [...figure, ...measures, level, arc, plumbLine].forEach((node) => {
+  [...measures, level, arc, plumbLine].forEach((node) => {
     gsap.set(node, { strokeDashoffset: strokeLength(node) });
   });
 
@@ -215,9 +215,9 @@ function buildHow(gsap, ScrollTrigger) {
     },
   });
 
-  /* 1. The figure draws itself, plumb line first. */
+  /* 1. The plumb line drops, then the figure is revealed down its length. */
   tl.to(plumbLine, { strokeDashoffset: 0, duration: 0.6 }, 0)
-    .to(figure, { strokeDashoffset: 0, duration: 1, stagger: 0.06 }, 0.1)
+    .fromTo(reveal, { attr: { height: 0 } }, { attr: { height: 400 }, duration: 1, ease: 'power2.out' }, 0.1)
   /* 2. The four points land. */
     .from(points, { scale: 0.4, autoAlpha: 0, transformOrigin: '50% 50%', duration: 0.35, stagger: 0.12, ease: 'back.out(2.4)' }, 1.15)
   /* 3. Horizontal reference, the measured lines, the angle, and the number. */

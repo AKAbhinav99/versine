@@ -1,6 +1,6 @@
 /* The intake questions, and where the answers land.
  *
- * Answers save as they are given rather than behind a Save button — this is a
+ * Answers save as they are given rather than behind a Save button, this is a
  * form someone fills in while sitting with a worried parent, and losing it to a
  * mistapped back gesture would be its own small cruelty.
  */
@@ -32,7 +32,7 @@ function render() {
 
   append(body,
     el('p', { class: 'small muted', style: 'margin-bottom:var(--space-5)' },
-      'Kept on this device with your scans, and printed onto the referral summary so you are not trying to remember it in the room. Answer what you know — a blank is better than a guess.'),
+      'Kept on this device with your scans, and printed onto the referral summary so you are not trying to remember it in the room. Answer what you know. A blank is better than a guess.'),
     flags.length ? flagSummary(flags) : null,
     ...Object.entries(SECTIONS).map(([id, section]) => sectionBlock(id, section)),
     el('div', { class: 'stack-sm', style: 'margin-top:var(--space-6)' },
@@ -111,7 +111,7 @@ function optionRow(question) {
   const name = `intake-${question.id}`;
 
   /* No role="radiogroup" here: the fieldset and its legend already group and name
-     these, and a radiogroup may contain only radios — the Clear button below is
+     these, and a radiogroup may contain only radios, the Clear button below is
      not one, which made the wrapper invalid as well as redundant. */
   return el('div', { class: 'intake__options' },
     ...question.options.map((option) => {

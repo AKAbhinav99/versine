@@ -2,7 +2,7 @@
  *
  * Three providers, richest first: Google Places has ratings, Geoapify has good
  * coverage without them, and Overpass is the keyless last resort. Overpass is
- * last on purpose — it is a free, shared, volunteer-run service that is often
+ * last on purpose, it is a free, shared, volunteer-run service that is often
  * overloaded, and it is the one that made this chain necessary. */
 
 import { fetchWithTimeout, readJson, runChain, haversineMeters, delay, CancelledError } from './net.js';
@@ -97,7 +97,7 @@ async function searchGoogle(center, radiusM, signal) {
 
 /* ---------------------------------------------------------------- Geoapify --- */
 
-/* Verified against the live API — an unsupported category 400s the whole request,
+/* Verified against the live API, an unsupported category 400s the whole request,
    which is what "healthcare.physiotherapist" did. Geoapify has no physiotherapy
    category at all, which is the main reason its coverage for this app is thinner
    than OpenStreetMap's. */
@@ -111,7 +111,7 @@ const GEOAPIFY_CATEGORIES = [
 /* With no physiotherapy category and mostly general-practice names, filtering
    Geoapify by name the way OpenStreetMap is filtered discards everything. So
    sub-category decides where it can, the name decides where it cannot, and what
-   is left stays in labelled as general — a hospital is a real place to get a
+   is left stays in labelled as general, a hospital is a real place to get a
    scoliosis referral, it just is not a specialist. */
 function geoapifySpecialty(name, categories) {
   const cats = categories.join(' ');
@@ -285,7 +285,7 @@ const OVERPASS_ATTEMPTS = OVERPASS_ENDPOINTS.length;
 const OVERPASS_BACKOFF_MS = [0, 500, 3000];
 
 /* Overpass answers 429 when its per-IP slots are full and 504 when its gateway
-   gives up, and both clear on their own within seconds — so they are retried
+   gives up, and both clear on their own within seconds, so they are retried
    rather than reported. */
 async function searchOverpass(center, radiusM, signal) {
   let lastError = null;
@@ -364,7 +364,7 @@ async function overpassAttempt(endpoint, center, radiusM, signal) {
  * tags physiotherapists explicitly and Geoapify has no physiotherapy category at
  * all. Measured on the same 15km circle: OpenStreetMap returned 27 practices that
  * actually treat backs, Geoapify returned 59 general clinics and hospitals and no
- * specialists. Geoapify is the fallback beneath it — hospitals are a real route to
+ * specialists. Geoapify is the fallback beneath it, hospitals are a real route to
  * a referral, and they are labelled as general rather than dressed up.
  *
  * OpenStreetMap is asked through Photon first and Overpass second. Same data;

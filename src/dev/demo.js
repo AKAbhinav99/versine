@@ -1,5 +1,5 @@
 /* Demo scan, for showing the result screen without a camera or a real photo.
- * Loaded only when the page is opened with ?demo — never part of a normal scan.
+ * Loaded only when the page is opened with ?demo, never part of a normal scan.
  * The landmarks below are hand-written, not detected: this is a UI fixture. */
 
 import { POSE } from '../lib/geometry.js';
@@ -59,7 +59,7 @@ function placeholderPhoto() {
 
   ctx.font = '500 20px "IBM Plex Mono", monospace';
   ctx.fillStyle = 'rgba(237,240,241,0.75)';
-  ctx.fillText('DEMO IMAGE — NOT A REAL SCAN', 150, 40);
+  ctx.fillText('DEMO IMAGE, NOT A REAL SCAN', 150, 40);
   return canvas;
 }
 

@@ -2,7 +2,7 @@
  * error bars, and a plain-language reading of what they mean.
  *
  * Nothing here is a black box, and nothing here is reported without its
- * uncertainty — the benchmark that shaped this app (bench/README.md) showed a
+ * uncertainty, the benchmark that shaped this app (bench/README.md) showed a
  * single-framing measurement is not reliable enough to present as a fact. */
 
 import { $, el, append, formatDate, prefersReducedMotion } from '../lib/dom.js';
@@ -57,7 +57,7 @@ export function renderResult(payload) {
   }
 }
 
-/** Redraw with whatever was last shown — used after the intake is answered. */
+/** Redraw with whatever was last shown, used after the intake is answered. */
 export function rerenderResult() {
   if (current) renderResult(current);
 }
@@ -81,7 +81,7 @@ export function renderFailure({ headline, body: message, photo }) {
 /* ------------------------------------------------------------------ parts --- */
 
 /* Sits above the verdict, deliberately. A reassuring number should never be the
-   first thing read by someone who has just reported leg weakness — the ordering
+   first thing read by someone who has just reported leg weakness, the ordering
    on the page is the whole point of this block. */
 function redFlagBlock(flags) {
   const urgency = highestUrgency(flags);
@@ -91,7 +91,7 @@ function redFlagBlock(flags) {
       urgency === 'urgent' ? 'See a clinician this week' : 'Raise this with a clinician'),
     el('p', { class: 'redflag__body' },
       `You told Versine about ${flags.length === 1 ? 'a symptom' : 'symptoms'} that a photograph does not screen for. Whatever the reading below says, ${urgency === 'urgent'
-        ? 'this needs a person to examine you, and soon — it can indicate the nerves or spinal cord rather than the shape of the spine.'
+        ? 'this needs a person to examine you, and soon: it can indicate the nerves or spinal cord rather than the shape of the spine.'
         : 'ordinary idiopathic scoliosis usually does not cause it, so it is worth asking about directly.'}`),
     el('ul', { class: 'redflag__list' }, ...flags.map((flag) => el('li', {}, flag.label))),
     el('button', {
@@ -105,7 +105,7 @@ function intakePrompt() {
   return el('div', { class: 'intake-prompt' },
     el('div', { class: 'intake-prompt__text' },
       el('b', {}, 'Eight questions this photo cannot answer'),
-      el('span', {}, 'Growth, family history, and symptoms decide as much as the curve does. Answering them adds context to your referral summary — and none of it changes the measurement above.')),
+      el('span', {}, 'Growth, family history, and symptoms decide as much as the curve does. Answering them adds context to your referral summary, and none of it changes the measurement above.')),
     el('button', { class: 'btn', onClick: () => openIntake('result') }, 'Answer them'));
 }
 
@@ -195,9 +195,9 @@ function thresholdRuler(value) {
 
   return el('div', { class: 'ruler' }, track,
     el('div', { class: 'ruler__legend' },
-      legend('clear', 'Under 2° — level'),
-      legend('monitor', '2–3.5° — track it'),
-      legend('refer', '3.5°+ — get it looked at')));
+      legend('clear', 'Under 2°: level'),
+      legend('monitor', '2–3.5°: track it'),
+      legend('refer', '3.5°+: get it looked at')));
 }
 
 const legend = (band, text) => el('span', {},
@@ -218,7 +218,7 @@ function swayPanel(reading) {
           ? 'That is more than the measurement itself wobbled, which means how you were standing matters more here than anything the app did. Standing more steadily, or having someone hold the phone, would tighten it.'
           : 'That is less than the measurement itself wobbled, so you were holding the position well.'))),
     el('p', { class: 'sway__note' },
-      'This is reported, not judged. No threshold for it has been calibrated against anything, so it never decides whether you get a number — that decision still rests on the framing spread above.'));
+      'This is reported, not judged. No threshold for it has been calibrated against anything, so it never decides whether you get a number. That decision still rests on the framing spread above.'));
 }
 
 function metricGrid(reading) {
@@ -244,7 +244,7 @@ function reliabilityPanel(reading) {
 }
 
 /* A hand-applied rotation shifts the reading one-for-one, so it is never left
-   implicit — the number below was measured on a photo that was turned. */
+   implicit, the number below was measured on a photo that was turned. */
 function rotationNote(rotationDeg) {
   return el('div', { class: 'quality-note' },
     el('b', {}, `This photo was rotated ${rotationDeg.toFixed(1)}° before measuring. `),
@@ -253,13 +253,13 @@ function rotationNote(rotationDeg) {
 
 function methodPanel() {
   return el('details', { class: 'panel panel--registered', style: 'margin-bottom:var(--space-4)' },
-    el('summary', { class: 'label', style: 'cursor:pointer' }, 'How this is measured — and what it cannot measure'),
+    el('summary', { class: 'label', style: 'cursor:pointer' }, 'How this is measured, and what it cannot measure'),
     el('ul', { class: 'small muted', style: 'margin:var(--space-3) 0 0;padding-left:1.1rem' },
-      el('li', {}, 'MediaPipe Pose locates 33 body landmarks. Four of them — both shoulders and both hips — carry the measurement.'),
+      el('li', {}, 'MediaPipe Pose locates 33 body landmarks. Four of them (both shoulders and both hips) carry the measurement.'),
       el('li', {}, 'Shoulder and hip tilt: the angle between the line joining that pair and horizontal, measured in pixel space so image proportions do not skew it.'),
       el('li', {}, 'Each photo is measured at five framings. The reading is the median, the ± is the spread, and a wide spread means no number is reported.'),
       el('li', {}, el('b', {}, 'Not measured: trunk rotation. '),
-        'The rib hump a clinician feels for is a depth difference of a centimetre or two. Testing against clinical photographs showed the depth this model estimates moves further than that when the same photo is simply re-cropped, so Versine does not report a rotation angle. A scoliometer, laid on the back in the forward bend, is what measures that — and 7° on one is the usual referral level.'),
+        'The rib hump a clinician feels for is a depth difference of a centimetre or two. Testing against clinical photographs showed the depth this model estimates moves further than that when the same photo is simply re-cropped, so Versine does not report a rotation angle. A scoliometer, laid on the back in the forward bend, is what measures that, and 7° on one is the usual referral level.'),
       el('li', {}, 'The bands here are calibrated on a small set of labelled clinical photographs. They are provisional, not clinically validated.')));
 }
 
@@ -279,7 +279,7 @@ function nextStepsBlock(level) {
 
 function actions(entry = null) {
   return el('div', { class: 'stack-sm', style: 'margin-bottom:var(--space-5)' },
-    /* Only offered for a reading that was actually logged — a withheld reading
+    /* Only offered for a reading that was actually logged, a withheld reading
        has no number to summarise, and a page saying so helps nobody. */
     entry
       ? el('button', {

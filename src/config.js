@@ -10,13 +10,13 @@ export const POSE_MODEL = {
 
 /* Screening bands.
  *
- * These are calibrated on the labelled image set in bench/ — a small set of
+ * These are calibrated on the labelled image set in bench/, a small set of
  * clinical photographs of confirmed scoliosis alongside ordinary posterior
  * photographs. They are provisional, not clinically validated, and the UI says so.
  *
  * scoliometerReferenceDeg is a different thing: the real 7 degree angle-of-trunk-
  * rotation referral cutoff used with a scoliometer in the forward bend. It is
- * shown for context only. This app cannot measure that angle from a photograph —
+ * shown for context only. This app cannot measure that angle from a photograph,
  * see bench/README.md.
  */
 export const THRESHOLDS = {
@@ -31,13 +31,13 @@ export const THRESHOLDS = {
 /* Is the subject actually bent forward?
  *
  * Photographed from behind, the shoulders sit higher in the frame than the hips
- * whether the subject is standing or bent — a camera held at chest height looks
+ * whether the subject is standing or bent, a camera held at chest height looks
  * down at both. What changes is foreshortening: bending forward points the trunk
  * away from the camera, so the shoulder-to-hip distance in the image collapses
  * relative to shoulder width.
  *
  * standingTorsoRatio is measured: every standing photograph in bench/ came out
- * between 1.06 and 1.47. The bent-forward side is physical reasoning, not data —
+ * between 1.06 and 1.47. The bent-forward side is physical reasoning, not data,
  * the one forward-bend image in the set is too tightly cropped to detect. So this
  * raises a note, never withholds a reading.
  */
@@ -51,7 +51,7 @@ export const POSE_CHECK = {
    framings exceeded ~3.5 degrees came from detections that had gone wrong.
  *
  * implausibleTiltDeg discards a single framing whose geometry cannot be a real
- * shoulder line — a guard against the pose model mis-fitting the subject.
+ * shoulder line, a guard against the pose model mis-fitting the subject.
  *
  * It was briefly lowered to 15 on the reasoning that the largest genuine reading
  * anywhere in the labelled set was 8.3 degrees while observed mis-fits ran to 83.
@@ -72,7 +72,7 @@ export const RELIABILITY = {
 };
 
 /* Clinician finder. Providers and their keys live in lib/keys.js, lib/clinics.js
-   and lib/geocoding.js — this is just the shared search shape. */
+   and lib/geocoding.js, this is just the shared search shape. */
 export const PLACES = {
   countryStorage: 'versine.country',
   defaultRadiusM: 15000,

@@ -60,6 +60,13 @@ export function initField() {
   const canvas = document.querySelector('canvas.field');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
+  /* The spine gets a canvas of its own, above the dots: the dot layer fades out
+     toward the masthead (a CSS mask), and the spine must not fade with it. */
+  const front = document.createElement('canvas');
+  front.className = 'field field--front';
+  front.setAttribute('aria-hidden', 'true');
+  canvas.after(front);
+  const fx = front.getContext('2d');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const fills = Array.from({ length: SHADES }, (_, i) => {
@@ -92,6 +99,11 @@ export function initField() {
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    front.width = canvas.width;
+    front.height = canvas.height;
+    front.style.width = `${width}px`;
+    front.style.height = `${height}px`;
+    fx.setTransform(dpr, 0, 0, dpr, 0, 0);
     /* One spare row and column so the drifting lattice never shows an edge. */
     cols = Math.ceil(width / GAP) + 2;
     rows = Math.ceil(height / GAP) + 2;
@@ -150,23 +162,23 @@ export function initField() {
     const base = geo.top + geo.length;
 
     /* The plumb line, dropped from the top vertebra past the sacrum. */
-    ctx.save();
-    ctx.setLineDash([5, 7]);
-    ctx.strokeStyle = 'rgba(14, 34, 48, 0.35)';
-    ctx.lineWidth = 1.25;
-    ctx.beginPath();
-    ctx.moveTo(geo.cx, geo.top - spacing);
-    ctx.lineTo(geo.cx, base + spacing * 2.5);
-    ctx.stroke();
-    ctx.restore();
+    fx.save();
+    fx.setLineDash([5, 7]);
+    fx.strokeStyle = 'rgba(14, 34, 48, 0.35)';
+    fx.lineWidth = 1.25;
+    fx.beginPath();
+    fx.moveTo(geo.cx, geo.top - spacing);
+    fx.lineTo(geo.cx, base + spacing * 2.5);
+    fx.stroke();
+    fx.restore();
 
     /* Cobb lines: along the end plates at the top and the bottom of the upper
        curve, extended to where they would be measured. */
     if (angle > 2) {
       const side = spine.amp >= 0 ? -1 : 1;
-      ctx.save();
-      ctx.strokeStyle = `rgba(${alarm > 0.5 ? MARKER_RGB : SCRUB_RGB}, ${Math.min(0.9, angle / 12)})`;
-      ctx.lineWidth = 1.5;
+      fx.save();
+      fx.strokeStyle = `rgba(${alarm > 0.5 ? MARKER_RGB : SCRUB_RGB}, ${Math.min(0.9, angle / 12)})`;
+      fx.lineWidth = 1.5;
       for (const t of [0, 0.5]) {
         const x = spineX(geo, t);
         const y = geo.top + t * geo.length;
@@ -175,28 +187,28 @@ export function initField() {
         const uy = -Math.sin(spineTilt(geo, t));
         const hw = halfWidth(geo, t);
         const run = hw + 70 * geo.scale;
-        ctx.beginPath();
-        ctx.moveTo(x - ux * hw * side, y - uy * hw * side);
-        ctx.lineTo(x + ux * run * side, y + uy * run * side);
-        ctx.stroke();
+        fx.beginPath();
+        fx.moveTo(x - ux * hw * side, y - uy * hw * side);
+        fx.lineTo(x + ux * run * side, y + uy * run * side);
+        fx.stroke();
       }
-      ctx.restore();
+      fx.restore();
     }
 
     /* Sacrum: a rounded wedge under the last vertebra. */
     const sx = spineX(geo, 1);
     const sw = halfWidth(geo, 1) * 0.95;
     const sy = base + spacing * 0.55;
-    ctx.beginPath();
-    ctx.moveTo(sx - sw, sy - spacing * 0.1);
-    ctx.quadraticCurveTo(sx, sy - spacing * 0.3, sx + sw, sy - spacing * 0.1);
-    ctx.quadraticCurveTo(sx + sw * 0.45, sy + spacing * 1.2, sx, sy + spacing * 1.35);
-    ctx.quadraticCurveTo(sx - sw * 0.45, sy + spacing * 1.2, sx - sw, sy - spacing * 0.1);
-    ctx.fillStyle = '#FFFFFF';
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = INK;
-    ctx.fill();
-    ctx.stroke();
+    fx.beginPath();
+    fx.moveTo(sx - sw, sy - spacing * 0.1);
+    fx.quadraticCurveTo(sx, sy - spacing * 0.3, sx + sw, sy - spacing * 0.1);
+    fx.quadraticCurveTo(sx + sw * 0.45, sy + spacing * 1.2, sx, sy + spacing * 1.35);
+    fx.quadraticCurveTo(sx - sw * 0.45, sy + spacing * 1.2, sx - sw, sy - spacing * 0.1);
+    fx.fillStyle = '#FFFFFF';
+    fx.lineWidth = 1.5;
+    fx.strokeStyle = INK;
+    fx.fill();
+    fx.stroke();
 
     /* Vertebrae, rotated with the curve. Those around the apex of each curve
        tint toward marker red as the angle passes the threshold. */
@@ -209,45 +221,45 @@ export function initField() {
       const apex = Math.abs(Math.sin(Math.PI * 2 * t)) ** 4;
       const heat = alarm * apex;
 
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(-spineTilt(geo, t));
+      fx.save();
+      fx.translate(x, y);
+      fx.rotate(-spineTilt(geo, t));
       /* Transverse processes, the wings either side, behind the body. */
       const wing = hw * (1.55 - 0.25 * t);
-      ctx.beginPath();
-      ctx.roundRect(-wing, -hh * 0.32, wing * 2, hh * 0.64, hh * 0.32);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fill();
-      ctx.lineWidth = 1.25;
-      ctx.strokeStyle = heat > 0.5 ? MARKER : 'rgba(14, 34, 48, 0.55)';
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.roundRect(-hw, -hh, hw * 2, hh * 2, Math.min(hh, 7 * geo.scale));
-      ctx.fillStyle = heat > 0.05 ? `rgba(${MARKER_RGB}, ${0.1 + heat * 0.14})` : '#FFFFFF';
-      ctx.fill();
-      ctx.lineWidth = 1.5;
-      ctx.strokeStyle = heat > 0.5 ? MARKER : INK;
-      ctx.stroke();
+      fx.beginPath();
+      fx.roundRect(-wing, -hh * 0.32, wing * 2, hh * 0.64, hh * 0.32);
+      fx.fillStyle = '#FFFFFF';
+      fx.fill();
+      fx.lineWidth = 1.25;
+      fx.strokeStyle = heat > 0.5 ? MARKER : 'rgba(14, 34, 48, 0.55)';
+      fx.stroke();
+      fx.beginPath();
+      fx.roundRect(-hw, -hh, hw * 2, hh * 2, Math.min(hh, 7 * geo.scale));
+      fx.fillStyle = heat > 0.05 ? `rgba(${MARKER_RGB}, ${0.1 + heat * 0.14})` : '#FFFFFF';
+      fx.fill();
+      fx.lineWidth = 1.5;
+      fx.strokeStyle = heat > 0.5 ? MARKER : INK;
+      fx.stroke();
       /* The spinous process, the bump you can feel down a back. */
-      ctx.beginPath();
-      ctx.arc(0, 0, 2.2 * geo.scale + 0.6, 0, Math.PI * 2);
-      ctx.fillStyle = heat > 0.5 ? MARKER : INK;
-      ctx.fill();
-      ctx.restore();
+      fx.beginPath();
+      fx.arc(0, 0, 2.2 * geo.scale + 0.6, 0, Math.PI * 2);
+      fx.fillStyle = heat > 0.5 ? MARKER : INK;
+      fx.fill();
+      fx.restore();
     }
 
     /* The bob, a diamond as in the wordmark. */
-    ctx.save();
-    ctx.translate(geo.cx, base + spacing * 2.5);
-    ctx.shadowColor = 'rgba(214, 64, 42, 0.35)';
-    ctx.shadowBlur = 14;
-    ctx.shadowOffsetY = 4;
-    ctx.beginPath();
-    ctx.moveTo(0, -2); ctx.lineTo(10, 12); ctx.lineTo(0, 26); ctx.lineTo(-10, 12);
-    ctx.closePath();
-    ctx.fillStyle = MARKER;
-    ctx.fill();
-    ctx.restore();
+    fx.save();
+    fx.translate(geo.cx, base + spacing * 2.5);
+    fx.shadowColor = 'rgba(214, 64, 42, 0.35)';
+    fx.shadowBlur = 14;
+    fx.shadowOffsetY = 4;
+    fx.beginPath();
+    fx.moveTo(0, -2); fx.lineTo(10, 12); fx.lineTo(0, 26); fx.lineTo(-10, 12);
+    fx.closePath();
+    fx.fillStyle = MARKER;
+    fx.fill();
+    fx.restore();
 
     if (spine.readout) {
       spine.readout.textContent = `${angle.toFixed(1)}° curve`;
@@ -268,6 +280,7 @@ export function initField() {
 
   function draw(dt, now) {
     ctx.clearRect(0, 0, width, height);
+    fx.clearRect(0, 0, width, height);
     const drift = reduced ? 0 : -((window.scrollY * PARALLAX) % GAP);
     const geo = spineGeometry();
     if (geo && !reduced) stepSpine(geo, dt, now);

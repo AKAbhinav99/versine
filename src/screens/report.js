@@ -11,7 +11,7 @@
  *   what it is worth    the calibration behind the bands, including its size
  *
  * The limitations section is not a disclaimer bolted on the end. It is the part
- * that makes the rest usable — a page claiming less gets read, and a page
+ * that makes the rest usable, a page claiming less gets read, and a page
  * claiming to have found scoliosis gets dismissed, correctly.
  *
  * Printing goes through window.print() and styles/print.css rather than a PDF
@@ -28,7 +28,7 @@ import { loadIntake, redFlagsFrom, riskFactorsFrom, highestUrgency } from '../li
 const TREND_ROWS = 6;
 
 /* Bumped when the measurement itself changes, so a printed page can be placed
-   against the method that produced it. Not the app version — the method's. */
+   against the method that produced it. Not the app version, the method's. */
 const METHOD_VERSION = 'shoulder-tilt/consensus-5, calibrated 2026-08';
 
 let returnTo = 'result';
@@ -106,7 +106,7 @@ function flagsBlock(flags) {
   const urgency = highestUrgency(flags);
 
   return el('section', { class: 'report__flags', 'data-urgency': urgency },
-    el('h2', { class: 'label' }, urgency === 'urgent' ? 'Reported symptoms — urgent' : 'Reported symptoms'),
+    el('h2', { class: 'label' }, urgency === 'urgent' ? 'Reported symptoms: urgent' : 'Reported symptoms'),
     el('ul', {}, ...flags.map((flag) => el('li', {}, flag.label))),
     el('p', { class: 'report__flagnote' },
       'Self-reported, not measured. Listed first because a photograph does not screen for any of them.'));
@@ -131,7 +131,7 @@ function readingBlock(entry) {
         row('Hip tilt', `${entry.hipTiltDeg.toFixed(1)}°`, sideText(entry.higherHip, 'hip')),
         row('Framings in agreement', framingText(entry), `Withheld above ${RELIABILITY.maxShoulderSpreadDeg}° spread`),
         entry.swayDeg === null || entry.swayDeg === undefined
-          ? row('Movement between frames', 'Not measured', 'Single frame — uploaded, or only one frame resolved')
+          ? row('Movement between frames', 'Not measured', 'Single frame, uploaded, or only one frame resolved')
           : row('Movement between frames', `${entry.swayDeg.toFixed(1)}°`,
             `Across ${entry.usableFrames || entry.frames} frames about a second apart. Reported, not gated.`),
         row('Landmark confidence', (entry.landmarkConfidence ?? 0).toFixed(2), 'Weakest of the four measured points'),
@@ -150,13 +150,13 @@ const row = (label, value, note) => el('tr', {},
   el('td', { class: 'report__rownote' }, note));
 
 const framingText = (entry) =>
-  (entry.totalFramings ? `${entry.passes} of ${entry.totalFramings}` : `${entry.passes ?? '—'}`);
+  (entry.totalFramings ? `${entry.passes} of ${entry.totalFramings}` : `${entry.passes ?? 'n/a'}`);
 
 const bandText = (level) => ({
   clear: `Under ${THRESHOLDS.shoulderMonitorDeg}°`,
   monitor: `${THRESHOLDS.shoulderMonitorDeg}–${THRESHOLDS.shoulderReferDeg}°`,
   refer: `${THRESHOLDS.shoulderReferDeg}° and above`,
-}[level] || '—');
+}[level] || 'n/a');
 
 const bandBasis = (level) => ({
   clear: 'App band: no significant asymmetry measured',
@@ -230,7 +230,7 @@ function factorsBlock(factors) {
     el('p', { class: 'report__note' }, 'Self-reported and unverified. Not combined with the measurement in any way.'));
 }
 
-/* The trend is the part of this that a single clinic visit cannot reproduce —
+/* The trend is the part of this that a single clinic visit cannot reproduce,
    nobody else has last quarter's photograph. Rotation is printed beside every row
    because differently-rotated scans are not comparing like with like. */
 function trendBlock(history, current) {
@@ -286,7 +286,7 @@ function methodBlock() {
       'MediaPipe Pose locates body landmarks in a single photograph. Shoulder tilt is the angle between the line joining the two shoulder landmarks and horizontal, computed in pixel space so the image aspect ratio does not skew it. The photograph is measured at five framings; the reported value is the median and the ± is the spread between them. Where that spread exceeds '
       + `${RELIABILITY.maxShoulderSpreadDeg}°, or fewer than ${RELIABILITY.minPasses} framings yield a usable pose, no number is reported at all.`),
     el('p', {},
-      `The bands — under ${THRESHOLDS.shoulderMonitorDeg}°, ${THRESHOLDS.shoulderMonitorDeg}–${THRESHOLDS.shoulderReferDeg}°, above ${THRESHOLDS.shoulderReferDeg}° — are calibrated against a set of 17 labelled photographs, of which 9 produced a reportable reading. On that set: sensitivity 0.83, specificity 1.00. `,
+      `The bands (under ${THRESHOLDS.shoulderMonitorDeg}°, ${THRESHOLDS.shoulderMonitorDeg}–${THRESHOLDS.shoulderReferDeg}°, above ${THRESHOLDS.shoulderReferDeg}°) are calibrated against a set of 17 labelled photographs, of which 9 produced a reportable reading. On that set: sensitivity 0.83, specificity 1.00. `,
       el('b', {}, 'Nine cases is a demonstration, not a validation. '),
       'The confidence interval on that sensitivity spans most of the range. These thresholds are provisional and have not been clinically validated.'),
     el('p', {},

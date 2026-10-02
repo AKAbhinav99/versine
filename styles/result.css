@@ -1,4 +1,4 @@
-/* Result screen — the most important surface. Photo + landmark overlay,
+/* Result screen, the most important surface. Photo + landmark overlay,
    then the raw measurements, then plain-language interpretation. */
 
 .result { padding: var(--space-5) var(--gutter) calc(var(--nav-h) + var(--space-8)); }
