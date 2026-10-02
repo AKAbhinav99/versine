@@ -232,7 +232,7 @@ html.pointer-fine .spot {
 /* ---------- Shared components ---------------------------------------- */
 
 /* An eyebrow: where you are in the flow. No chip around it; it floats on the
-   page like the hero's line, the number in the accent, then the name. */
+   page, the number in the accent, then the name. */
 .step-label {
   display: flex;
   align-items: center;

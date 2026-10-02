@@ -86,9 +86,6 @@ function buildIntro(gsap, ScrollTrigger) {
      lede, the button and the cue follow. */
   const title = hero.querySelector('.hero__title');
   const entrance = gsap.timeline({ defaults: { ease: 'expo.out' } });
-  /* yPercent on the inner text: the outer line takes the scroll's y and the
-     inner one the pointer's, so the entrance stays clear of both. */
-  entrance.from(hero.querySelector('.hero__eyebrow-text'), { yPercent: 90, autoAlpha: 0, duration: 0.8 });
 
   if (window.SplitText && title) {
     const split = window.SplitText.create(title, { type: 'lines,words', mask: 'lines', linesClass: 'split-line' });
@@ -132,15 +129,6 @@ function buildIntro(gsap, ScrollTrigger) {
       scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
     });
   });
-  /* The line above the headline is the furthest layer forward on scroll: it
-     leaves first, ahead of the top line. The outer element takes the scroll
-     and the inner text takes the pointer, so the two never share a property. */
-  const eyebrow = hero.querySelector('.hero__eyebrow');
-  const eyebrowText = hero.querySelector('.hero__eyebrow-text');
-  gsap.to(eyebrow, {
-    y: -260, ease: 'none',
-    scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
-  });
   gsap.to(hero.querySelector('.hero__lede'), {
     y: 60, ease: 'none',
     scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
@@ -157,8 +145,6 @@ function buildIntro(gsap, ScrollTrigger) {
       x: gsap.quickTo(line, 'x', { duration: 1, ease: 'power3' }),
       y: gsap.quickTo(line, 'y', { duration: 1, ease: 'power3' }),
     }));
-    const eyebrowX = eyebrowText && gsap.quickTo(eyebrowText, 'x', { duration: 1.1, ease: 'power3' });
-    const eyebrowY = eyebrowText && gsap.quickTo(eyebrowText, 'y', { duration: 1.1, ease: 'power3' });
     const onMove = (event) => {
       const nx = (event.clientX / window.innerWidth) - 0.5;
       const ny = (event.clientY / window.innerHeight) - 0.5;
@@ -169,15 +155,11 @@ function buildIntro(gsap, ScrollTrigger) {
         shift.x(nx * 22 * depth);
         shift.y(ny * 10 * depth);
       });
-      /* Behind the headline: it drifts against the pointer, so the type
-         appears to sit in front of it. */
-      if (eyebrowX) { eyebrowX(nx * -26); eyebrowY(ny * -14); }
     };
     hero.addEventListener('pointermove', onMove);
     hero.addEventListener('pointerleave', () => {
       turnX(0); turnY(0);
       shifts.forEach((shift) => { shift.x(0); shift.y(0); });
-      if (eyebrowX) { eyebrowX(0); eyebrowY(0); }
     });
   }
 

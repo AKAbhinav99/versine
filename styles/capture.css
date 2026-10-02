@@ -20,15 +20,6 @@
   padding: var(--space-6) 0 var(--space-5);
 }
 .hero__copy { position: relative; z-index: 1; max-width: 40rem; }
-/* No chip around it: it floats on the field like the headline, as its own
-   layer. */
-.hero__eyebrow {
-  margin-bottom: var(--space-5);
-  font-size: var(--text-base);
-  font-weight: 600;
-  color: var(--ink-500);
-}
-.hero__eyebrow-text { display: inline-block; }
 .hero__title {
   font-size: clamp(2.7rem, 1.5rem + 5.4vw, 5.6rem);
   font-weight: 700;
