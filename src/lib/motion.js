@@ -78,21 +78,63 @@ function initTabIndicator() {
   const bar = document.querySelector('.tabbar');
   const pill = bar?.querySelector('.tabbar__indicator');
   if (!bar || !pill) return;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* Selection: the pill does not just slide, it stretches to cover both the
+     old tab and the new one, then lets go of the old side, like something
+     elastic being pulled across. The icon of the tab it lands on gives a
+     small pop. */
+  let last = null;   // { x, y, w, h, tab }
   const place = () => {
     const tab = bar.querySelector('.tab[aria-selected="true"]');
     if (!tab || !tab.offsetWidth) return;
-    pill.style.width = `${tab.offsetWidth}px`;
-    pill.style.height = `${tab.offsetHeight}px`;
-    pill.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
+    const next = { x: tab.offsetLeft, y: tab.offsetTop, w: tab.offsetWidth, h: tab.offsetHeight, tab };
+    pill.style.width = `${next.w}px`;
+    pill.style.height = `${next.h}px`;
+    pill.style.transform = `translate(${next.x}px, ${next.y}px)`;
+
+    const moved = last && last.tab !== tab && last.y === next.y && pill.classList.contains('is-placed');
+    if (moved && !reduced) {
+      const left = Math.min(last.x, next.x);
+      const span = Math.max(last.x + last.w, next.x + next.w) - left;
+      pill.animate([
+        { transform: `translate(${last.x}px, ${last.y}px)`, width: `${last.w}px` },
+        { transform: `translate(${left}px, ${next.y}px) scaleY(0.86)`, width: `${span}px`, offset: 0.42 },
+        { transform: `translate(${next.x}px, ${next.y}px)`, width: `${next.w}px` },
+      ], { duration: 560, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+      tab.classList.remove('is-popping');
+      void tab.offsetWidth;   // restart the pop if it is selected twice quickly
+      tab.classList.add('is-popping');
+      setTimeout(() => tab.classList.remove('is-popping'), 700);
+    }
+    last = next;
     if (!pill.classList.contains('is-placed')) pill.classList.add('is-placed');
   };
+
+  /* Hover: a fainter second pill glides to whichever tab is under the
+     pointer, so the bar answers before anything is chosen. */
+  const ghost = document.createElement('span');
+  ghost.className = 'tabbar__hover';
+  ghost.setAttribute('aria-hidden', 'true');
+  pill.after(ghost);
+  bar.addEventListener('pointerover', (event) => {
+    if (event.pointerType === 'touch') return;
+    const tab = event.target instanceof Element ? event.target.closest('.tab') : null;
+    if (!tab) return;
+    ghost.style.width = `${tab.offsetWidth}px`;
+    ghost.style.height = `${tab.offsetHeight}px`;
+    ghost.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
+    ghost.classList.toggle('is-on', tab.getAttribute('aria-selected') !== 'true');
+    if (!ghost.classList.contains('is-ready')) requestAnimationFrame(() => ghost.classList.add('is-ready'));
+  });
+  bar.addEventListener('pointerleave', () => ghost.classList.remove('is-on'));
+  bar.addEventListener('click', () => ghost.classList.remove('is-on'));
 
   /* Only aria-selected: the pill lives inside the bar, so watching class or
      style here would hear place()'s own writes and loop forever. Un-hiding the
      bar is a size change, which the ResizeObserver catches. */
   new MutationObserver(place).observe(bar, { subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
-  new ResizeObserver(place).observe(bar);
+  new ResizeObserver(() => { last = null; place(); }).observe(bar);
   place();
 }
 

@@ -56,10 +56,22 @@ p:last-child { margin-bottom: 0; }
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  /* The field thins out toward the masthead instead of being cut off by it. */
-  --field-fade: linear-gradient(to bottom, transparent 0, transparent calc(var(--masthead-h) * 0.6), rgba(0, 0, 0, 0.35) calc(var(--masthead-h) + 40px), #000 calc(var(--masthead-h) + 200px));
-  -webkit-mask-image: var(--field-fade);
-  mask-image: var(--field-fade);
+  /* The field thins out toward the edges of the window instead of being cut
+     off by them: fully under the masthead, where it would run into text and
+     buttons, and only partly at the sides and the bottom, where nothing sits
+     on it. Two masks, intersected. */
+  --field-edge: clamp(56px, 9vw, 180px);
+  --field-fade-y: linear-gradient(to bottom,
+    transparent 0, transparent calc(var(--masthead-h) * 0.6),
+    rgba(0, 0, 0, 0.35) calc(var(--masthead-h) + 40px), #000 calc(var(--masthead-h) + 200px),
+    #000 calc(100% - var(--field-edge) * 1.2), rgba(0, 0, 0, 0.3) 100%);
+  --field-fade-x: linear-gradient(to right,
+    rgba(0, 0, 0, 0.25) 0, #000 var(--field-edge),
+    #000 calc(100% - var(--field-edge)), rgba(0, 0, 0, 0.25) 100%);
+  -webkit-mask-image: var(--field-fade-y), var(--field-fade-x);
+  -webkit-mask-composite: source-in;
+  mask-image: var(--field-fade-y), var(--field-fade-x);
+  mask-composite: intersect;
 }
 .field--front { -webkit-mask-image: none; mask-image: none; }
 
@@ -394,9 +406,36 @@ html.pointer-fine .spot {
   background: var(--scrub-wash);
   opacity: 0;
   pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(31, 110, 140, 0.14), 0 2px 8px -2px rgba(31, 110, 140, 0.25);
   transition: transform 340ms var(--ease-out), width 340ms var(--ease-out), opacity var(--dur-fast) var(--ease);
 }
 .tabbar__indicator.is-placed { opacity: 1; }
+
+/* The hover pill, also placed by motion.js: fainter than the selection, and
+   it only slides once it has appeared, so it never flies in from a corner. */
+.tabbar__hover {
+  position: absolute;
+  top: 0; left: 0;
+  z-index: 0;
+  border-radius: calc(var(--radius-lg) - 6px);
+  background: rgba(14, 34, 48, 0.055);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+.tabbar__hover.is-ready { transition: transform 260ms var(--ease-out), width 260ms var(--ease-out), opacity var(--dur-fast) var(--ease); }
+.tabbar__hover.is-on { opacity: 1; }
+.tabbar .tab { transition: color var(--dur) var(--ease); }
+.pointer-fine .tab:hover svg { transform: translateY(-2px) rotate(-8deg); }
+.tab.is-popping svg { animation: tab-pop 620ms var(--ease-spring); }
+@keyframes tab-pop {
+  0% { transform: scale(0.7) rotate(-14deg); }
+  55% { transform: scale(1.22) rotate(6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pointer-fine .tab:hover svg, .tab.is-popping svg { transform: none; animation: none; }
+}
 .tab { z-index: 1; }
 .tabbar:not(:has(.is-placed)) .tab[aria-selected='true'] { background: var(--scrub-wash); }
 
@@ -447,7 +486,7 @@ html.pointer-fine .spot {
   .tab svg { width: 16px; height: 16px; }
   .tab:hover { color: var(--ink-900); }
   .tab[aria-selected='true'] svg { transform: none; }
-  .tabbar__indicator { border-radius: var(--radius-pill); }
+  .tabbar__indicator, .tabbar__hover { border-radius: var(--radius-pill); }
 
   .screen--pad,
   .result,

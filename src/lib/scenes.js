@@ -116,18 +116,52 @@ function buildIntro(gsap, ScrollTrigger) {
     scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
   });
 
-  /* The headline turns a few degrees toward the pointer, in perspective, as
-     if the type were standing off the page. */
+  /* Each line of the headline sits at its own depth. Scrolling away, the
+     lines rise at different speeds and pull apart; the lede lags behind them.
+     yPercent here, so the pointer below can use x and y on the same lines
+     without the two fighting. */
+  const lines = title ? [...title.querySelectorAll('.split-line-mask')] : [];
+  lines.forEach((line, i) => {
+    /* The top line rises fastest, so the gaps open as it goes rather than the
+       lower lines riding up into the ones above. */
+    gsap.to(line, {
+      yPercent: -45 - (lines.length - 1 - i) * 70,
+      ease: 'none',
+      scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
+    });
+  });
+  gsap.to(hero.querySelector('.hero__lede'), {
+    y: 60, ease: 'none',
+    scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 0.4 },
+  });
+
+  /* The headline turns toward the pointer in perspective, and its lines slide
+     with it by depth, the front line furthest, as if the type were standing
+     off the page in layers. */
   if (title && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     gsap.set(title, { transformPerspective: 900, transformOrigin: '30% 50%' });
     const turnX = gsap.quickTo(title, 'rotationX', { duration: 0.8, ease: 'power3' });
     const turnY = gsap.quickTo(title, 'rotationY', { duration: 0.8, ease: 'power3' });
+    const shifts = lines.map((line) => ({
+      x: gsap.quickTo(line, 'x', { duration: 1, ease: 'power3' }),
+      y: gsap.quickTo(line, 'y', { duration: 1, ease: 'power3' }),
+    }));
     const onMove = (event) => {
-      turnY(((event.clientX / window.innerWidth) - 0.5) * 14);
-      turnX(((event.clientY / window.innerHeight) - 0.5) * -10);
+      const nx = (event.clientX / window.innerWidth) - 0.5;
+      const ny = (event.clientY / window.innerHeight) - 0.5;
+      turnY(nx * 16);
+      turnX(ny * -12);
+      shifts.forEach((shift, i) => {
+        const depth = 1 + i * 0.9;
+        shift.x(nx * 22 * depth);
+        shift.y(ny * 10 * depth);
+      });
     };
     hero.addEventListener('pointermove', onMove);
-    hero.addEventListener('pointerleave', () => { turnX(0); turnY(0); });
+    hero.addEventListener('pointerleave', () => {
+      turnX(0); turnY(0);
+      shifts.forEach((shift) => { shift.x(0); shift.y(0); });
+    });
   }
 
   buildBand(gsap, ScrollTrigger);
