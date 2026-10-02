@@ -38,6 +38,7 @@ const REVEAL_MS = 700;
 
 export function initMotion() {
   initMasthead();
+  initTabIndicator();
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   document.documentElement.classList.add('motion');
@@ -56,6 +57,52 @@ function initMasthead() {
   const update = () => bar.classList.toggle('is-scrolled', window.scrollY > 4);
   window.addEventListener('scroll', update, { passive: true });
   update();
+}
+
+/* ---------------------------------------------------------- tab indicator --- */
+
+/* A single highlight that slides to whichever tab is selected. The router only
+   flips aria-selected, so this watches for that and moves the pill. A CSS
+   transition, not keyframes, so a quick second tap retargets mid-slide. */
+function initTabIndicator() {
+  const bar = document.querySelector('.tabbar');
+  const pill = bar?.querySelector('.tabbar__indicator');
+  if (!bar || !pill) return;
+
+  const place = () => {
+    const tab = bar.querySelector('.tab[aria-selected="true"]');
+    if (!tab || !tab.offsetWidth) return;
+    pill.style.width = `${tab.offsetWidth}px`;
+    pill.style.height = `${tab.offsetHeight}px`;
+    pill.style.transform = `translate(${tab.offsetLeft}px, ${tab.offsetTop}px)`;
+    if (!pill.classList.contains('is-placed')) pill.classList.add('is-placed');
+  };
+
+  /* Only aria-selected: the pill lives inside the bar, so watching class or
+     style here would hear place()'s own writes and loop forever. Un-hiding the
+     bar is a size change, which the ResizeObserver catches. */
+  new MutationObserver(place).observe(bar, { subtree: true, attributes: true, attributeFilter: ['aria-selected'] });
+  new ResizeObserver(place).observe(bar);
+  place();
+}
+
+/* ------------------------------------------------------------- count up --- */
+
+/** Counts a number up from zero into an element, for a reading's first appearance. */
+export function countUp(node, to, { decimals = 1, duration = 900 } = {}) {
+  if (!node) return;
+  const final = to.toFixed(decimals);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { node.textContent = final; return; }
+  const start = performance.now();
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - (1 - t) ** 4;
+    node.textContent = (to * eased).toFixed(decimals);
+    if (t < 1) requestAnimationFrame(step);
+    else node.textContent = final;
+  };
+  node.textContent = (0).toFixed(decimals);
+  requestAnimationFrame(step);
 }
 
 /* ----------------------------------------------------------------- reveal --- */
@@ -99,8 +146,13 @@ function initReveal() {
     });
   };
 
+  /* GSAP owns the intro and the Learn headings and figure when it is loaded;
+     two systems animating one element fight over its transform. */
+  const gsapOwns = (node) => document.documentElement.classList.contains('gsap')
+    && (node.closest('#screen-intro') || node.matches('#screen-resources h2, .figure-cobb'));
+
   const tag = (node) => {
-    if (node.hasAttribute('data-revealed')) return;
+    if (node.hasAttribute('data-revealed') || gsapOwns(node)) return;
     node.setAttribute('data-revealed', '');
     node.setAttribute('data-reveal', '');
     observer.observe(node);

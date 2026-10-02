@@ -6,7 +6,8 @@ import { showScreen, initTabs, onEnter } from './router.js';
 import { initCapture } from './screens/capture.js';
 import { initAdjust } from './screens/adjust.js';
 import { initMotion } from './lib/motion.js';
-import { initDotfield } from './lib/dotfield.js';
+import { initField } from './lib/field.js';
+import { initScenes } from './lib/scenes.js';
 
 /* Carry anything stored under the pre-rename namespace across first. Must run
    before any screen reads storage. */
@@ -14,8 +15,12 @@ migrateLegacyStorage();
 
 initCapture();
 initAdjust();
+/* Scenes first: it registers its screenchange listener before the first
+   showScreen below, and marks html.gsap, which motion.js reads to leave
+   GSAP-driven elements alone. */
+initScenes();
 initMotion();
-initDotfield();
+initField();
 
 /* Only the capture flow is loaded up front. The other screens are whole
    subtrees — the clinician finder alone pulls eight modules and Leaflet — and
@@ -122,10 +127,11 @@ function migrateLegacyStorage() {
   }
 }
 
-$('#intro-accept').addEventListener('click', () => {
+/* The intro offers the same button at the top and the bottom of the page. */
+document.querySelectorAll('[data-intro-accept]').forEach((button) => button.addEventListener('click', () => {
   localStorage.setItem(INTRO_KEY, String(Date.now()));
   showScreen('capture');
-});
+}));
 
 /* The disclaimer gate shows once; after that the app opens on the capture screen. */
 showScreen(localStorage.getItem(INTRO_KEY) ? 'capture' : 'intro');

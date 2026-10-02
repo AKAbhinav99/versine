@@ -97,7 +97,8 @@ function trendChart(entries) {
   });
 
   const path = entries.map((entry, i) => `${i === 0 ? 'M' : 'L'}${x(i)} ${y(entry.shoulderTiltDeg)}`).join(' ');
-  add('path', { class: 'trend-line', d: path });
+  /* pathLength 1 lets the stylesheet draw the line on with a 0-to-1 dash. */
+  add('path', { class: 'trend-line', d: path, pathLength: 1 });
   /* Error bars: the spread across framings for that scan, drawn to scale. */
   entries.forEach((entry, i) => {
     const spread = entry.shoulderSpreadDeg ?? 0;

@@ -50,14 +50,34 @@ p:last-child { margin-bottom: 0; }
 
 /* ---------- App frame ------------------------------------------------ */
 
+/* The live dot field (field.js) sits fixed behind everything. */
+.field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
 .app {
   max-width: 560px;
   margin: 0 auto;
   min-height: 100dvh;
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
 }
+
+/* Lenis (smooth wheel scrolling on desktop) needs native smooth scrolling off
+   while it runs, and its own scroll inside anything that opts out. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* Hidden until GSAP has set the hero's starting state (boot.js, scenes.js). */
+.anim-pending .hero__copy > *,
+.anim-pending .hero__cue { opacity: 0; }
 
 .masthead {
   position: sticky;
@@ -78,6 +98,17 @@ p:last-child { margin-bottom: 0; }
 /* Set by motion.js once the page has scrolled, so the bar only separates itself
    from the content when there is content underneath it. */
 .masthead.is-scrolled { border-bottom-color: var(--rule); box-shadow: 0 6px 24px rgba(14,34,48,0.06); }
+
+/* Reading progress, shown only while scenes.js drives it on the Learn screen. */
+.read-progress {
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--scrub);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  visibility: hidden;
+}
 
 .masthead__mark { width: 16px; height: 26px; flex: none; }
 
@@ -105,23 +136,6 @@ p:last-child { margin-bottom: 0; }
 .screen[data-active] { display: block; animation: fade-in var(--dur-slow) var(--ease) both; }
 .screen--pad { padding: var(--space-5) var(--gutter) calc(var(--nav-h) + var(--nav-gap) * 2 + var(--space-8)); }
 
-/* A patch of posture-board dots behind the top corner of each reading screen.
-   Purely decorative, masked to fade out before it reaches any text column. */
-.screen--pad::before,
-.result::before,
-.intro::before {
-  content: '';
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  right: 0;
-  width: min(46vw, 420px);
-  height: 300px;
-  background: var(--dots);
-  -webkit-mask-image: radial-gradient(ellipse at top right, #000 0%, transparent 70%);
-  mask-image: radial-gradient(ellipse at top right, #000 0%, transparent 70%);
-  pointer-events: none;
-}
 
 /* ---------- Motion --------------------------------------------------- */
 
@@ -262,6 +276,7 @@ html.pointer-fine .spot {
 .btn:hover { background: var(--scrub-dim); border-color: var(--scrub-dim); box-shadow: 0 2px 4px rgba(14,34,48,0.08), 0 10px 26px rgba(31,110,140,0.3); }
 .btn:active { transform: translate(var(--mag-x), var(--mag-y)) scale(0.97); }
 .btn--block { width: 100%; }
+.btn--lg { min-height: 60px; padding: 0 var(--space-8); font-size: var(--text-lg); }
 .btn--ghost {
   background: var(--paper-raised);
   color: var(--ink-900);
@@ -326,8 +341,24 @@ html.pointer-fine .spot {
 }
 .tab svg { stroke: currentColor; fill: none; stroke-width: 1.7; transition: transform var(--dur) var(--ease-spring); }
 .tab:hover { color: var(--ink-900); }
-.tab[aria-selected='true'] { color: var(--scrub-dim); background: var(--scrub-wash); }
+.tab[aria-selected='true'] { color: var(--scrub-dim); }
 .tab[aria-selected='true'] svg { transform: translateY(-1px) scale(1.08); }
+
+/* The sliding highlight, positioned by motion.js. Until it has been placed the
+   selected tab carries its own background, so it is never missing. */
+.tabbar__indicator {
+  position: absolute;
+  top: 0; left: 0;
+  z-index: 0;
+  border-radius: calc(var(--radius-lg) - 6px);
+  background: var(--scrub-wash);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 340ms var(--ease-out), width 340ms var(--ease-out), opacity var(--dur-fast) var(--ease);
+}
+.tabbar__indicator.is-placed { opacity: 1; }
+.tab { z-index: 1; }
+.tabbar:not(:has(.is-placed)) .tab[aria-selected='true'] { background: var(--scrub-wash); }
 
 /* ---------- Utility -------------------------------------------------- */
 
@@ -374,9 +405,9 @@ html.pointer-fine .spot {
     font-size: var(--text-sm);
   }
   .tab svg { width: 16px; height: 16px; }
-  .tab:hover { background: var(--paper); }
-  .tab[aria-selected='true'] { background: var(--scrub-wash); }
+  .tab:hover { color: var(--ink-900); }
   .tab[aria-selected='true'] svg { transform: none; }
+  .tabbar__indicator { border-radius: var(--radius-pill); }
 
   .screen--pad,
   .result,
@@ -387,7 +418,24 @@ html.pointer-fine .spot {
     margin-inline: auto;
     padding-top: var(--space-8);
   }
-  .screen--pad::before,
-  .result::before,
-  .intro::before { width: 520px; height: 380px; }
+}
+
+/* ---------- Drawn-on details ----------------------------------------- */
+
+/* SplitText line masks (scenes.js) need room for descenders. */
+.split-line { padding-bottom: 0.08em; margin-bottom: -0.08em; }
+
+/* The trend line on the log draws itself on when the card is revealed. */
+.motion .trend .trend-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw-on 1.6s var(--ease-out) 0.35s forwards;
+}
+@keyframes draw-on { to { stroke-dashoffset: 0; } }
+
+/* The result photo wipes up into view rather than fading. */
+.motion .plate[data-reveal] { clip-path: inset(0 0 100% 0 round var(--radius-lg)); opacity: 1; transform: none; }
+.motion .plate[data-reveal].is-in {
+  clip-path: inset(0 0 0 0 round var(--radius-lg));
+  transition: clip-path 1s var(--ease-out) var(--reveal-delay, 0ms);
 }

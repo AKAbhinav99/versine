@@ -13,6 +13,7 @@ import { highestUrgency } from '../lib/intake.js';
 import { intakeState, openIntake } from './intake.js';
 import { openReport } from './report.js';
 import { prepareCanvas, drawOverlay, OVERLAY_COLOURS } from './overlay.js';
+import { countUp } from '../lib/motion.js';
 
 const REVEAL_MS = 1200;
 
@@ -154,13 +155,22 @@ function tiltReadout(reading) {
     el('div', { class: 'label' }, 'Shoulder tilt from level'),
     el('div', { class: 'readout__head' },
       el('div', { class: 'readout__value' },
-        reading.shoulderTiltDeg.toFixed(1), el('sup', {}, '°'),
+        tiltValue(reading.shoulderTiltDeg), el('sup', {}, '°'),
         el('span', { class: 'readout__error' }, ` ±${reading.shoulderSpreadDeg.toFixed(1)}°`)),
       el('div', { class: 'readout__side' },
         reading.higherShoulder === 'level' ? 'Level' : `${reading.higherShoulder === 'left' ? 'Left' : 'Right'} shoulder higher`)),
     thresholdRuler(reading.shoulderTiltDeg),
     el('p', { class: 'readout__note' },
       'The angle between the line joining your shoulder points and horizontal. The ± is the real spread across five framings of the same photo, not a rounding.'));
+}
+
+/* The headline number counts up into place as the needle travels to it, so
+   the two arrive together. The counting digits are hidden from assistive tech,
+   which gets the final value at once instead of a stream of interim numbers. */
+function tiltValue(deg) {
+  const counting = el('span', { class: 'readout__count', 'aria-hidden': 'true' });
+  countUp(counting, deg, { decimals: 1, duration: 1100 });
+  return [counting, el('span', { class: 'visually-hidden' }, deg.toFixed(1))];
 }
 
 /** Where this reading falls against the app's own bands. */

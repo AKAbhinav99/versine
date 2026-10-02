@@ -36,9 +36,15 @@ export function showScreen(name, payload) {
   const tabbar = $('.tabbar');
   if (tabbar) tabbar.classList.toggle('hidden', name === 'intro');
 
+  const previous = active;
   active = name;
   window.scrollTo({ top: 0 });
   if (enterHooks.has(name)) enterHooks.get(name)(payload);
+
+  /* For anything that needs to know the screen changed without owning that
+     screen's enter hook (onEnter keeps one hook per screen): the scroll scenes
+     build and tear themselves down per screen from this. */
+  document.dispatchEvent(new CustomEvent('screenchange', { detail: { name, previous } }));
 }
 
 export function initTabs(onTab) {

@@ -19,7 +19,18 @@
 <link rel="modulepreload" href="src/screens/capture.js" />
 <link rel="modulepreload" href="src/screens/adjust.js" />
 <link rel="modulepreload" href="src/lib/motion.js" />
-<link rel="modulepreload" href="src/lib/dotfield.js" />
+<link rel="modulepreload" href="src/lib/field.js" />
+<link rel="modulepreload" href="src/lib/scenes.js" />
+
+<!-- Before first paint: hides the intro hero until GSAP takes it over (src/boot.js). -->
+<script src="src/boot.js"></script>
+<!-- GSAP, ScrollTrigger, SplitText and Lenis. Deferred, so they never block the
+     first paint, and they run before the deferred app module below. Everything
+     they drive degrades to a static, finished layout without them. -->
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/SplitText.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.26/dist/lenis.min.js"></script>
 
 <link rel="stylesheet" href="styles/tokens.css" />
 <link rel="stylesheet" href="styles/base.css" />
@@ -31,6 +42,9 @@
 <link rel="stylesheet" href="styles/care.css" />
 </head>
 <body>
+<!-- The page's dot field: reacts to the cursor, ripples on click, drifts on
+     scroll (src/lib/field.js). Purely decorative. -->
+<canvas class="field" aria-hidden="true"></canvas>
 <div class="app">
 
   <header class="masthead">
@@ -43,29 +57,94 @@
     </svg>
     <span class="masthead__name">Versine</span>
     <span class="masthead__tag">Screening aid</span>
+    <!-- Reading progress on the Learn screen, scrubbed by scenes.js. -->
+    <span class="read-progress" aria-hidden="true"></span>
   </header>
 
   <main>
 
   <!-- ============================ 00 · DISCLAIMER GATE ==================== -->
   <section class="screen intro" id="screen-intro" aria-labelledby="intro-title">
-    <span class="step-label intro__eyebrow">The Adam's forward bend test, on your phone</span>
 
-    <h1 class="intro__title" id="intro-title">A screening check, <em>not a diagnosis.</em></h1>
-    <p class="intro__lede">Versine measures how level your shoulders and hips sit in a forward-bend photo, shows its working, and tells you whether it's worth having a clinician take a look.</p>
+    <!-- Hero. The plumb line on the right is drawn by the page's own dot field
+         (src/lib/field.js), anchored to [data-plumb-zone]: it follows the pointer
+         and settles back to true vertical. -->
+    <header class="hero" data-gsap="hero">
+      <div class="hero__copy">
+        <p class="step-label hero__eyebrow">The Adam's forward bend test, on your phone</p>
+        <h1 class="hero__title" id="intro-title">A screening check, <em>not a diagnosis.</em></h1>
+        <p class="hero__lede">One forward-bend photo. Shoulder and hip tilt, measured five times, with its error bar, and where to go next.</p>
+        <div class="hero__cta">
+          <button class="btn btn--lg" data-intro-accept>I understand, start a scan</button>
+          <span class="hero__note">Photos and results stay on this device.</span>
+        </div>
+      </div>
+      <div class="hero__plumb" data-plumb-zone aria-hidden="true">
+        <span class="plumb-readout mono" data-plumb-readout>0.0° off vertical</span>
+      </div>
+      <p class="hero__cue" aria-hidden="true"><span class="hero__cue-line"></span>Scroll to see how a reading is made</p>
+    </header>
 
-    <!-- The posture board. A plumb line hangs through a field of dots and follows
-         the pointer, then settles back to true vertical: the reference every
-         reading here is taken against. Drawn by src/lib/dotfield.js. -->
-    <figure class="board" aria-label="Interactive posture board: a plumb line that follows your pointer and settles back to vertical">
-      <canvas class="board__canvas" data-dotfield aria-hidden="true"></canvas>
-      <figcaption class="board__foot">
-        <span>Move across the board. The line always settles back to vertical.</span>
-        <span class="board__readout" data-dotfield-readout>0.0° off vertical</span>
-      </figcaption>
-    </figure>
+    <!-- How a reading is made. Pinned and scrubbed by scroll (src/lib/scenes.js).
+         The markup is the finished drawing, so without GSAP, or with reduced
+         motion, it simply shows the end state. -->
+    <section class="how" data-gsap="how" aria-labelledby="how-title">
+      <div class="how__pin">
+        <div class="how__text">
+          <h2 class="how__title" id="how-title">How a reading is made</h2>
+          <ol class="how__steps">
+            <li data-how-step="0"><b>You bend forward.</b> Back flat, arms hanging, phone behind you at chest height.</li>
+            <li data-how-step="1"><b>It finds four points.</b> Both shoulders and both hips, located by a pose model running on your device.</li>
+            <li data-how-step="2"><b>It measures the tilt.</b> The angle between the line through your shoulders and true horizontal.</li>
+            <li data-how-step="3"><b>It checks itself.</b> The same photo is measured at five framings. How far they disagree becomes the error bar.</li>
+          </ol>
+        </div>
+        <figure class="how__stage">
+          <svg class="how__svg" viewBox="0 0 300 400" role="img" aria-label="Illustration: a figure bent forward, seen from behind, with its shoulder and hip points marked and the shoulder tilt measured against horizontal">
+            <g class="how__frames">
+              <rect x="36" y="44" width="226" height="322" rx="12" />
+              <rect x="46" y="36" width="214" height="334" rx="12" />
+              <rect x="40" y="48" width="222" height="318" rx="12" />
+              <rect x="32" y="38" width="232" height="330" rx="12" />
+              <rect x="44" y="42" width="218" height="326" rx="12" />
+            </g>
+            <line class="how__plumb" x1="150" y1="8" x2="150" y2="392" />
+            <g class="how__figure">
+              <circle cx="150" cy="92" r="22" />
+              <path d="M128 124 Q 150 117 172 124" />
+              <path d="M124 128 C 114 186, 114 248, 118 300" />
+              <path d="M176 128 C 186 186, 186 248, 182 300" />
+              <path d="M118 304 Q 150 326 182 304" />
+              <path d="M126 131 C 108 182, 100 240, 99 288" />
+              <path d="M174 131 C 192 182, 200 240, 201 288" />
+              <path d="M130 328 L 130 392" /><path d="M170 328 L 170 392" />
+            </g>
+            <line class="how__level" x1="92" y1="128" x2="212" y2="128" />
+            <line class="how__measure" x1="120" y1="128" x2="180" y2="123.6" />
+            <line class="how__measure how__measure--hip" x1="122" y1="306" x2="178" y2="304" />
+            <path class="how__arc" d="M162 128 A 42 42 0 0 0 161.89 124.93" />
+            <g class="how__points">
+              <circle cx="120" cy="128" r="5.5" />
+              <circle cx="180" cy="123.6" r="5.5" />
+              <circle cx="122" cy="306" r="5.5" />
+              <circle cx="178" cy="304" r="5.5" />
+            </g>
+          </svg>
+          <figcaption class="how__readout">
+            <span class="how__value mono"><span data-how-angle>4.2</span>°</span>
+            <span class="how__pm mono">±<span data-how-pm>0.8</span>°</span>
+            <span class="how__label">shoulder tilt, illustration</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
 
-    <ul class="claim-list">
+    <section class="limits" aria-labelledby="limits-title">
+      <div class="limits__head">
+        <h2 class="limits__title" id="limits-title">Honest about what a photo can do.</h2>
+        <p class="limits__lede">It measures one thing well and tells you plainly what it cannot see.</p>
+      </div>
+      <ul class="limits__list">
       <li>
         <span class="claim-list__key">DOES</span>
         <span><b>Measure geometry.</b> It finds body landmarks in your photo and calculates how far your shoulders and hips sit off level, measuring the same photo five times so you get an error bar with the number.</span>
@@ -84,12 +163,15 @@
       </li>
       <li>
         <span class="claim-list__key claim-list__key--no">NO</span>
-        <span><b>It cannot measure trunk rotation.</b> The rib hump a clinician feels for is a centimetre or two of depth, which a single photo does not carry. That is what a scoliometer is for. A clear result here is not an all-clear either — curves can exist with level shoulders.</span>
+        <span><b>It cannot measure trunk rotation.</b> The rib hump a clinician feels for is a centimetre or two of depth, which a single photo does not carry. That is what a scoliometer is for. A clear result here is not an all-clear either: curves can exist with level shoulders.</span>
       </li>
-    </ul>
+      </ul>
+    </section>
 
-    <button class="btn" id="intro-accept">I understand, start a scan</button>
-    <p class="small muted intro__note">Photos and results stay on this device. Nothing is uploaded.</p>
+    <section class="closer" aria-label="Start">
+      <p class="closer__line">It takes one photo, and nothing leaves your phone.</p>
+      <button class="btn btn--lg" data-intro-accept>I understand, start a scan</button>
+    </section>
   </section>
 
   <!-- ============================ 01 · CAPTURE =========================== -->
@@ -291,7 +373,7 @@
     </div>
 
     <div class="care__mapcol">
-      <div id="map" role="region" aria-label="Map of nearby clinicians"></div>
+      <div id="map" role="region" aria-label="Map of nearby clinicians" data-lenis-prevent></div>
       <div class="source-line">
         <span id="places-source">Source: —</span>
         <span id="map-count"></span>
@@ -401,6 +483,8 @@
   </main>
 
   <nav class="tabbar" role="tablist" aria-label="Sections">
+    <!-- One highlight that slides between tabs, rather than each tab lighting up. -->
+    <span class="tabbar__indicator" aria-hidden="true"></span>
     <button class="tab" role="tab" data-tab="capture" aria-selected="true">
       <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M2 6V2h4M18 6V2h-4M2 14v4h4M18 14v4h-4"/><line x1="10" y1="4" x2="10" y2="16"/></svg>
       Scan
