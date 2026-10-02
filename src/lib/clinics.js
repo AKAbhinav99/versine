@@ -311,11 +311,13 @@ export async function findClinicians(center, radiusM, { signal = null, skipLocal
   };
 }
 
-/* An empty answer is treated as a miss so the chain moves on — a provider with
-   no coverage in this country should not end the search. */
+/* An empty answer is treated as a miss so the chain moves on, so a provider with
+   no coverage in this country does not end the search. The local index answers
+   null rather than [] for an area it does not cover, which used to throw here and
+   surface as "Local index: Cannot read properties of null" above the results. */
 const nonEmpty = async (promise) => {
   const results = await promise;
-  return results.length ? results : null;
+  return results?.length ? results : null;
 };
 
 function dedupe(results) {

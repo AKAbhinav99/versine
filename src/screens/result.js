@@ -128,8 +128,8 @@ function plate(pass, entry, reading) {
     el('ul', { class: 'plate__legend', 'aria-label': 'What the lines on the photo show' },
       legendItem('line', OVERLAY_COLOURS.measure, 'Shoulder line', `${shoulders.tiltDeg.toFixed(1)}°`),
       legendItem('line', OVERLAY_COLOURS.measure, 'Hip line', `${hips.tiltDeg.toFixed(1)}°`),
-      legendItem('dash', OVERLAY_COLOURS.marker, 'Plumb line', 'vertical'),
-      legendItem('dot', OVERLAY_COLOURS.marker, 'Measured points', '4')),
+      legendItem('dash', OVERLAY_COLOURS.marker, 'Plumb line', null),
+      legendItem('dot', OVERLAY_COLOURS.marker, 'Measured points', null)),
     el('div', { class: 'plate__caption' },
       el('span', { class: 'label' }, `Framing shown: ${pass.framing}`),
       el('span', { class: 'label' },
@@ -140,7 +140,7 @@ function legendItem(kind, colour, name, value) {
   return el('li', { class: 'plate__key' },
     el('i', { class: `plate__swatch plate__swatch--${kind}`, style: `--swatch:${colour}`, 'aria-hidden': 'true' }),
     el('span', { class: 'plate__keyname' }, name),
-    el('b', { class: 'plate__keyvalue mono' }, value));
+    value ? el('b', { class: 'plate__keyvalue mono' }, value) : null);
 }
 
 function photoOnlyCanvas(photo) {

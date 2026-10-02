@@ -1,6 +1,6 @@
 # Versine
 
-A mobile-first web app that screens for the surface asymmetry associated with
+A mobile-first web app (which also spreads into columns on a desktop window) that screens for the surface asymmetry associated with
 scoliosis, using a phone camera and the Adam's forward bend test, then points the
 user toward clinicians who actually treat it.
 
@@ -252,7 +252,16 @@ any other provider the rating chips are disabled with an explanation rather than
 silently emptying the list. Empty results name the filter responsible. Nobody
 publishes insurance acceptance, so the app doesn't invent it.
 
-The map is Leaflet with CARTO tiles.
+The map is MapLibre GL drawing [OpenFreeMap](https://openfreemap.org)'s Positron
+vector style: free, no key, no account, no request limit. It used to be Leaflet
+over CARTO raster tiles, until CARTO started answering keyless requests with a
+placeholder tile reading "API KEY REQUIRED". That is a 200 and a valid image, so
+nothing failed and the map silently drew no streets. If OpenFreeMap is
+unreachable, or its tiles keep failing after load, the map switches to
+OpenStreetMap's own raster tiles, which are keyless too.
+
+Picking a clinic's name in the list flies the map to its pin and opens its label;
+picking a pin highlights its card.
 
 ## Layout
 
@@ -330,13 +339,15 @@ Everything else arrives when it is wanted:
 |---|---|
 | capture flow — router, capture, adjust, storage | at load, 7 modules |
 | analysis — pose, consensus, screening, result, report | on idle after first paint |
-| clinician finder — clinics, geocoding, index, keys, Leaflet | first time the Care tab is opened |
+| clinician finder — clinics, geocoding, index, keys, MapLibre | first time the Care tab is opened |
 
-Leaflet mattered most: 46 KB across two files on a third origin, loaded from the
-document head on every visit for a screen most people never open. It is now
-fetched by `doctors.js` at the point the map is first wanted, and every caller of
-`ensureMap` already coped with the map not existing yet, so nothing had to be
-restructured around it. If it fails to load the list still works.
+The map library mattered most. It was Leaflet then, 46 KB across two files on a
+third origin, loaded from the document head on every visit for a screen most
+people never open. It is fetched by `doctors.js` at the point the map is first
+wanted, and every caller of `ensureMap` copes with the map not existing yet. If it
+fails to load the list still works. MapLibre, which replaced Leaflet, is heavier
+(about 275 KB gzipped) and is loaded the same way, so it still costs nothing
+until the Care tab opens. It is pinned to 5.x because 6.x ships ES modules only.
 
 Measured on a cold load: 20 requests before the app is interactive, no contact
 with unpkg at all, and four font files rather than five — `Archivo 500` was
@@ -362,8 +373,11 @@ silently in production.
 ## Tests
 
 ```bash
-cd ~/spinecheck && node --test tests/
+cd ~/spinecheck && node --test tests/*.mjs
 ```
+
+(Newer Node versions treat a bare `tests/` as a file path and fail before running
+anything, so the glob is spelled out.)
 
 42 tests: the angle math and its aspect-ratio correction, the pose quality
 warnings, the consensus reduction — median selection, the spread as an error bar,
@@ -385,6 +399,15 @@ amber `#B87514` and green `#2C7A5B` for the monitor and clear states. Archivo fo
 UI, IBM Plex Mono for every number. The recurring motif is the plumb line — the
 vertical reference the whole test measures against — which appears in the wordmark,
 the capture guide, and drawn down the pelvis on the result photo.
+
+Corners run on a 8 / 14 / 22px scale with pill-shaped chips, and coloured accents
+are inset shadows so they follow the radius. Nothing is written over a
+photograph or the live camera: the measurement legend sits under the result
+photo and the capture coaching sits in a bar above the viewfinder, because text
+on an arbitrary image is legible on some backgrounds and not others. Screens,
+cards, pins and the ruler needle animate in; `prefers-reduced-motion` turns all
+of it off. Above 960px the tab bar moves into the masthead and screens lay out in
+columns.
 
 ## Known limits
 

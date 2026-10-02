@@ -336,9 +336,10 @@
     position: sticky;
     top: calc(var(--masthead-h) + var(--space-5));
   }
-  .result__media .plate canvas { max-height: calc(100dvh - var(--masthead-h) - 220px); width: 100%; object-fit: contain; }
-  .plate__legend { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .plate__key { flex-wrap: wrap; row-gap: 2px; }
+  /* The plate shrinks to the photo, so a tall portrait shot is not padded out
+     to the column width with dark bars. */
+  .result__media .plate { width: fit-content; max-width: 100%; margin-inline: auto; }
+  .result__media .plate canvas { width: auto; max-width: 100%; max-height: calc(100dvh - var(--masthead-h) - 240px); }
 
   /* The scan log as cards in a grid rather than one long list. */
   #history-body .log-list {
