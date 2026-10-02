@@ -1,5 +1,6 @@
-/* Page motion: scroll reveal, a cursor spotlight on cards, buttons that lean
- * toward the cursor, and the masthead's scrolled state.
+/* Page motion: scroll reveal, a cursor spotlight on cards, cards that tilt in
+ * 3D toward the cursor, buttons that lean toward it, and the masthead's
+ * scrolled state.
  *
  * Everything here is progressive. The hidden "before" state of a reveal only
  * applies under html.motion, which is set here, so content is never invisible
@@ -27,6 +28,13 @@ const SPOT = [
   '.claim-list li', '.verdict', '.readout', '.sway', '.clinic', '.log-entry', '.trend',
   '.panel', '.intake__q', '.intake-prompt', '.capture__steps', '.capture__controls',
   '.adjust__panel', '.link-list a', '.analyze__log li',
+].join(',');
+
+/* Cards that tilt in 3D toward the cursor, as if picked up by that corner.
+   Not anything GSAP animates (it owns those elements' transforms). */
+const TILT = [
+  '.jcard__inner', '.stat', '.clinic', '.verdict', '.readout', '.sway', '.trend',
+  '.log-entry', '.link-list a', '.intake-prompt', '.next-steps li', '.limits__list li',
 ].join(',');
 
 /* Controls that lean a few pixels toward the cursor. */
@@ -201,6 +209,13 @@ function initPointerEffects() {
     spot?.style.removeProperty('--my');
     spot = null;
   };
+  let tilted = null;
+  const clearTilt = () => {
+    if (!tilted) return;
+    tilted.classList.remove('is-tilting');
+    ['--tilt-x', '--tilt-y', '--sx', '--sy', '--gx', '--gy'].forEach((name) => tilted.style.removeProperty(name));
+    tilted = null;
+  };
   const clearMagnet = () => {
     magnet?.style.removeProperty('--mag-x');
     magnet?.style.removeProperty('--mag-y');
@@ -219,6 +234,22 @@ function initPointerEffects() {
       card.style.setProperty('--my', `${Math.round(event.clientY - box.top)}px`);
     }
 
+    const tile = target?.closest(TILT) || null;
+    if (tile !== tilted) { clearTilt(); tilted = tile; tile?.classList.add('is-tilting'); }
+    if (tile) {
+      const box = tile.getBoundingClientRect();
+      const nx = ((event.clientX - box.left) / box.width) * 2 - 1;
+      const ny = ((event.clientY - box.top) / box.height) * 2 - 1;
+      /* Big cards tilt less, so a wide panel does not swing like a door. */
+      const reach = Math.max(2.5, Math.min(9, 2400 / Math.max(box.width, box.height)));
+      tile.style.setProperty('--tilt-x', `${(-ny * reach).toFixed(2)}deg`);
+      tile.style.setProperty('--tilt-y', `${(nx * reach).toFixed(2)}deg`);
+      tile.style.setProperty('--sx', `${(-nx * 14).toFixed(1)}px`);
+      tile.style.setProperty('--sy', `${(-ny * 10).toFixed(1)}px`);
+      tile.style.setProperty('--gx', `${((nx + 1) * 50).toFixed(1)}%`);
+      tile.style.setProperty('--gy', `${((ny + 1) * 50).toFixed(1)}%`);
+    }
+
     const button = target?.closest(MAGNET) || null;
     if (button !== magnet) { clearMagnet(); magnet = button; }
     if (button && !button.disabled) {
@@ -233,6 +264,6 @@ function initPointerEffects() {
   }, { passive: true });
 
   document.addEventListener('pointerout', (event) => {
-    if (!event.relatedTarget) { clearSpot(); clearMagnet(); }
+    if (!event.relatedTarget) { clearSpot(); clearMagnet(); clearTilt(); }
   });
 }

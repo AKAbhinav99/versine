@@ -110,8 +110,24 @@ function buildIntro(gsap, ScrollTrigger) {
     scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
   });
 
+  /* The headline turns a few degrees toward the pointer, in perspective, as
+     if the type were standing off the page. */
+  if (title && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    gsap.set(title, { transformPerspective: 900, transformOrigin: '30% 50%' });
+    const turnX = gsap.quickTo(title, 'rotationX', { duration: 0.8, ease: 'power3' });
+    const turnY = gsap.quickTo(title, 'rotationY', { duration: 0.8, ease: 'power3' });
+    const onMove = (event) => {
+      turnY(((event.clientX / window.innerWidth) - 0.5) * 14);
+      turnX(((event.clientY / window.innerHeight) - 0.5) * -10);
+    };
+    hero.addEventListener('pointermove', onMove);
+    hero.addEventListener('pointerleave', () => { turnX(0); turnY(0); });
+  }
+
   buildBand(gsap, ScrollTrigger);
   buildHow(gsap, ScrollTrigger);
+  buildJourney(gsap, ScrollTrigger);
+  buildStats(gsap);
   buildLimits(gsap);
   buildCloser(gsap, ScrollTrigger);
 }
@@ -134,6 +150,101 @@ function buildBand(gsap, ScrollTrigger) {
     onUpdate: (self) => lean(gsap.utils.clamp(-14, 14, self.getVelocity() / -260)),
     onLeave: () => lean(0),
     onLeaveBack: () => lean(0),
+  });
+}
+
+/* The journey: pinned, its track of cards driven sideways by the vertical
+   scroll. Each card turns on its vertical axis by how far it sits from the
+   middle of the window, like a carousel seen from the front, and the one in
+   the middle is marked so its illustration plays. */
+function buildJourney(gsap, ScrollTrigger) {
+  const section = document.querySelector('[data-gsap="journey"]');
+  if (!section) return;
+  const pin = section.querySelector('.journey__pin');
+  const viewport = section.querySelector('.journey__viewport');
+  const track = section.querySelector('.journey__track');
+  const cards = [...track.children];
+  const bar = section.querySelector('.journey__progress span');
+  const index = section.querySelector('[data-journey-index]');
+  /* Far enough that the last card ends centred. */
+  const distance = () => {
+    const last = cards[cards.length - 1];
+    return Math.max(0, last.offsetLeft + last.offsetWidth / 2 - viewport.clientWidth / 2);
+  };
+  const setters = cards.map((card) => ({
+    rotationY: gsap.quickSetter(card, 'rotationY', 'deg'),
+    z: gsap.quickSetter(card, 'z', 'px'),
+    opacity: gsap.quickSetter(card, 'opacity'),
+  }));
+  gsap.set(cards, { transformPerspective: 1400 });
+  let active = -1;
+
+  const turn = () => {
+    const middle = window.innerWidth / 2;
+    let nearest = 0;
+    let nearestGap = Infinity;
+    cards.forEach((card, i) => {
+      const box = card.getBoundingClientRect();
+      const offset = (box.left + box.width / 2 - middle) / window.innerWidth;
+      const clamped = gsap.utils.clamp(-1, 1, offset * 1.6);
+      setters[i].rotationY(clamped * -32);
+      setters[i].z(Math.abs(clamped) * -180);
+      setters[i].opacity(1 - Math.abs(clamped) * 0.35);
+      if (Math.abs(offset) < nearestGap) { nearestGap = Math.abs(offset); nearest = i; }
+    });
+    if (nearest !== active) {
+      cards[active]?.toggleAttribute('data-active', false);
+      if (active >= 0) cards[active].setAttribute('data-played', '');
+      active = nearest;
+      cards[active].toggleAttribute('data-active', true);
+      index.textContent = String(active + 1).padStart(2, '0');
+    }
+  };
+
+  gsap.to(track, {
+    x: () => -distance(),
+    ease: 'none',
+    onUpdate: turn,
+    scrollTrigger: {
+      trigger: section,
+      pin,
+      start: 'top top',
+      end: () => `+=${Math.round(distance() * 1.15)}`,
+      scrub: 0.7,
+      invalidateOnRefresh: true,
+      onUpdate: (self) => gsap.set(bar, { scaleX: 0.2 + self.progress * 0.8 }),
+      onRefresh: turn,
+    },
+  });
+  turn();
+
+  /* The heading and counter rise in before the pin takes over. */
+  gsap.from(section.querySelectorAll('.journey__title, .journey__count'), {
+    y: 50, autoAlpha: 0, duration: 1, ease: 'expo.out', stagger: 0.1,
+    scrollTrigger: { trigger: section, start: 'top 75%' },
+  });
+}
+
+/* Numbers that flip up out of the page in perspective and count as they come. */
+function buildStats(gsap) {
+  const section = document.querySelector('[data-gsap="stats"]');
+  if (!section) return;
+  const stats = [...section.querySelectorAll('.stat')];
+  const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: 'top 80%' } });
+  tl.from(stats, {
+    rotationX: -75, y: 80, autoAlpha: 0, transformOrigin: '50% 100%',
+    duration: 1.1, ease: 'expo.out', stagger: 0.1,
+  });
+  stats.forEach((stat, i) => {
+    const number = stat.querySelector('[data-count]');
+    if (!number) return;
+    const to = Number(number.dataset.count);
+    const counter = { value: Number(number.dataset.from ?? 0) };
+    number.textContent = String(counter.value);
+    tl.to(counter, {
+      value: to, duration: 1.4, ease: 'power3.out',
+      onUpdate: () => { number.textContent = String(Math.round(counter.value)); },
+    }, 0.15 + i * 0.1);
   });
 }
 

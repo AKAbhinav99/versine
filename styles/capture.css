@@ -210,6 +210,136 @@
 .how__pm { font-size: var(--text-lg); color: var(--ink-500); }
 .how__label { margin-left: auto; font-size: var(--text-xs); color: var(--ink-400); }
 
+/* --- Journey: the scan, scrolled sideways --------------------------------- */
+
+.journey { margin: var(--space-8) 0 0; }
+.journey__pin {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);   /* the track overflows; the column must not grow to fit it */
+  align-content: center;
+  gap: var(--space-5);
+  min-height: 100svh;
+  padding: calc(var(--masthead-h) + var(--space-4)) 0 var(--space-6);
+}
+.journey__head { display: flex; align-items: end; justify-content: space-between; gap: var(--space-4); }
+.journey__title { font-size: var(--text-2xl); max-width: 14ch; margin: 0; }
+.journey__count { margin: 0; font-size: clamp(2rem, 1.4rem + 2.6vw, 3.6rem); font-weight: 500; letter-spacing: -0.04em; color: var(--ink-900); line-height: 1; }
+.journey__of { color: var(--ink-300); }
+
+/* Without GSAP: a row that scrolls sideways under the finger, snapping. */
+.journey__viewport {
+  margin: 0 calc(-1 * var(--gutter));
+  padding: var(--space-6) var(--gutter) var(--space-8);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.journey__viewport::-webkit-scrollbar { display: none; }
+.journey__track {
+  display: flex;
+  gap: var(--space-5);
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.jcard {
+  width: min(80vw, 400px);
+  flex: none;
+  scroll-snap-align: center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.jcard__inner {
+  height: 100%;
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-lg);
+}
+.jcard__art {
+  width: 100%;
+  height: auto;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+  background: radial-gradient(var(--dots, rgba(31,110,140,0.22)) 1px, transparent 1.4px) 0 0 / 14px 14px, var(--paper);
+}
+.jcard__step { margin: 0 0 var(--space-2); font-size: var(--text-sm); color: var(--scrub); font-weight: 600; }
+.jcard__title { margin: 0 0 var(--space-2); font-size: var(--text-xl); letter-spacing: -0.02em; }
+.jcard__text { margin: 0; color: var(--ink-500); }
+
+/* With GSAP the viewport stops scrolling itself: the page drives the track. */
+.gsap .journey__viewport { overflow: visible; scroll-snap-type: none; perspective: 1400px; }
+.journey__progress { height: 3px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+.journey__progress span { display: block; height: 100%; background: var(--scrub); transform: scaleX(0.2); transform-origin: 0 50%; }
+html:not(.gsap) .journey__progress { display: none; }
+
+/* Card art, in the page's own line language. */
+.jcard__art * { vector-effect: non-scaling-stroke; }
+.jart__screen { fill: var(--ink-900); }
+.jart__plumb { stroke: var(--marker); stroke-width: 1.4; }
+.jart__body { fill: rgba(255,255,255,0.16); stroke: #fff; stroke-width: 1.6; }
+.jart__tick { stroke: #fff; stroke-width: 2; stroke-linecap: round; }
+.jart__shutter { fill: var(--marker); stroke: #fff; stroke-width: 2; }
+.jart__guide { fill: none; stroke: var(--scrub); stroke-width: 1.5; stroke-dasharray: 5 5; }
+.jart__photo rect { fill: rgba(14,34,48,0.08); stroke: var(--ink-700); stroke-width: 1.5; }
+.jart__photo path { stroke: var(--ink-500); stroke-width: 1.5; stroke-linecap: round; }
+.jart__photo { transform-box: fill-box; transform-origin: center; transform: rotate(-9deg); }
+.jart__rotate, .jart__rotate-head { fill: none; stroke: var(--scrub); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.jart-frames rect { fill: none; stroke: var(--scrub); stroke-width: 1.3; opacity: 0.55; }
+.jart__pt { fill: var(--marker); stroke: #fff; stroke-width: 1.5; }
+.jart__num { font-family: var(--font-num); font-size: 44px; font-weight: 500; fill: var(--ink-900); letter-spacing: -2px; }
+.jart__pm { font-family: var(--font-num); font-size: 12px; fill: var(--ink-500); }
+.jart__band--clear { fill: rgba(31,110,140,0.25); }
+.jart__band--monitor { fill: var(--scrub); }
+.jart__band--refer { fill: rgba(214,64,42,0.35); }
+.jart__needle { fill: var(--ink-900); }
+.jart__land { fill: #E6EEF1; }
+.jart__road { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; }
+.jart__pin path { fill: var(--scrub); }
+.jart__pin circle { fill: #fff; }
+.jart__pin--you path { fill: var(--marker); }
+.jart__pin { transform-box: fill-box; transform-origin: 50% 100%; }
+
+/* The card in the middle plays its little scene; scenes.js marks it. */
+.motion .jcard[data-active] .jart__photo { animation: jart-level 1.6s var(--ease-out) both; }
+.motion .jcard[data-active] .jart-frames rect { animation: jart-jitter 2.4s ease-in-out infinite; }
+.motion .jcard[data-active] .jart-frames rect:nth-child(2n) { animation-delay: -0.8s; }
+.motion .jcard[data-active] .jart-frames rect:nth-child(3n) { animation-delay: -1.5s; }
+.motion .jcard[data-active] .jart__pin { animation: jart-drop 0.8s var(--ease-spring) both; }
+.motion .jcard[data-active] .jart__pin:nth-of-type(2) { animation-delay: 0.15s; }
+.motion .jcard[data-active] .jart__pin:nth-of-type(3) { animation-delay: 0.3s; }
+.motion .jcard[data-active] .jart__needle { animation: jart-needle 1.4s var(--ease-out) both; }
+.motion .jcard[data-active] .jart__shutter { animation: jart-pulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes jart-level { from { transform: rotate(-9deg); } to { transform: rotate(0deg); } }
+@keyframes jart-jitter { 0%, 100% { transform: translate(0, 0); } 33% { transform: translate(2px, -1.5px); } 66% { transform: translate(-1.5px, 2px); } }
+@keyframes jart-drop { 0% { transform: translateY(-26px) scale(0.6); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes jart-needle { from { transform: translateX(-80px); } to { transform: none; } }
+@keyframes jart-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+/* Once played, a card keeps its finished state. */
+.jcard[data-played] .jart__photo { transform: none; }
+
+/* --- Stats ---------------------------------------------------------------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  margin: var(--space-8) 0 var(--space-4);
+  perspective: 1000px;
+}
+.stat {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow);
+}
+.stat__num { margin: 0 0 var(--space-2); font-size: clamp(3rem, 2rem + 4vw, 5.5rem); font-weight: 500; letter-spacing: -0.05em; line-height: 0.95; color: var(--ink-900); font-variant-numeric: tabular-nums; }
+.stat__label { margin: 0; color: var(--ink-500); font-size: var(--text-sm); max-width: 22ch; }
+.stat--accent { background: var(--scrub); }
+.stat--accent .stat__num { color: #fff; }
+.stat--accent .stat__label { color: rgba(255, 255, 255, 0.92); }
+
 /* --- Limits --------------------------------------------------------------- */
 
 .limits { padding: var(--space-10) 0 var(--space-8); }
@@ -671,6 +801,8 @@
   .limits__head { position: sticky; top: calc(var(--masthead-h) + var(--space-6)); }
   .limits__list { margin-top: 0; }
   .closer { grid-template-columns: 1fr auto; align-items: center; padding: var(--space-8); }
+  .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .jcard { width: 420px; }
   .closer__line { font-size: var(--text-2xl); }
 
   /* Capture: a large viewfinder with the steps and controls beside it. */
