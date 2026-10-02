@@ -429,7 +429,8 @@ Light only. The visual idea is a physio's posture board: a field of dots on a
 clean surface with a plumb line hanging through it, the vertical reference the
 whole test measures against. Page `#F2F5F6`, white cards, ink `#0E2230`, scrub
 blue `#1F6E8C` for measurement and action, marker red-orange `#D6402A` reserved
-for signals. Bricolage Grotesque for headings only, Archivo for UI, IBM Plex
+for signals. Schibsted Grotesk for headings only (it replaced Bricolage
+Grotesque, whose ink-trap quirks read as a generated-site default), Archivo for UI, IBM Plex
 Mono for every number.
 
 That board is the page itself: one fixed canvas behind every screen

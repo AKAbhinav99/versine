@@ -49,7 +49,7 @@
   --dots: radial-gradient(circle, var(--dot) 1.1px, transparent 1.6px) 0 0 / var(--dot-gap) var(--dot-gap);
 
   /* --- Type ---------------------------------------------------------- */
-  --font-display: 'Bricolage Grotesque', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Schibsted Grotesk', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --font-ui:      'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --font-num:     'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
