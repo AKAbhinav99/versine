@@ -20,6 +20,10 @@ const SCREENS = {
 
 let lenis = null;
 let current = null;   // { name, ctx }
+/* Teardown for things a gsap.context cannot revert on its own (a WebGL
+   canvas, async loads still in flight), run when the screen is left. */
+let cleanups = [];
+const onRevert = (fn) => cleanups.push(fn);
 
 export function initScenes() {
   const { gsap, ScrollTrigger } = window;
@@ -37,6 +41,8 @@ export function initScenes() {
 
   document.addEventListener('screenchange', ({ detail }) => {
     if (current) { current.ctx.revert(); current = null; }
+    cleanups.forEach((fn) => fn());
+    cleanups = [];
     lenis?.scrollTo(0, { immediate: true });
 
     const build = SCREENS[detail.name];
@@ -313,8 +319,10 @@ function buildHow(gsap, ScrollTrigger) {
   const setStep = (index) => steps.forEach((step, i) => step.toggleAttribute('data-active', i === index));
   setStep(0);
 
+  let figure3d = null;
   const tl = gsap.timeline({
     defaults: { ease: 'power2.inOut' },
+    onUpdate: () => figure3d?.setProgress(tl.progress()),
     scrollTrigger: {
       trigger: section,
       start: 'top top',
@@ -349,6 +357,22 @@ function buildHow(gsap, ScrollTrigger) {
 
   angle.textContent = '0.0';
   pm.textContent = '0.0';
+
+  /* The 3D figure, fetched once the page has settled so it never competes
+     with the hero's entrance. It takes its progress from this timeline. */
+  let alive = true;
+  const art = section.querySelector('.how__art');
+  const load = () => import('./figure3d.js')
+    .then((module) => module.mountFigure(art, tl.duration()))
+    .then((mounted) => {
+      if (!mounted) return;
+      if (!alive) { mounted.destroy(); return; }
+      figure3d = mounted;
+      figure3d.setProgress(tl.progress());
+    })
+    .catch(() => { /* the SVG drawing stays */ });
+  const timer = setTimeout(() => (window.requestIdleCallback || setTimeout)(load), 900);
+  onRevert(() => { alive = false; clearTimeout(timer); figure3d?.destroy(); figure3d = null; });
 }
 
 /* The limits: the heading rises out of its lines and holds while the list

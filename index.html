@@ -115,6 +115,9 @@
           </ol>
         </div>
         <figure class="how__stage">
+          <!-- The SVG is the complete drawing. figure3d.js lays a 3D version over it
+               when WebGL and the library load; otherwise this is what shows. -->
+          <div class="how__art">
           <svg class="how__svg" viewBox="0 0 300 400" role="img" aria-label="Illustration: a figure bent forward, seen from behind, with its shoulder and hip points marked and the shoulder tilt measured against horizontal">
             <g class="how__frames">
               <rect x="36" y="44" width="226" height="322" rx="12" />
@@ -162,6 +165,7 @@
               <circle cx="178" cy="304" r="5.5" />
             </g>
           </svg>
+          </div>
           <figcaption class="how__readout">
             <span class="how__value mono"><span data-how-angle>4.2</span>°</span>
             <span class="how__pm mono">±<span data-how-pm>0.8</span>°</span>

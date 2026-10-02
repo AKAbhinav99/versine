@@ -111,6 +111,16 @@
 }
 @keyframes cue { to { top: 100%; } }
 
+/* On a phone the pinned scene has to fit one screen: only the step being
+   drawn is shown (it changes as the scroll moves on), and the drawing is
+   capped lower. */
+@media (max-width: 959px) {
+  .gsap .how__steps { min-height: 5.6em; align-content: start; }
+  .gsap .how__steps li:not([data-active]) { display: none; }
+  .gsap .how__svg { max-height: 42svh; }
+  .gsap .how__pin { align-content: center; gap: var(--space-4); padding-top: var(--masthead-h); }
+}
+
 /* --- Type band ------------------------------------------------------------ */
 
 /* Bleeds to both edges of the window. Without GSAP the rows simply sit, cropped. */
@@ -184,7 +194,11 @@
   background: var(--paper-raised);
   box-shadow: var(--shadow);
 }
+.how__art { position: relative; }
 .how__svg { width: 100%; height: auto; max-height: 52svh; margin: 0 auto; overflow: visible; }
+.how__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Once the 3D figure is up, the SVG keeps the box its size and steps aside. */
+.how__art.is-3d .how__svg { visibility: hidden; }
 .how__svg * { vector-effect: non-scaling-stroke; }
 .how__frames rect { fill: none; stroke: var(--scrub); stroke-width: 1; opacity: 0.45; }
 .how__plumb { stroke: var(--marker); stroke-width: 1.2; }

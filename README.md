@@ -347,6 +347,7 @@ Everything else arrives when it is wanted:
 | capture flow, router, capture, adjust, storage | at load, 7 modules |
 | motion: motion, field, scenes | at load, 3 modules |
 | GSAP, ScrollTrigger, SplitText, Lenis (jsDelivr) | deferred classic scripts, about 55 KB gzipped; the page is complete without them |
+| three.js (jsDelivr `+esm`, about 190 KB gzipped) | on the intro only, once the page is idle, for the 3D figure; the SVG drawing stands in if it never arrives |
 | analysis, pose, consensus, screening, result, report | on idle after first paint |
 | clinician finder, clinics, geocoding, index, keys, MapLibre | first time the Care tab is opened |
 
@@ -426,6 +427,16 @@ red at 10°, the angle at which a curve is called scoliosis. It is the subject
 explained in one gesture, before a word of copy is read. The geometry is honest
 to itself (the angle shown is the angle drawn) but it is a model, not a
 measurement, and the copy around it says what the app actually measures.
+
+The "how a reading is made" figure is a clay model in three.js
+([`src/lib/figure3d.js`](src/lib/figure3d.js)): rounded primitives with a
+clearcoat, a drifting key light so the glints move, a contact shadow. The
+scroll scrub assembles it, drops the plumb line, lands the four landmarks and
+draws the measuring lines as tubes in space while the camera swings from
+three-quarters to square on. It always finishes square on, because the
+reading it illustrates is a straight-on measurement. The landmarks and lines
+sit on one plane just behind the back, nearer the camera than the body, so
+the pelvis never swallows the hip line.
 
 Scroll storytelling uses GSAP and ScrollTrigger
 ([`src/lib/scenes.js`](src/lib/scenes.js)), and only on the two read-once pages:
