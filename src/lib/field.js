@@ -61,12 +61,19 @@ export function initField() {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   /* The spine gets a canvas of its own, above the dots: the dot layer fades out
-     toward the masthead (a CSS mask), and the spine must not fade with it. */
+     toward the masthead (a CSS mask), and the spine must not fade with it. It
+     lives inside the spine's box rather than fixed over the window, so the
+     page carries it when it scrolls. Fixed and redrawn at the box's new place
+     each frame, it trailed the scroll by a frame on phones, where scrolling
+     runs off the main thread, and the spine stuttered against the page. */
   const front = document.createElement('canvas');
-  front.className = 'field field--front';
+  front.className = 'spine-canvas';
   front.setAttribute('aria-hidden', 'true');
-  canvas.after(front);
   const fx = front.getContext('2d');
+  const FRONT_PAD = 60;                 // room around the box for the Cobb lines and the bob
+  let frontW = 0;
+  let frontH = 0;
+  let dpr = 1;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const fills = Array.from({ length: SHADES }, (_, i) => {
@@ -90,20 +97,23 @@ export function initField() {
   const scroll = { y: window.scrollY, v: 0 };
   const spine = { zone: null, readout: null, amp: 0, vel: 0, primed: false };
 
+  /* A phone's address bar showing or hiding resizes the window by its own
+     height, every time the scroll changes direction. Rebuilding the canvas
+     then threw away every dot's spring state and stalled a frame, so the
+     field jumped. Height changes alone only ever grow the canvas: it stays
+     sized for the tallest the window has been at this width. */
   function resize() {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    width = window.innerWidth;
-    height = window.innerHeight;
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    const nextWidth = window.innerWidth;
+    const nextHeight = nextWidth === width ? Math.max(height, window.innerHeight) : window.innerHeight;
+    if (nextWidth === width && nextHeight === height && canvas.width) return;
+    width = nextWidth;
+    height = nextHeight;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    front.width = canvas.width;
-    front.height = canvas.height;
-    front.style.width = `${width}px`;
-    front.style.height = `${height}px`;
-    fx.setTransform(dpr, 0, 0, dpr, 0, 0);
     /* One spare row and column so the drifting lattice never shows an edge. */
     cols = Math.ceil(width / GAP) + 2;
     rows = Math.ceil(height / GAP) + 2;
@@ -278,9 +288,23 @@ export function initField() {
 
   /* --------------------------------------------------------------- draw --- */
 
+  /* The spine canvas covers its box plus a margin. */
+  function sizeFront() {
+    if (!spine.zone) return;
+    const w = spine.zone.clientWidth + FRONT_PAD * 2;
+    const h = spine.zone.clientHeight + FRONT_PAD * 2;
+    if (w === frontW && h === frontH) return;
+    frontW = w; frontH = h;
+    front.width = Math.round(w * dpr);
+    front.height = Math.round(h * dpr);
+    front.style.width = `${w}px`;
+    front.style.height = `${h}px`;
+  }
+
   function draw(dt, now) {
     ctx.clearRect(0, 0, width, height);
-    fx.clearRect(0, 0, width, height);
+    fx.setTransform(1, 0, 0, 1, 0, 0);
+    fx.clearRect(0, 0, front.width, front.height);
     const drift = reduced ? 0 : -((window.scrollY * PARALLAX) % GAP);
     const geo = spineGeometry();
     if (geo && !reduced) stepSpine(geo, dt, now);
@@ -372,7 +396,12 @@ export function initField() {
       ctx.fill(paths[i]);
     }
 
-    if (geo) drawSpine(geo);
+    if (geo) {
+      /* Drawn in window coordinates, shifted into the box's own: whatever the
+         box's position this frame, the drawing lands at the same place in it. */
+      fx.setTransform(dpr, 0, 0, dpr, (FRONT_PAD - geo.box.left) * dpr, (FRONT_PAD - geo.box.top) * dpr);
+      drawSpine(geo);
+    }
   }
 
   /* --------------------------------------------------------------- loop --- */
@@ -440,15 +469,22 @@ export function initField() {
   }
 
   /* The spine exists only on the intro; re-find it when screens change. */
+  const zoneObserver = window.ResizeObserver
+    ? new ResizeObserver(() => { sizeFront(); if (reduced) draw(0, 0); })
+    : null;
   const findSpine = () => {
     spine.zone = document.querySelector('[data-plumb-zone]');
     spine.readout = document.querySelector('[data-plumb-readout]');
+    if (spine.zone && front.parentNode !== spine.zone) spine.zone.prepend(front);
+    zoneObserver?.disconnect();
+    if (spine.zone) zoneObserver?.observe(spine.zone);
+    frontW = 0;
+    sizeFront();
     if (reduced) draw(0, 0);
   };
   document.addEventListener('screenchange', findSpine);
-  findSpine();
-
   resize();
+  findSpine();
   if (!reduced) {
     lastInput = performance.now();
     requestAnimationFrame((now) => { last = now; tick(now); });

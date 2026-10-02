@@ -73,7 +73,14 @@ p:last-child { margin-bottom: 0; }
   mask-image: var(--field-fade-y), var(--field-fade-x);
   mask-composite: intersect;
 }
-.field--front { -webkit-mask-image: none; mask-image: none; }
+/* The spine's own canvas, inside its box (field.js) with a margin all round. */
+.spine-canvas {
+  position: absolute;
+  left: -60px;
+  top: -60px;
+  max-width: none;        /* wider than its box on purpose; the global canvas cap would squash it */
+  pointer-events: none;
+}
 
 .app {
   /* Full-bleed pieces (the type band, the sideways card track) reach past the

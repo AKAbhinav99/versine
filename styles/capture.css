@@ -108,10 +108,18 @@
 
 /* On a phone the pinned scene has to fit one screen: only the step being
    drawn is shown (it changes as the scroll moves on), and the drawing is
-   capped lower. */
+   capped lower. The steps share one grid cell, so the box is as tall as the
+   longest and they cross-fade, the old one lifting away as the new one rises
+   in, instead of snapping. */
 @media (max-width: 959px) {
-  .gsap .how__steps { min-height: 5.6em; align-content: start; }
-  .gsap .how__steps li:not([data-active]) { display: none; }
+  .gsap .how__steps { align-content: start; }
+  .gsap .how__steps li {
+    grid-area: 1 / 1;
+    transition: opacity 420ms var(--ease), transform 520ms var(--ease-out), background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .gsap .how .how__steps li:not([data-active]) { opacity: 0; transform: translateY(-14px) scale(0.98); pointer-events: none; }
+  .gsap .how__steps li[data-active] { opacity: 1; transform: none; transition-delay: 90ms; }
+  .gsap .how .how__steps li[data-active] ~ li:not([data-active]) { transform: translateY(14px) scale(0.98); }
   .gsap .how__svg { max-height: 42svh; }
   .gsap .how__pin { align-content: center; gap: var(--space-4); padding-top: var(--masthead-h); }
 }
