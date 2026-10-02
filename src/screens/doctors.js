@@ -4,7 +4,7 @@
 
 import { $, $$, el, formatDistance, escapeHtml } from '../lib/dom.js';
 import { PLACES } from '../config.js';
-import { findClinicians, clinicProviders } from '../lib/clinics.js';
+import { findClinicians, clinicProviders, checkSiteRatings } from '../lib/clinics.js';
 import { geocode, describePlace } from '../lib/geocoding.js';
 import { currentPosition } from '../lib/geolocation.js';
 import { CancelledError, fetchWithTimeout } from '../lib/net.js';
@@ -41,6 +41,9 @@ let hereMarker = null;    // the search centre
 
 export function initDoctors() {
   initCountrySelect();
+  /* Ask once whether this site serves ratings, and redraw the service list
+     when the answer arrives, so it names Google when ratings are on. */
+  checkSiteRatings().then((configured) => { if (configured && !state.center) renderNotice(); });
   $('#loc-gps').addEventListener('click', useCurrentLocation);
   $('#loc-search').addEventListener('click', useTypedLocation);
   $('#loc-input').addEventListener('keydown', (event) => {
@@ -246,7 +249,7 @@ function syncRatingFilter() {
     if (!available) chip.setAttribute('aria-pressed', 'false');
     chip.title = available
       ? 'Filter to practices rated at least this highly'
-      : 'This lookup service does not publish ratings. Only Google Places does. Add a key below.';
+      : 'This lookup service does not publish ratings (OpenStreetMap has none at all). Only Google Places does.';
   });
 }
 

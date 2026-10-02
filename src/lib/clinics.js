@@ -95,6 +95,45 @@ async function searchGoogle(center, radiusM, signal) {
   return dedupe(results);
 }
 
+/* ------------------------------------------------- Google, via this site --- */
+
+/* The same Google data, asked through this site's own function (api/places.mjs)
+   with a key kept on the server, so every visitor gets ratings without bringing
+   a key. Whether the site has one is asked once per visit. */
+let serverPlaces = null;
+const serverPlacesReady = () => (serverPlaces ||= fetchWithTimeout('/api/places?probe=1', {}, 4000)
+  .then((response) => (response.ok ? response.json() : { configured: false }))
+  .then((body) => Boolean(body.configured))
+  .catch(() => false));
+let serverConfigured = false;
+
+async function searchServerGoogle(center, radiusM, signal) {
+  const params = new URLSearchParams({ lat: center.lat.toFixed(4), lng: center.lng.toFixed(4), radius: String(Math.round(radiusM)) });
+  const data = await readJson(await fetchWithTimeout(`/api/places?${params}`, {}, 15000, signal), 'Google Places');
+  const results = (data.places || []).map((place) => {
+    const { lat, lng } = place;
+    const distanceM = lat && lng ? haversineMeters(center, { lat, lng }) : null;
+    if (distanceM !== null && distanceM > Math.min(radiusM, 50000) * 1.2) return null;
+    return {
+      id: place.id,
+      name: place.name,
+      address: place.address,
+      lat, lng,
+      distanceM,
+      rating: place.rating,
+      reviewCount: place.reviewCount,
+      phone: place.phone,
+      openNow: null,
+      specialty: place.spec,
+      tags: buildTags(place.types, place.spec),
+      website: place.website,
+      directionsUrl: place.mapsUrl || directionsFor(lat, lng),
+      source: 'google',
+    };
+  }).filter(Boolean);
+  return dedupe(results);
+}
+
 /* ---------------------------------------------------------------- Geoapify --- */
 
 /* Verified against the live API, an unsupported category 400s the whole request,
@@ -474,12 +513,19 @@ async function overpassAttempt(endpoint, center, radiusM, signal) {
  * Overpass second. Same data; the first two are the fast ways in, and Overpass
  * is kept beneath them because it catches practices a name search misses. */
 const PROVIDERS = [
+  /* First when the site has a key: it is the only source with ratings, and the
+     bundled index (which has none) would otherwise answer first in the areas
+     it covers. */
+  { id: 'google-site', label: 'Google Places', ratings: true, live: true, available: () => serverConfigured, search: searchServerGoogle },
   { id: 'local', label: 'Local index', ratings: false, live: false, available: () => true, search: (c, r) => localSearch(c, r) },
-  { id: 'google', label: 'Google Places', ratings: true, live: true, available: () => hasKey('google'), search: searchGoogle },
+  { id: 'google', label: 'Google Places (your key)', ratings: true, live: true, available: () => hasKey('google') && !serverConfigured, search: searchGoogle },
   { id: 'photon', label: 'OpenStreetMap', ratings: false, live: true, available: () => true, search: searchOpenStreetMap },
   { id: 'osm', label: 'OpenStreetMap (Overpass)', ratings: false, live: true, available: () => true, search: searchOverpass },
   { id: 'geoapify', label: 'Geoapify', ratings: false, live: true, available: () => hasKey('geoapify'), search: searchGeoapify },
 ];
+
+/** Starts the once-per-visit check for site-side ratings, so the first search does not wait on it. */
+export const checkSiteRatings = () => serverPlacesReady().then((configured) => { serverConfigured = configured; return configured; });
 
 export const clinicProviders = () => PROVIDERS.filter((p) => p.available()).map((p) => p.label);
 export const liveProviders = () => PROVIDERS.filter((p) => p.live && p.available()).map((p) => p.label);
@@ -492,6 +538,7 @@ export const liveProviders = () => PROVIDERS.filter((p) => p.live && p.available
  *                    hasRatings: boolean, attempts: string[]}>}
  */
 export async function findClinicians(center, radiusM, { signal = null, skipLocal = false } = {}) {
+  serverConfigured = await serverPlacesReady();
   const providers = skipLocal ? PROVIDERS.filter((p) => p.live) : PROVIDERS;
 
   const { value, provider, attempts } = await runChain(
