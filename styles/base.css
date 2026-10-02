@@ -483,7 +483,7 @@ html.pointer-fine .spot {
 
 /* A card under a real mouse tilts toward the cursor and lifts, its shadow
    sliding the other way, with a soft glare where the light would catch it. */
-.pointer-fine :is(.jcard__inner, .stat, .clinic, .verdict, .readout, .sway, .trend, .log-entry, .link-list a, .intake-prompt, .next-steps li, .limits__list li) {
+.pointer-fine :is(.jcard__inner, .stat__card, .clinic, .verdict, .readout, .sway, .trend, .log-entry, .link-list a, .intake-prompt, .next-steps li) {
   transition: transform 0.6s var(--ease-out), box-shadow 0.6s var(--ease-out);
 }
 .pointer-fine .is-tilting {

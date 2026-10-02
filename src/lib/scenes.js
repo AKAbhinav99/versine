@@ -219,8 +219,8 @@ function buildJourney(gsap, ScrollTrigger) {
   turn();
 
   /* The heading and counter rise in before the pin takes over. */
-  gsap.from(section.querySelectorAll('.journey__title, .journey__count'), {
-    y: 50, autoAlpha: 0, duration: 1, ease: 'expo.out', stagger: 0.1,
+  gsap.fromTo(section.querySelectorAll('.journey__title, .journey__count'), { y: 50, autoAlpha: 0 }, {
+    y: 0, autoAlpha: 1, duration: 1, ease: 'expo.out', stagger: 0.1,
     scrollTrigger: { trigger: section, start: 'top 75%' },
   });
 }
@@ -231,8 +231,8 @@ function buildStats(gsap) {
   if (!section) return;
   const stats = [...section.querySelectorAll('.stat')];
   const tl = gsap.timeline({ scrollTrigger: { trigger: section, start: 'top 80%' } });
-  tl.from(stats, {
-    rotationX: -75, y: 80, autoAlpha: 0, transformOrigin: '50% 100%',
+  tl.fromTo(stats, { rotationX: -75, y: 80, autoAlpha: 0, transformOrigin: '50% 100%' }, {
+    rotationX: 0, y: 0, autoAlpha: 1,
     duration: 1.1, ease: 'expo.out', stagger: 0.1,
   });
   stats.forEach((stat, i) => {
@@ -256,8 +256,8 @@ function buildCloser(gsap, ScrollTrigger) {
   const closer = document.querySelector('.closer');
   if (!closer) return;
   const pageEnd = () => ScrollTrigger.maxScroll(window);
-  gsap.from(closer, {
-    scale: 0.9, y: 60, borderRadius: 64, ease: 'none',
+  gsap.fromTo(closer, { scale: 0.9, y: 60, borderRadius: 64 }, {
+    scale: 1, y: 0, borderRadius: 24, ease: 'none',
     scrollTrigger: { trigger: closer, start: 'top bottom', end: 'bottom bottom', scrub: 0.6, invalidateOnRefresh: true },
   });
   const line = closer.querySelector('.closer__line');
@@ -268,8 +268,8 @@ function buildCloser(gsap, ScrollTrigger) {
       scrollTrigger: { trigger: closer, start: 'top 95%', end: () => pageEnd() - 40, scrub: true, invalidateOnRefresh: true },
     });
   }
-  gsap.from(closer.querySelector('.btn'), {
-    y: 24, autoAlpha: 0, duration: 0.9, ease: 'expo.out',
+  gsap.fromTo(closer.querySelector('.btn'), { y: 24, autoAlpha: 0 }, {
+    y: 0, autoAlpha: 1, duration: 0.9, ease: 'expo.out',
     scrollTrigger: { trigger: closer, start: 'top 85%' },
   });
 }
@@ -304,8 +304,8 @@ function buildHow(gsap, ScrollTrigger) {
   });
 
   /* Before it pins, the drawing board rises into place. */
-  gsap.from(section.querySelector('.how__stage'), {
-    y: 120, scale: 0.9, rotate: -2, ease: 'none',
+  gsap.fromTo(section.querySelector('.how__stage'), { y: 120, scale: 0.9, rotate: -2 }, {
+    y: 0, scale: 1, rotate: 0, ease: 'none',
     scrollTrigger: { trigger: section, start: 'top bottom', end: 'top top', scrub: 0.6 },
   });
 
@@ -362,15 +362,15 @@ function buildLimits(gsap) {
       scrollTrigger: { trigger: title, start: 'top 85%' },
     });
   }
-  gsap.from('.limits__lede', {
-    y: 20, autoAlpha: 0, duration: 0.9, ease: 'expo.out', delay: 0.2,
+  gsap.fromTo('.limits__lede', { y: 20, autoAlpha: 0 }, {
+    y: 0, autoAlpha: 1, duration: 0.9, ease: 'expo.out', delay: 0.2,
     scrollTrigger: { trigger: '.limits__lede', start: 'top 88%' },
   });
 
   gsap.utils.toArray('.limits__list > li').forEach((row) => {
     gsap.timeline({ scrollTrigger: { trigger: row, start: 'top 86%' } })
-      .from(row, { x: 60, autoAlpha: 0, duration: 0.9, ease: 'expo.out' })
-      .from(row.querySelector('.claim-list__key'), { scale: 0.4, autoAlpha: 0, duration: 0.5, ease: 'back.out(3)' }, 0.25);
+      .fromTo(row, { x: 60, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.9, ease: 'expo.out' })
+      .fromTo(row.querySelector('.claim-list__key'), { scale: 0.4, autoAlpha: 0 }, { scale: 1, autoAlpha: 1, duration: 0.5, ease: 'back.out(3)' }, 0.25);
   });
 }
 

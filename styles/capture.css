@@ -328,7 +328,12 @@ html:not(.gsap) .journey__progress { display: none; }
   margin: var(--space-8) 0 var(--space-4);
   perspective: 1000px;
 }
-.stat {
+.stat { transform-style: preserve-3d; }
+/* GSAP flips .stat in; the cursor tilt acts on the card inside it. Never both
+   on one element: a CSS transform transition under a GSAP tween made the
+   tween read its own start state as its end, and the cards froze mid-flip. */
+.stat__card {
+  height: 100%;
   padding: var(--space-5);
   border-radius: var(--radius-lg);
   background: var(--paper-raised);
@@ -336,7 +341,7 @@ html:not(.gsap) .journey__progress { display: none; }
 }
 .stat__num { margin: 0 0 var(--space-2); font-size: clamp(3rem, 2rem + 4vw, 5.5rem); font-weight: 500; letter-spacing: -0.05em; line-height: 0.95; color: var(--ink-900); font-variant-numeric: tabular-nums; }
 .stat__label { margin: 0; color: var(--ink-500); font-size: var(--text-sm); max-width: 22ch; }
-.stat--accent { background: var(--scrub); }
+.stat--accent .stat__card { background: var(--scrub); }
 .stat--accent .stat__num { color: #fff; }
 .stat--accent .stat__label { color: rgba(255, 255, 255, 0.92); }
 

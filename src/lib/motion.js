@@ -31,10 +31,12 @@ const SPOT = [
 ].join(',');
 
 /* Cards that tilt in 3D toward the cursor, as if picked up by that corner.
-   Not anything GSAP animates (it owns those elements' transforms). */
+   Never anything GSAP animates: the tilt's CSS transform transition under a
+   GSAP tween corrupts the tween (stat cards froze mid-flip). Tilt an inner
+   element instead, as .jcard__inner and .stat__card do. */
 const TILT = [
-  '.jcard__inner', '.stat', '.clinic', '.verdict', '.readout', '.sway', '.trend',
-  '.log-entry', '.link-list a', '.intake-prompt', '.next-steps li', '.limits__list li',
+  '.jcard__inner', '.stat__card', '.clinic', '.verdict', '.readout', '.sway', '.trend',
+  '.log-entry', '.link-list a', '.intake-prompt', '.next-steps li',
 ].join(',');
 
 /* Controls that lean a few pixels toward the cursor. */
