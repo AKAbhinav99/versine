@@ -162,7 +162,12 @@ dialog including iOS Safari's. Nothing is uploaded to produce it.
 ## Finding care
 
 **Ratings.** OpenStreetMap has no ratings at all; it is a map, not a review
-site. Ratings come from Google Places, through this site's own function
+site, and every service that has them charges (Google Places, Foursquare's
+premium tier, Yelp) or has almost no data (Mangrove, the open OSM-linked
+review set, had no reviews for London, Berlin or Pune when checked). So every
+practice without a rating gets a free "See ratings and reviews on Google
+Maps" link: a plain Maps search for its name and address, no key involved.
+The option below stays available if a billed key is ever wanted. Ratings come from Google Places, through this site's own function
 ([`api/places.mjs`](api/places.mjs)) so no visitor needs a key. To switch them
 on, create a Google Maps Platform key with only "Places API (New)" enabled,
 set a daily quota on it in the Cloud console, and add it to the Vercel project:

@@ -296,11 +296,25 @@ function emptyReason() {
   return `All ${hidden} results are further away than the current distance filter allows.`;
 }
 
+/* OpenStreetMap has no ratings, and every service that does charges for
+   them. A Google Maps search link costs nothing and needs no key: one tap
+   shows the practice's real stars and reviews. The address (or, without one,
+   the coordinates) keeps the search on this practice rather than a namesake. */
+function reviewsUrl(clinic) {
+  const where = clinic.address || (clinic.lat && clinic.lng ? `near ${clinic.lat.toFixed(5)},${clinic.lng.toFixed(5)}` : '');
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clinic.name} ${where}`.trim())}`;
+}
+
 function clinicCard(clinic, index) {
   const rating = clinic.rating
     ? el('div', { class: 'clinic__rating' },
         el('b', {}, clinic.rating.toFixed(1)), ` / 5 · ${clinic.reviewCount ?? 0} reviews`)
-    : el('div', { class: 'clinic__rating muted' }, 'No rating data in OpenStreetMap');
+    : el('a', {
+        class: 'clinic__rating clinic__reviews',
+        href: reviewsUrl(clinic),
+        target: '_blank',
+        rel: 'noopener',
+      }, 'See ratings and reviews on Google Maps');
 
   return el('div', { class: 'clinic', 'data-index': index },
     el('div', { class: 'clinic__head' },

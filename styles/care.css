@@ -313,6 +313,18 @@
 .tag--spec { border-color: var(--scrub); color: var(--scrub-dim); background: var(--scrub-wash); }
 .clinic__rating { font-family: var(--font-num); font-size: var(--text-sm); }
 .clinic__rating b { color: var(--ink-900); }
+.clinic__reviews {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-ui);
+  color: var(--scrub);
+  font-weight: 600;
+  text-decoration: none;
+}
+.clinic__reviews::before { content: '★'; color: #E0A526; font-size: 1.05em; }
+.clinic__reviews::after { content: '↗'; font-weight: 400; }
+.clinic__reviews:hover { text-decoration: underline; }
 .clinic__actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2); margin-top: var(--space-3); }
 .clinic__actions .btn { min-height: 46px; font-size: var(--text-sm); padding: 0 var(--space-3); }
 
