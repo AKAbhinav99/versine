@@ -16,3 +16,4 @@ bench/set/
 *.jpeg
 *.png
 *.webp
+.vercel
