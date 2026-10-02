@@ -136,7 +136,6 @@
   border-radius: var(--radius-lg);
   box-shadow: inset 5px 0 0 var(--amber), var(--shadow-sm);
   background: var(--amber-wash);
-  animation: rise var(--dur-slow) var(--ease) both;
 }
 
 .redflag[data-urgency='urgent'] {

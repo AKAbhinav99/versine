@@ -150,7 +150,7 @@
   width: 100%;
   max-width: 460px;
   border-radius: var(--radius);
-  background: var(--ink-900);
+  background: var(--paper-sunk);
 }
 
 .report__not ul { margin: 0; padding-left: 1.1rem; font-size: var(--text-sm); line-height: 1.6; color: var(--ink-500); }

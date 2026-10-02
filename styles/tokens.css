@@ -1,63 +1,68 @@
-/* Versine design tokens
-   Visual language: technical drawing / anatomical blueprint.
-   Base = deep slate ink, surface = cool off-white paper, one measurement blue,
-   one X-ray marker red-orange reserved for signals only. */
+/* Versine design tokens.
+ *
+ * Light only. The visual idea is a physio's posture board: a field of dots on a
+ * clean surface with a plumb line hanging through it, the reference every
+ * measurement in this app is taken against. Dots stand in for the old blueprint
+ * line grid and appear as texture in a few deliberate places, never everywhere.
+ *
+ * Scrub blue carries measurement and action. Marker red-orange is reserved for
+ * signals (the plumb bob, a reading worth acting on, a red flag). */
 
 :root {
-  /* --- Palette ------------------------------------------------------- */
-  --ink-900: #0B1622;   /* deepest slate — headers, capture chrome */
-  --ink-700: #17293C;   /* body text on paper */
-  --ink-500: #35566F;   /* secondary text, diagram strokes */
-  --ink-300: #7E97A9;   /* hairline strokes and disabled states — NOT text */
-  --ink-400: #577083;   /* the darkest tertiary that clears 4.5:1 on paper */
-  --paper:   #EDF0F1;   /* cool off-white page (deliberately not cream) */
-  --paper-raised: #F7F9F9;
-  --rule:    #C6D0D4;   /* decorative hairlines and drawing rules */
-  --rule-soft: #DCE3E5;
-  --rule-control: #778E98;  /* borders that delimit a control — 3:1 vs paper */
+  /* --- Surfaces ------------------------------------------------------ */
+  --paper:        #F2F5F6;   /* the page */
+  --paper-raised: #FFFFFF;   /* cards, panels, controls */
+  --paper-sunk:   #E8EEF0;   /* wells: the viewfinder before a camera, photo frames */
 
-  --scrub:   #1F6E8C;   /* medical scrub blue — measurement + primary action */
-  --scrub-dim: #12506A;
-  --scrub-wash: #E1EDF2;
-  --marker:  #D6402A;   /* X-ray highlight marker — signal only, used sparingly */
-  --marker-wash: #FAE6E2;
-  --amber:   #B87514;   /* monitor state */
-  --amber-wash: #F7EEDC;
-  --clear:   #2C7A5B;   /* within-range state */
-  --clear-wash: #E2EFE9;
+  /* --- Ink ----------------------------------------------------------- */
+  --ink-900: #0E2230;   /* headings, numbers */
+  --ink-700: #1D3445;   /* body text */
+  --ink-500: #4A6272;   /* secondary text, diagram strokes */
+  --ink-400: #566E7E;   /* tertiary text; the lightest that clears 4.5:1 on the page */
+  --ink-300: #9AAEB9;   /* hairlines and disabled states only, never text */
 
-  /* Text-weight variants of the three signal colours.
-     The values above are tuned for strokes, fills and 1px rules, where the bar is
-     3:1 and only against an adjacent colour. As small text on their own washes
-     they measure 3.26-4.39:1 and fail WCAG AA. These are the darkest versions of
-     the same hues that clear 4.5:1 on both the wash and the page, so a red flag
-     is legible rather than merely red. Use these whenever the colour is carrying
-     words. */
-  --marker-text: #C13925;
-  --amber-text:  #986010;
-  --clear-text:  #2B785A;
+  --rule:         #DCE4E8;   /* card borders and dividers */
+  --rule-soft:    #E9EEF1;
+  --rule-control: #768A95;   /* borders that delimit a control: 3:1 against the page */
 
-  /* And the mirror problem: this app has dark surfaces too — the capture chrome,
-     the adjust panel, the viewfinder. --scrub and --marker are tuned against
-     paper and drop to 3.18:1 and 4.02:1 against #0B1622. --ink-300 is fine there
-     (5.98:1) and only fails on paper, which is why it appears on both and must be
-     read as "hairlines and text on dark", never as tertiary text on paper. */
-  --scrub-on-dark:  #2E93B8;
-  --marker-on-dark: #E4695A;
+  /* --- Signal ---------------------------------------------------------- */
+  --scrub:      #1F6E8C;   /* measurement and primary action */
+  --scrub-dim:  #12506A;
+  --scrub-wash: #E3EEF3;
+  --marker:      #D6402A;  /* signal only, used sparingly */
+  --marker-wash: #FBE9E5;
+  --amber:      #B87514;
+  --amber-wash: #F8F0E0;
+  --clear:      #2C7A5B;
+  --clear-wash: #E3F1EA;
+
+  /* The signal colours above are tuned for strokes and fills, where the bar is
+     3:1. These are the darkest versions of the same hues that clear 4.5:1 as
+     small text on their own washes. Use these whenever the colour carries words. */
+  --marker-text: #B8341F;
+  --amber-text:  #8F5A0E;
+  --clear-text:  #276E52;
+
+  /* --- Dots ---------------------------------------------------------- */
+  --dot:      rgba(31, 110, 140, 0.26);
+  --dot-gap:  18px;
+  --dots: radial-gradient(circle, var(--dot) 1.1px, transparent 1.6px) 0 0 / var(--dot-gap) var(--dot-gap);
 
   /* --- Type ---------------------------------------------------------- */
-  --font-ui: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
-  --font-num: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: 'Bricolage Grotesque', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-ui:      'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-num:     'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --text-xs:   0.6875rem;                                  /* 11px labels */
+  --text-xs:   0.6875rem;
   --text-sm:   0.8125rem;
   --text-base: 0.9375rem;
   --text-lg:   1.0625rem;
-  --text-xl:   clamp(1.25rem, 1.05rem + 1vw, 1.5rem);
-  --text-2xl:  clamp(1.6rem, 1.2rem + 2.2vw, 2.25rem);
-  --text-readout: clamp(2.5rem, 1.6rem + 4.6vw, 3.5rem);   /* angle numbers */
+  --text-xl:   clamp(1.3rem, 1.1rem + 1vw, 1.6rem);
+  --text-2xl:  clamp(1.8rem, 1.3rem + 2.4vw, 2.6rem);
+  --text-hero: clamp(2.4rem, 1.4rem + 4.2vw, 4.2rem);
+  --text-readout: clamp(2.6rem, 1.6rem + 4.6vw, 3.6rem);
 
-  --track-label: 0.14em;   /* uppercase mono label tracking */
+  --track-label: 0.12em;
 
   /* --- Space --------------------------------------------------------- */
   --space-1: 0.25rem;
@@ -67,42 +72,40 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
   --space-8: 3rem;
+  --space-10: 4.5rem;
   --gutter: 1.125rem;
 
-  --tap: 52px;            /* one-handed minimum tap target */
-  --nav-h: 62px;
+  --tap: 52px;
+  --nav-h: 64px;          /* the floating tab bar on a phone */
+  --nav-gap: 12px;        /* its distance from the screen edge */
+  --masthead-h: 60px;
 
-  /* --- Drawing ------------------------------------------------------- */
-  /* Rounded, so the surfaces read as friendly controls rather than a drafting
-     sheet. The precision lives in the numbers and the drawing, not the corners. */
-  --radius-sm: 8px;       /* tags, small chips inside cards */
-  --radius: 14px;         /* cards, panels, inputs, buttons */
-  --radius-lg: 22px;      /* the photo plate, the map, large surfaces */
-  --radius-pill: 999px;   /* filter chips and capture toggles */
+  /* --- Shape --------------------------------------------------------- */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
   --hair: 1px solid var(--rule);
-  --grid-size: 22px;
 
-  --shadow-sm: 0 1px 2px rgba(11,22,34,0.05), 0 2px 8px rgba(11,22,34,0.04);
-  --shadow:    0 2px 6px rgba(11,22,34,0.06), 0 10px 28px rgba(11,22,34,0.07);
-  --shadow-lg: 0 6px 18px rgba(11,22,34,0.10), 0 24px 60px rgba(11,22,34,0.12);
+  --shadow-sm: 0 1px 2px rgba(14,34,48,0.04), 0 2px 10px rgba(14,34,48,0.04);
+  --shadow:    0 2px 6px rgba(14,34,48,0.05), 0 12px 32px rgba(14,34,48,0.07);
+  --shadow-lg: 0 8px 20px rgba(14,34,48,0.08), 0 28px 64px rgba(14,34,48,0.12);
 
   /* --- Layout -------------------------------------------------------- */
-  --content-max: 1240px;  /* the desktop container */
-  --read-max: 760px;      /* comfortable line length for prose screens */
-  --masthead-h: 56px;
+  --content-max: 1200px;
+  --read-max: 740px;
 
   /* --- Motion -------------------------------------------------------- */
-  --dur-fast: 150ms;
-  --dur: 280ms;
-  --dur-slow: 520ms;
+  --dur-fast: 160ms;
+  --dur: 300ms;
+  --dur-slow: 700ms;
   --ease: cubic-bezier(0.2, 0, 0, 1);
-  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
 }
 
-/* Wide screens: the tab bar moves up into the masthead, so nothing at the
-   bottom of the page needs clearing. */
 @media (min-width: 960px) {
-  :root { --nav-h: 0px; --gutter: 2rem; }
+  :root { --nav-h: 0px; --nav-gap: 0px; --gutter: 2rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -110,5 +113,6 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

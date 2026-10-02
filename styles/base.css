@@ -1,29 +1,41 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 
-html { -webkit-text-size-adjust: 100%; }
+/* The page colour lives on html as well as body, and overscroll is switched off
+   on both. Without that, a rubber-band scroll past either end of the page showed
+   unstyled white and dragged the fixed bars with it. */
+html {
+  -webkit-text-size-adjust: 100%;
+  background-color: var(--paper);
+  overscroll-behavior: none;
+  scroll-behavior: smooth;
+}
 
 body {
   font-family: var(--font-ui);
   font-size: var(--text-base);
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--ink-700);
   background-color: var(--paper);
-  /* Blueprint grid: a faint measurement field behind everything. */
-  background-image:
-    linear-gradient(to right, rgba(31,110,140,0.055) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(31,110,140,0.055) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior-y: none;
+  overscroll-behavior: none;
 }
 
 img, svg, video, canvas { display: block; max-width: 100%; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
-a { color: var(--scrub); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a { color: var(--scrub); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+::selection { background: var(--scrub-wash); color: var(--ink-900); }
 
-h1, h2, h3, h4 { margin: 0; font-weight: 600; letter-spacing: -0.015em; line-height: 1.15; }
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  color: var(--ink-900);
+  font-optical-sizing: auto;
+}
 h1 { font-size: var(--text-2xl); }
 h2 { font-size: var(--text-xl); }
 h3 { font-size: var(--text-lg); }
@@ -32,29 +44,16 @@ p:last-child { margin-bottom: 0; }
 
 :focus-visible {
   outline: 2px solid var(--scrub);
-  outline-offset: 2px;
-}
-
-/* --scrub is tuned against paper and reaches only 3.41:1 on the near-black
-   viewfinder and adjust panel, which is the bare minimum for a focus indicator.
-   On those surfaces the page colour is the legible one. */
-.capture__stage :focus-visible,
-.capture__controls :focus-visible,
-.capture__steps :focus-visible,
-.adjust__panel :focus-visible {
-  outline-color: var(--paper);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 /* ---------- App frame ------------------------------------------------ */
 
-/* Phone: one column, as before. Wide screens: the frame fills the window and
-   each screen lays itself out inside a centred container (see the media query
-   at the end of this file and the per-screen sheets). */
 .app {
   max-width: 560px;
   margin: 0 auto;
   min-height: 100dvh;
-  background: transparent;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -69,90 +68,139 @@ p:last-child { margin-bottom: 0; }
   gap: var(--space-3);
   min-height: var(--masthead-h);
   padding: var(--space-3) var(--gutter);
-  background: rgba(11,22,34,0.94);
-  -webkit-backdrop-filter: saturate(1.4) blur(12px);
-  backdrop-filter: saturate(1.4) blur(12px);
-  color: var(--paper);
+  background: rgba(242, 245, 246, 0.82);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  backdrop-filter: saturate(1.6) blur(14px);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  animation: drop-in var(--dur-slow) var(--ease-out) both;
 }
+/* Set by motion.js once the page has scrolled, so the bar only separates itself
+   from the content when there is content underneath it. */
+.masthead.is-scrolled { border-bottom-color: var(--rule); box-shadow: 0 6px 24px rgba(14,34,48,0.06); }
 
-.masthead__mark {
-  width: 16px;
-  height: 26px;
-  flex: none;
-}
+.masthead__mark { width: 16px; height: 26px; flex: none; }
 
 .masthead__name {
-  font-family: var(--font-ui);
-  font-size: var(--text-base);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  color: var(--ink-900);
 }
 
 .masthead__tag {
   margin-left: auto;
+  padding: 3px 10px;
+  border: var(--hair);
+  border-radius: var(--radius-pill);
+  background: var(--paper-raised);
   font-family: var(--font-num);
   font-size: var(--text-xs);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--ink-300);
+  letter-spacing: 0.04em;
+  color: var(--ink-500);
 }
 
-.screen { display: none; flex: 1; }
-.screen[data-active] { display: block; animation: screen-in var(--dur-slow) var(--ease) both; }
-.screen--pad { padding: var(--space-5) var(--gutter) calc(var(--nav-h) + var(--space-8)); }
+.screen { display: none; flex: 1; position: relative; isolation: isolate; }
+.screen[data-active] { display: block; animation: fade-in var(--dur-slow) var(--ease) both; }
+.screen--pad { padding: var(--space-5) var(--gutter) calc(var(--nav-h) + var(--nav-gap) * 2 + var(--space-8)); }
+
+/* A patch of posture-board dots behind the top corner of each reading screen.
+   Purely decorative, masked to fade out before it reaches any text column. */
+.screen--pad::before,
+.result::before,
+.intro::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  width: min(46vw, 420px);
+  height: 300px;
+  background: var(--dots);
+  -webkit-mask-image: radial-gradient(ellipse at top right, #000 0%, transparent 70%);
+  mask-image: radial-gradient(ellipse at top right, #000 0%, transparent 70%);
+  pointer-events: none;
+}
 
 /* ---------- Motion --------------------------------------------------- */
 
-/* Every screen arrives the same way: a short rise and fade. Re-runs on each
-   visit because the section goes from display:none to block. */
-@keyframes screen-in {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
-}
-
-@keyframes rise {
-  from { opacity: 0; transform: translateY(12px) scale(0.985); }
-  to   { opacity: 1; transform: none; }
-}
-
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* Children of a .reveal container cascade in one after another. */
-.reveal > * { animation: rise var(--dur-slow) var(--ease) both; }
-.reveal > :nth-child(1)  { animation-delay: 30ms; }
-.reveal > :nth-child(2)  { animation-delay: 80ms; }
-.reveal > :nth-child(3)  { animation-delay: 130ms; }
-.reveal > :nth-child(4)  { animation-delay: 180ms; }
-.reveal > :nth-child(5)  { animation-delay: 230ms; }
-.reveal > :nth-child(6)  { animation-delay: 280ms; }
-.reveal > :nth-child(7)  { animation-delay: 330ms; }
-.reveal > :nth-child(8)  { animation-delay: 380ms; }
-.reveal > :nth-child(n+9) { animation-delay: 420ms; }
+/* Scroll reveal. motion.js marks elements with data-reveal as they are rendered
+   and adds .is-in when each scrolls into view, staggering a batch that arrives
+   together. The hidden starting state only applies once the script is running
+   (html.motion), so content is never invisible without it, and the attribute
+   is removed after the transition so hover effects keep their own timing. */
+.motion [data-reveal] {
+  opacity: 0;
+  transform: translateY(22px) scale(0.985);
+  transition:
+    opacity var(--dur-slow) var(--ease-out) var(--reveal-delay, 0ms),
+    transform var(--dur-slow) var(--ease-out) var(--reveal-delay, 0ms);
+}
+.motion [data-reveal].is-in { opacity: 1; transform: none; }
 
-/* ---------- Shared drawing components -------------------------------- */
+/* Cursor spotlight: a soft scrub-tinted glow that follows the pointer across a
+   card. --mx and --my are set by motion.js; off-card they park far away.
+   Scoped under html.pointer-fine so it outranks the background shorthands the
+   card styles set in later sheets. */
+html.pointer-fine .spot {
+  background-image: radial-gradient(
+    380px circle at var(--mx, -999px) var(--my, -999px),
+    rgba(31, 110, 140, 0.075),
+    transparent 46%
+  );
+}
 
-/* Numbered section label: "01 — CAPTURE" */
+/* ---------- Shared components ---------------------------------------- */
+
+/* An eyebrow: where you are in the flow. */
 .step-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  padding: 4px 12px 4px 6px;
+  margin-bottom: var(--space-3);
+  border: var(--hair);
+  border-radius: var(--radius-pill);
+  background: var(--paper-raised);
   font-family: var(--font-num);
   font-size: var(--text-xs);
-  letter-spacing: var(--track-label);
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-500);
-  margin-bottom: var(--space-2);
+  box-shadow: var(--shadow-sm);
 }
-.step-label__num { color: var(--scrub); font-weight: 600; }
-.step-label__rule { flex: 1; height: 1px; background: var(--rule); }
+.step-label__num {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--scrub-wash);
+  color: var(--scrub-dim);
+  font-weight: 600;
+}
+.step-label__rule { display: none; }
 
 .panel {
   position: relative;
-  background: var(--paper-raised);
+  background-color: var(--paper-raised);
   border: var(--hair);
   border-radius: var(--radius);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-5);
   box-shadow: var(--shadow-sm);
 }
 .panel > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
@@ -167,17 +215,14 @@ p:last-child { margin-bottom: 0; }
   transition: transform var(--dur) var(--ease);
 }
 .panel[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
-.panel[open] > summary ~ * { animation: fade var(--dur) var(--ease) both; }
+.panel[open] > summary ~ * { animation: rise var(--dur) var(--ease-out) both; }
 
 .stack > * + * { margin-top: var(--space-4); }
 .stack-sm > * + * { margin-top: var(--space-2); }
 
 .muted { color: var(--ink-500); }
 .small { font-size: var(--text-sm); }
-.mono {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
-}
+.mono { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .label {
   font-family: var(--font-num);
   font-size: var(--text-xs);
@@ -188,67 +233,80 @@ p:last-child { margin-bottom: 0; }
 
 /* ---------- Buttons -------------------------------------------------- */
 
+/* --mag-x / --mag-y pull a button a few pixels toward the cursor (motion.js). */
 .btn {
+  --mag-x: 0px;
+  --mag-y: 0px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
   min-height: var(--tap);
-  padding: 0 var(--space-5);
+  padding: 0 var(--space-6);
   border: 1px solid var(--scrub);
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   background: var(--scrub);
   color: #fff;
   font-weight: 600;
   font-size: var(--text-base);
-  letter-spacing: 0.01em;
+  letter-spacing: 0.005em;
   text-decoration: none;
-  box-shadow: 0 1px 2px rgba(11,22,34,0.08), 0 4px 12px rgba(31,110,140,0.18);
-  transition: background var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease),
-              box-shadow var(--dur) var(--ease), border-color var(--dur-fast) var(--ease);
+  box-shadow: 0 1px 2px rgba(14,34,48,0.08), 0 6px 18px rgba(31,110,140,0.22);
+  transform: translate(var(--mag-x), var(--mag-y));
+  transition:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease),
+    box-shadow var(--dur) var(--ease),
+    transform var(--dur) var(--ease-out);
 }
-.btn:hover { background: var(--scrub-dim); transform: translateY(-1px); box-shadow: 0 2px 4px rgba(11,22,34,0.08), 0 8px 20px rgba(31,110,140,0.24); }
-.btn:active { transform: translateY(0) scale(0.98); box-shadow: 0 1px 2px rgba(11,22,34,0.08); }
+.btn:hover { background: var(--scrub-dim); border-color: var(--scrub-dim); box-shadow: 0 2px 4px rgba(14,34,48,0.08), 0 10px 26px rgba(31,110,140,0.3); }
+.btn:active { transform: translate(var(--mag-x), var(--mag-y)) scale(0.97); }
 .btn--block { width: 100%; }
 .btn--ghost {
-  background: transparent;
-  box-shadow: none;
-  color: var(--ink-700);
-  /* A control boundary, so --rule-control rather than the drawing hairline. */
+  background: var(--paper-raised);
+  color: var(--ink-900);
   border-color: var(--rule-control);
+  box-shadow: var(--shadow-sm);
 }
-.btn--ghost:hover { background: var(--paper-raised); border-color: var(--ink-500); box-shadow: var(--shadow-sm); }
+.btn--ghost:hover { background: var(--paper-raised); border-color: var(--ink-500); color: var(--ink-900); box-shadow: var(--shadow); }
 .btn--quiet {
   background: transparent;
   border-color: transparent;
   color: var(--scrub);
   box-shadow: none;
   min-height: 40px;
-  padding: 0 var(--space-2);
+  padding: 0 var(--space-3);
   font-size: var(--text-sm);
 }
-.btn--quiet:hover { background: var(--scrub-wash); box-shadow: none; transform: none; }
+.btn--quiet:hover { background: var(--scrub-wash); border-color: transparent; box-shadow: none; }
 .btn[disabled] { opacity: 0.45; pointer-events: none; }
 
-/* ---------- Bottom navigation ---------------------------------------- */
+/* ---------- Tab bar -------------------------------------------------- */
 
+/* Phone: a floating bar clear of the screen edge. Wide screens: links in the
+   masthead (see the media query below). */
 .tabbar {
   position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
+  bottom: calc(var(--nav-gap) + env(safe-area-inset-bottom));
+  /* Centred with insets rather than a transform, which the entrance animation
+     below would otherwise overwrite. */
+  left: var(--nav-gap);
+  right: var(--nav-gap);
+  margin-inline: auto;
   max-width: 520px;
-  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
+  height: var(--nav-h);
+  padding: 6px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: rgba(11,22,34,0.96);
-  -webkit-backdrop-filter: saturate(1.4) blur(12px);
-  backdrop-filter: saturate(1.4) blur(12px);
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  box-shadow: 0 -8px 24px rgba(11,22,34,0.12);
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: saturate(1.6) blur(16px);
+  backdrop-filter: saturate(1.6) blur(16px);
+  border: var(--hair);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
   z-index: 50;
+  animation: rise var(--dur-slow) var(--ease-out) 120ms both;
 }
 .tab {
   position: relative;
@@ -256,34 +314,20 @@ p:last-child { margin-bottom: 0; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: 2px;
   background: none;
   border: 0;
-  color: var(--ink-300);
-  font-family: var(--font-num);
+  border-radius: calc(var(--radius-lg) - 6px);
+  color: var(--ink-500);
+  font-family: var(--font-ui);
   font-size: var(--text-xs);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  transition: color var(--dur) var(--ease);
+  font-weight: 600;
+  transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
 }
-.tab svg { stroke: currentColor; fill: none; stroke-width: 1.6; transition: transform var(--dur) var(--ease-spring); }
-.tab:hover { color: var(--paper); }
-/* The selection indicator grows out of the centre instead of snapping on. */
-.tab::before {
-  content: '';
-  position: absolute;
-  top: 6px;
-  left: 50%;
-  width: 28px;
-  height: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--marker);
-  transform: translateX(-50%) scaleX(0);
-  transition: transform var(--dur) var(--ease-spring);
-}
-.tab[aria-selected='true'] { color: var(--paper); }
-.tab[aria-selected='true']::before { transform: translateX(-50%) scaleX(1); }
-.tab[aria-selected='true'] svg { transform: translateY(1px) scale(1.08); }
+.tab svg { stroke: currentColor; fill: none; stroke-width: 1.7; transition: transform var(--dur) var(--ease-spring); }
+.tab:hover { color: var(--ink-900); }
+.tab[aria-selected='true'] { color: var(--scrub-dim); background: var(--scrub-wash); }
+.tab[aria-selected='true'] svg { transform: translateY(-1px) scale(1.08); }
 
 /* ---------- Utility -------------------------------------------------- */
 
@@ -296,9 +340,6 @@ p:last-child { margin-bottom: 0; }
 
 /* ---------- Wide screens --------------------------------------------- */
 
-/* Below 960px the app is the phone layout it was designed as. Above it the
-   frame fills the window, the tab bar becomes a row of links in the masthead,
-   and each screen centres itself in a container and spreads into columns. */
 @media (min-width: 960px) {
   .app { max-width: none; }
 
@@ -306,39 +347,37 @@ p:last-child { margin-bottom: 0; }
   .masthead__tag { margin-left: var(--space-2); }
 
   .tabbar {
-    top: 0;
+    top: 10px;
     bottom: auto;
     left: auto;
     right: max(var(--gutter), calc((100vw - var(--content-max)) / 2));
-    transform: none;
-    width: auto;
+    margin: 0;
     max-width: none;
-    height: var(--masthead-h);
-    padding: 0;
+    height: 40px;
+    padding: 4px;
     display: flex;
     align-items: center;
-    gap: var(--space-1);
-    background: transparent;
+    gap: 2px;
+    background: var(--paper-raised);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-    border-radius: 0;
-    box-shadow: none;
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-sm);
+    animation: drop-in var(--dur-slow) var(--ease-out) both;
   }
   .tab {
     flex-direction: row;
     gap: var(--space-2);
-    height: 38px;
+    height: 32px;
     padding: 0 var(--space-4);
     border-radius: var(--radius-pill);
-    transition: color var(--dur) var(--ease), background var(--dur) var(--ease);
+    font-size: var(--text-sm);
   }
   .tab svg { width: 16px; height: 16px; }
-  .tab:hover { background: rgba(237,240,241,0.08); }
-  .tab::before { display: none; }
-  .tab[aria-selected='true'] { background: rgba(237,240,241,0.12); }
-  .tab[aria-selected='true'] svg { transform: none; color: var(--marker-on-dark); }
+  .tab:hover { background: var(--paper); }
+  .tab[aria-selected='true'] { background: var(--scrub-wash); }
+  .tab[aria-selected='true'] svg { transform: none; }
 
-  /* Shared container for every padded screen. */
   .screen--pad,
   .result,
   .intro,
@@ -348,4 +387,7 @@ p:last-child { margin-bottom: 0; }
     margin-inline: auto;
     padding-top: var(--space-8);
   }
+  .screen--pad::before,
+  .result::before,
+  .intro::before { width: 520px; height: 380px; }
 }

@@ -11,7 +11,6 @@
   box-shadow: inset 5px 0 0 var(--accent), var(--shadow-sm);
   padding: var(--space-5) var(--space-5) var(--space-5) calc(var(--space-5) + 5px);
   margin-bottom: var(--space-5);
-  animation: rise var(--dur-slow) var(--ease) both;
 }
 .verdict[data-level='clear']   { --accent: var(--clear);  background: var(--clear-wash);  border-color: transparent; }
 .verdict[data-level='monitor'] { --accent: var(--amber);  background: var(--amber-wash);  border-color: transparent; }
@@ -25,11 +24,10 @@
 .plate {
   position: relative;
   border-radius: var(--radius-lg);
-  background: var(--ink-900);
+  background: var(--paper-sunk);
   margin-bottom: var(--space-3);
   overflow: hidden;
   box-shadow: var(--shadow);
-  animation: rise var(--dur-slow) var(--ease) both;
 }
 .plate canvas { width: 100%; height: auto; }
 
@@ -240,7 +238,7 @@
   object-fit: cover;
   border-radius: var(--radius-sm);
   border: 1px solid var(--rule);
-  background: var(--ink-900);
+  background: var(--paper-sunk);
   filter: grayscale(0.5);
 }
 .log-entry__date { font-family: var(--font-num); font-size: var(--text-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.08em; }
@@ -273,9 +271,10 @@
 .empty {
   text-align: center;
   padding: var(--space-8) var(--space-4);
-  border: 1px dashed var(--rule-control);
+  border: 1px solid var(--rule);
   border-radius: var(--radius-lg);
-  animation: fade var(--dur) var(--ease) both;
+  /* An empty state is a well of posture-board dots: a place for something to go. */
+  background: var(--dots), var(--paper-raised);
   color: var(--ink-500);
 }
 

@@ -95,6 +95,8 @@ const paint = (canvas, unit) => paintSource(photo, canvas, unit);
  *  source px to canvas px. */
 function paintSource(source, canvas, unit) {
   const ctx = canvas.getContext('2d');
+  /* Stays dark despite the light UI: this also paints the frames the pose model
+     measures, and the benchmark was run with this fill in uncovered corners. */
   ctx.fillStyle = '#0B1622';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 

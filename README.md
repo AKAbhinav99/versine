@@ -399,21 +399,32 @@ geometry, the consensus, or the thresholds.
 
 ## Design
 
-Deep slate `#0B1622`, cool off-white `#EDF0F1`, scrub blue `#1F6E8C` for
-measurement, X-ray marker red-orange `#D6402A` reserved for signals only, plus
-amber `#B87514` and green `#2C7A5B` for the monitor and clear states. Archivo for
-UI, IBM Plex Mono for every number. The recurring motif is the plumb line — the
-vertical reference the whole test measures against — which appears in the wordmark,
-the capture guide, and drawn down the pelvis on the result photo.
+Light only. The visual idea is a physio's posture board: a field of dots on a
+clean surface with a plumb line hanging through it, the vertical reference the
+whole test measures against. Page `#F2F5F6`, white cards, ink `#0E2230`, scrub
+blue `#1F6E8C` for measurement and action, marker red-orange `#D6402A` reserved
+for signals. Bricolage Grotesque for headings only, Archivo for UI, IBM Plex
+Mono for every number.
 
-Corners run on a 8 / 14 / 22px scale with pill-shaped chips, and coloured accents
-are inset shadows so they follow the radius. Nothing is written over a
-photograph or the live camera: the measurement legend sits under the result
-photo and the capture coaching sits in a bar above the viewfinder, because text
-on an arbitrary image is legible on some backgrounds and not others. Screens,
-cards, pins and the ruler needle animate in; `prefers-reduced-motion` turns all
-of it off. Above 960px the tab bar moves into the masthead and screens lay out in
-columns.
+The intro opens on that board, live ([`src/lib/dotfield.js`](src/lib/dotfield.js)):
+the plumb line follows the pointer on a spring, swings, and settles back to true
+vertical, and the readout under it reports the angle in the same units the app
+measures shoulders in. Elsewhere the dots are texture in a few deliberate places
+(screen corners, the empty viewfinder, empty states), not a background on
+everything.
+
+Motion lives in [`src/lib/motion.js`](src/lib/motion.js): blocks reveal as they
+scroll into view, staggered when they arrive together; cards carry a soft
+spotlight under the cursor; primary buttons lean slightly toward it. The hidden
+starting state only exists once that script runs, a safety net reveals anything
+on screen that a paused observer missed, the pointer effects only run on a real
+mouse, and `prefers-reduced-motion` turns all of it off.
+
+Nothing is written over a photograph or the live camera: the measurement legend
+sits under the result photo and coaching sits above the viewfinder, because text
+on an arbitrary image is legible on some backgrounds and not others. The adjust
+step's canvas still fills uncovered corners dark, because that canvas also
+produces the frames the pose model measures and the benchmark ran with it.
 
 ## Known limits
 

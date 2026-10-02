@@ -59,7 +59,7 @@
   padding: var(--space-2) var(--space-4);
   background: var(--scrub-wash);
   margin-bottom: var(--space-3);
-  animation: rise var(--dur) var(--ease) both;
+  animation: rise var(--dur) var(--ease-out) both;
 }
 .loc-resolved b {
   font-weight: 500;

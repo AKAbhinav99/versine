@@ -37,7 +37,7 @@ export function renderResult(payload) {
     verdictBlock(verdict),
     el('div', { class: 'result__grid' },
       pass ? el('div', { class: 'result__media' }, plate(pass, entry, reading)) : null,
-      el('div', { class: 'result__details reveal' },
+      el('div', { class: 'result__details' },
         reading.usable ? tiltReadout(reading) : null,
         reading.usable ? metricGrid(reading) : null,
         reading.usable && reading.swayDeg !== null && reading.swayDeg !== undefined ? swayPanel(reading) : null,

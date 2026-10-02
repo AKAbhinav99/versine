@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#0B1622" />
+<meta name="theme-color" content="#F2F5F6" />
 <title>Versine — a scoliosis screening aid</title>
 <meta name="description" content="Versine measures how far your shoulders and hips sit off level in a forward-bend photo, reports the number with its error bar, and points you toward real clinical care. Not a diagnosis." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <!-- Archivo 500 was declared and used by nothing; the other six weights are all in use. -->
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<!-- Bricolage Grotesque is the display face, headings only. -->
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="modulepreload" href="src/main.js" />
 <link rel="modulepreload" href="src/config.js" />
 <link rel="modulepreload" href="src/router.js" />
@@ -17,6 +18,8 @@
 <link rel="modulepreload" href="src/lib/storage.js" />
 <link rel="modulepreload" href="src/screens/capture.js" />
 <link rel="modulepreload" href="src/screens/adjust.js" />
+<link rel="modulepreload" href="src/lib/motion.js" />
+<link rel="modulepreload" href="src/lib/dotfield.js" />
 
 <link rel="stylesheet" href="styles/tokens.css" />
 <link rel="stylesheet" href="styles/base.css" />
@@ -33,10 +36,10 @@
   <header class="masthead">
     <!-- Wordmark glyph: a plumb line and bob — the reference this whole test measures against -->
     <svg class="masthead__mark" viewBox="0 0 16 26" aria-hidden="true">
-      <line x1="8" y1="0" x2="8" y2="17" stroke="#EDF0F1" stroke-width="1.2" />
+      <line x1="8" y1="0" x2="8" y2="17" stroke="#0E2230" stroke-width="1.4" />
       <path d="M8 17 L12 21 L8 25 L4 21 Z" fill="#D6402A" />
-      <line x1="0" y1="4" x2="4" y2="4" stroke="#7E97A9" stroke-width="1" />
-      <line x1="12" y1="4" x2="16" y2="4" stroke="#7E97A9" stroke-width="1" />
+      <line x1="0" y1="4" x2="4" y2="4" stroke="#9AAEB9" stroke-width="1.2" />
+      <line x1="12" y1="4" x2="16" y2="4" stroke="#9AAEB9" stroke-width="1.2" />
     </svg>
     <span class="masthead__name">Versine</span>
     <span class="masthead__tag">Screening aid</span>
@@ -46,19 +49,23 @@
 
   <!-- ============================ 00 · DISCLAIMER GATE ==================== -->
   <section class="screen intro" id="screen-intro" aria-labelledby="intro-title">
-    <svg class="intro__plumb" viewBox="0 0 40 96" aria-hidden="true">
-      <line x1="20" y1="0" x2="20" y2="70" stroke="#35566F" stroke-width="1" stroke-dasharray="3 3" />
-      <path d="M20 70 L27 80 L20 92 L13 80 Z" fill="#D6402A" />
-      <line x1="4" y1="30" x2="12" y2="30" stroke="#C6D0D4" stroke-width="1" />
-      <line x1="28" y1="30" x2="36" y2="30" stroke="#C6D0D4" stroke-width="1" />
-      <line x1="6" y1="52" x2="12" y2="52" stroke="#C6D0D4" stroke-width="1" />
-      <line x1="28" y1="52" x2="34" y2="52" stroke="#C6D0D4" stroke-width="1" />
-    </svg>
+    <span class="step-label intro__eyebrow">The Adam's forward bend test, on your phone</span>
 
-    <h1 class="intro__title" id="intro-title">A screening check,<br />not a diagnosis.</h1>
-    <p class="intro__lede small">Versine measures how symmetric your back looks in a forward-bend photo, and tells you whether it's worth having a clinician take a look.</p>
+    <h1 class="intro__title" id="intro-title">A screening check, <em>not a diagnosis.</em></h1>
+    <p class="intro__lede">Versine measures how level your shoulders and hips sit in a forward-bend photo, shows its working, and tells you whether it's worth having a clinician take a look.</p>
 
-    <ul class="claim-list reveal">
+    <!-- The posture board. A plumb line hangs through a field of dots and follows
+         the pointer, then settles back to true vertical: the reference every
+         reading here is taken against. Drawn by src/lib/dotfield.js. -->
+    <figure class="board" aria-label="Interactive posture board: a plumb line that follows your pointer and settles back to vertical">
+      <canvas class="board__canvas" data-dotfield aria-hidden="true"></canvas>
+      <figcaption class="board__foot">
+        <span>Move across the board. The line always settles back to vertical.</span>
+        <span class="board__readout" data-dotfield-readout>0.0° off vertical</span>
+      </figcaption>
+    </figure>
+
+    <ul class="claim-list">
       <li>
         <span class="claim-list__key">DOES</span>
         <span><b>Measure geometry.</b> It finds body landmarks in your photo and calculates how far your shoulders and hips sit off level, measuring the same photo five times so you get an error bar with the number.</span>
@@ -81,7 +88,7 @@
       </li>
     </ul>
 
-    <button class="btn btn--block" id="intro-accept">I understand — start a scan</button>
+    <button class="btn" id="intro-accept">I understand, start a scan</button>
     <p class="small muted intro__note">Photos and results stay on this device. Nothing is uploaded.</p>
   </section>
 
@@ -295,7 +302,7 @@
 
     <div class="care__results">
       <div id="places-notice"></div>
-      <div id="places-list" class="reveal"></div>
+      <div id="places-list"></div>
     </div>
     </div>
   </section>

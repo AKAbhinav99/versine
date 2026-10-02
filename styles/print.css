@@ -41,6 +41,10 @@ html, body {
    prints half-faded. The borders below restate every accent that carries meaning. */
 *, *::before, *::after { box-shadow: none !important; animation: none !important; transition: none !important; }
 
+/* A section that was never scrolled into view is still waiting to be revealed,
+   at opacity 0. On paper everything is in view. */
+[data-reveal] { opacity: 1 !important; transform: none !important; }
+
 /* Hairlines survive at print resolution; washes and tints mostly do not, so the
    ones carrying meaning are re-stated as borders that will always show. */
 .report__head { border-bottom: 1.5pt solid #000; }

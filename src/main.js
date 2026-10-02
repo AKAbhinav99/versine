@@ -5,6 +5,8 @@ import { INTRO_KEY, LEGACY_KEYS } from './config.js';
 import { showScreen, initTabs, onEnter } from './router.js';
 import { initCapture } from './screens/capture.js';
 import { initAdjust } from './screens/adjust.js';
+import { initMotion } from './lib/motion.js';
+import { initDotfield } from './lib/dotfield.js';
 
 /* Carry anything stored under the pre-rename namespace across first. Must run
    before any screen reads storage. */
@@ -12,6 +14,8 @@ migrateLegacyStorage();
 
 initCapture();
 initAdjust();
+initMotion();
+initDotfield();
 
 /* Only the capture flow is loaded up front. The other screens are whole
    subtrees — the clinician finder alone pulls eight modules and Leaflet — and
