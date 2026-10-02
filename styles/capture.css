@@ -20,7 +20,26 @@
   padding: var(--space-6) 0 var(--space-5);
 }
 .hero__copy { position: relative; z-index: 1; max-width: 40rem; }
-.hero__eyebrow { margin-bottom: var(--space-5); }
+/* No chip around it: it floats on the field like the headline, as its own
+   layer, with a short tick in the accent to anchor it. */
+.hero__eyebrow {
+  margin-bottom: var(--space-5);
+  font-family: var(--font-num);
+  font-size: var(--text-sm);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.hero__eyebrow-text { display: inline-flex; align-items: flex-start; gap: var(--space-3); }
+.hero__eyebrow-text::before {
+  content: '';
+  flex: none;
+  width: 28px;
+  height: 2px;
+  margin-top: 0.62em;
+  border-radius: 2px;
+  background: var(--scrub);
+}
 .hero__title {
   font-size: clamp(2.7rem, 1.5rem + 5.4vw, 5.6rem);
   font-weight: 700;
