@@ -432,8 +432,8 @@ blue `#1F6E8C` for measurement and action, marker red-orange `#D6402A` reserved
 for signals. Schibsted Grotesk for headings only (it replaced Bricolage
 Grotesque, whose ink-trap quirks read as a generated-site default), Archivo for UI
 and numbers (tabular figures only on readouts, since tabular punctuation spaces
-out commas in headings). Labels float as sentence-case text with a short accent
-tick, never as chips; uppercase mono labels read as a template default.
+out commas in headings). Labels float as plain sentence-case text, never as
+chips; uppercase mono labels read as a template default.
 
 That board is the page itself: one fixed canvas behind every screen
 ([`src/lib/field.js`](src/lib/field.js)). Each dot sits on a slightly

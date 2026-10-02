@@ -232,29 +232,21 @@ html.pointer-fine .spot {
 /* ---------- Shared components ---------------------------------------- */
 
 /* An eyebrow: where you are in the flow. No chip around it; it floats on the
-   page like the hero's line, number in the accent, a short tick, the name. */
+   page like the hero's line, the number in the accent, then the name. */
 .step-label {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink-500);
 }
 .step-label__num {
-  order: -2;
   color: var(--scrub-dim);
   font-weight: 700;
 }
-.step-label__rule {
-  order: -1;
-  flex: none;
-  width: 22px;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--scrub);
-}
+.step-label__rule { display: none; }
 
 .panel {
   position: relative;
