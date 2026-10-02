@@ -58,7 +58,7 @@
     <h1 class="intro__title" id="intro-title">A screening check,<br />not a diagnosis.</h1>
     <p class="intro__lede small">Versine measures how symmetric your back looks in a forward-bend photo, and tells you whether it's worth having a clinician take a look.</p>
 
-    <ul class="claim-list">
+    <ul class="claim-list reveal">
       <li>
         <span class="claim-list__key">DOES</span>
         <span><b>Measure geometry.</b> It finds body landmarks in your photo and calculates how far your shoulders and hips sit off level, measuring the same photo five times so you get an error bar with the number.</span>
@@ -82,12 +82,16 @@
     </ul>
 
     <button class="btn btn--block" id="intro-accept">I understand — start a scan</button>
-    <p class="small muted" style="margin-top:var(--space-3);text-align:center">Photos and results stay on this device. Nothing is uploaded.</p>
+    <p class="small muted intro__note">Photos and results stay on this device. Nothing is uploaded.</p>
   </section>
 
   <!-- ============================ 01 · CAPTURE =========================== -->
   <section class="screen capture" id="screen-capture" aria-labelledby="capture-title">
     <h2 class="visually-hidden" id="capture-title">Guided photo capture</h2>
+
+    <!-- Coaching lives above the viewfinder, not on it, so it stays legible
+         whatever the camera is pointed at. -->
+    <p class="capture__hint" id="capture-hint" aria-live="polite"><b>Bend forward at the waist</b> · arms hanging · shoulders on the upper mark, hips on the lower</p>
 
     <div class="capture__stage">
       <video class="capture__video" id="capture-video" playsinline muted autoplay tabindex="-1"></video>
@@ -113,11 +117,13 @@
           <!-- legs continuing down out of frame -->
           <path d="M130 328 L 130 392" /><path d="M170 328 L 170 392" />
         </g>
+        <!-- Shoulder and hip marks. Unlabelled on purpose: the hint bar above
+             names them, so no text sits on top of the live image. -->
         <g>
+          <line class="guide-tick" x1="34" y1="126" x2="88" y2="126" />
           <line class="guide-tick" x1="212" y1="126" x2="266" y2="126" />
-          <text class="guide-text" x="212" y="120">Shoulders</text>
+          <line class="guide-tick" x1="34" y1="306" x2="88" y2="306" />
           <line class="guide-tick" x1="212" y1="306" x2="266" y2="306" />
-          <text class="guide-text" x="212" y="300">Hips</text>
         </g>
       </svg>
 
@@ -137,7 +143,6 @@
         </svg>
         <span id="capture-flip-label">Rear</span>
       </button>
-      <p class="capture__hint" id="capture-hint"><b>Bend forward at the waist</b> · arms hanging loose · back to the camera</p>
       <div class="capture__timer hidden mono" id="capture-timer" role="timer" aria-live="off">3</div>
       <div class="capture__error hidden" id="capture-error" role="alert"></div>
     </div>
@@ -252,6 +257,8 @@
     <h2 id="doctors-title" style="margin-bottom:var(--space-2)">Clinicians who treat scoliosis</h2>
     <p class="small muted" style="margin-bottom:var(--space-4)">Orthopedic surgeons, pediatric orthopedists, and physical therapists near you. Curve evaluation usually starts with a pediatrician or family doctor, who refers on if needed.</p>
 
+    <div class="care">
+    <div class="care__panel">
     <div class="locbar">
       <input type="text" id="loc-input" placeholder="ZIP or postal code, city, or address" autocomplete="postal-code" aria-label="Search location" />
       <button class="btn" id="loc-search">Find</button>
@@ -274,16 +281,23 @@
       <button class="chip" data-filter-radius="50000" aria-pressed="false">≤ 50 km</button>
       <button class="chip" data-filter-rating="4" aria-pressed="false">4.0+ rated</button>
     </div>
-
-    <div id="map" role="img" aria-label="Map of nearby clinicians"></div>
-    <div class="source-line">
-      <span id="places-source">Source: —</span>
-      <span id="map-count"></span>
-      <span id="places-count"></span>
     </div>
-    <button class="btn btn--ghost btn--block" id="search-area" style="margin-bottom:var(--space-3)">Search this area for more</button>
-    <div id="places-notice"></div>
-    <div id="places-list"></div>
+
+    <div class="care__mapcol">
+      <div id="map" role="region" aria-label="Map of nearby clinicians"></div>
+      <div class="source-line">
+        <span id="places-source">Source: —</span>
+        <span id="map-count"></span>
+        <span id="places-count"></span>
+      </div>
+      <button class="btn btn--ghost btn--block" id="search-area">Search this area for more</button>
+    </div>
+
+    <div class="care__results">
+      <div id="places-notice"></div>
+      <div id="places-list" class="reveal"></div>
+    </div>
+    </div>
   </section>
 
   <!-- ============================ LEARN ================================== -->

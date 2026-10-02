@@ -383,5 +383,5 @@ function setHint(html) { $('#capture-hint').innerHTML = html; }
 function resetHint() {
   setHint(ghostOn && !$('#capture-ghost').classList.contains('hidden')
     ? '<b>Stand where the faint outline stands.</b> Same spot, same phone height.'
-    : '<b>Bend forward at the waist</b> · arms hanging loose · back to the camera');
+    : '<b>Bend forward at the waist</b> · arms hanging · shoulders on the upper mark, hips on the lower');
 }

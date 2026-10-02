@@ -4,17 +4,18 @@
 .result { padding: var(--space-5) var(--gutter) calc(var(--nav-h) + var(--space-8)); }
 
 .verdict {
+  --accent: var(--ink-300);
   border: 1px solid var(--rule);
-  border-left-width: 4px;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--paper-raised);
-  padding: var(--space-4);
+  box-shadow: inset 5px 0 0 var(--accent), var(--shadow-sm);
+  padding: var(--space-5) var(--space-5) var(--space-5) calc(var(--space-5) + 5px);
   margin-bottom: var(--space-5);
+  animation: rise var(--dur-slow) var(--ease) both;
 }
-.verdict[data-level='clear']   { border-left-color: var(--clear);  background: var(--clear-wash); }
-.verdict[data-level='monitor'] { border-left-color: var(--amber);  background: var(--amber-wash); }
-.verdict[data-level='refer']   { border-left-color: var(--marker); background: var(--marker-wash); }
-.verdict[data-level='unclear'] { border-left-color: var(--ink-300); }
+.verdict[data-level='clear']   { --accent: var(--clear);  background: var(--clear-wash);  border-color: transparent; }
+.verdict[data-level='monitor'] { --accent: var(--amber);  background: var(--amber-wash);  border-color: transparent; }
+.verdict[data-level='refer']   { --accent: var(--marker); background: var(--marker-wash); border-color: transparent; }
 .verdict__kicker { margin-bottom: var(--space-2); }
 .verdict__headline { font-size: var(--text-xl); margin-bottom: var(--space-2); }
 .verdict__body { font-size: var(--text-base); color: var(--ink-700); }
@@ -23,12 +24,43 @@
 
 .plate {
   position: relative;
-  border: 1px solid var(--ink-500);
+  border-radius: var(--radius-lg);
   background: var(--ink-900);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
   overflow: hidden;
+  box-shadow: var(--shadow);
+  animation: rise var(--dur-slow) var(--ease) both;
 }
 .plate canvas { width: 100%; height: auto; }
+
+/* The key to the drawing on the photo. It lives here, on paper, so the numbers
+   are legible no matter what the photograph looks like. */
+.plate__legend {
+  list-style: none;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+.plate__key {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--text-sm);
+  color: var(--ink-700);
+}
+.plate__keyname { flex: 1; min-width: 0; }
+.plate__keyvalue { font-weight: 600; color: var(--ink-900); }
+.plate__swatch { flex: none; display: inline-block; width: 22px; }
+.plate__swatch--line { height: 5px; border-radius: 999px; background: var(--swatch); }
+.plate__swatch--dash { height: 0; border-top: 2px dashed var(--swatch); }
+.plate__swatch--dot  { width: 12px; height: 12px; margin-inline: 5px; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 0 1.5px var(--ink-900); }
+
 .plate__caption {
   display: flex;
   justify-content: space-between;
@@ -42,10 +74,11 @@
   border: var(--hair);
   border-radius: var(--radius);
   background: var(--paper-raised);
+  box-shadow: var(--shadow-sm);
   padding: var(--space-4);
   margin-bottom: var(--space-3);
 }
-.readout--primary { border-color: var(--ink-500); border-width: 2px; }
+.readout--primary { padding: var(--space-5); box-shadow: var(--shadow); border-color: transparent; }
 
 .readout__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
 .readout__value {
@@ -82,6 +115,8 @@
   position: absolute;
   top: 12px; bottom: 0;
 }
+.ruler__band:first-child { border-top-left-radius: 6px; }
+.ruler__band:nth-child(3) { border-top-right-radius: 6px; }
 .ruler__band[data-band='clear']   { background: rgba(44,122,91,0.16); }
 .ruler__band[data-band='monitor'] { background: rgba(184,117,20,0.18); }
 .ruler__band[data-band='refer']   { background: rgba(214,64,42,0.16); }
@@ -109,7 +144,7 @@
   top: 0; bottom: 0;
   width: 2px;
   background: var(--marker);
-  transition: left 700ms var(--ease);
+  transition: left 1100ms var(--ease-spring);
 }
 .ruler__needle::after {
   content: '';
@@ -121,16 +156,17 @@
 }
 .ruler__legend { margin-top: 22px; display: flex; gap: var(--space-4); flex-wrap: wrap; }
 .ruler__legend span { display: inline-flex; align-items: center; gap: 5px; font-size: var(--text-xs); color: var(--ink-500); font-family: var(--font-num); }
-.ruler__legend i { width: 10px; height: 10px; display: inline-block; }
+.ruler__legend i { width: 10px; height: 10px; display: inline-block; border-radius: 3px; }
 
 .metric-grid { display: grid; gap: var(--space-2); grid-template-columns: 1fr 1fr; margin-bottom: var(--space-3); }
 .metric-grid .readout { margin-bottom: 0; }
 .metric-grid .readout__value { font-size: clamp(1.5rem, 1rem + 3vw, 2rem); }
 
 .quality-note {
-  border-left: 3px solid var(--amber);
+  border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--amber);
   background: var(--amber-wash);
-  padding: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-3) calc(var(--space-4) + 4px);
   font-size: var(--text-sm);
   margin-bottom: var(--space-4);
 }
@@ -155,7 +191,8 @@
 }
 
 .disclaimer {
-  border: 1px dashed var(--rule);
+  border: 1px dashed var(--rule-control);
+  border-radius: var(--radius);
   padding: var(--space-4);
   font-size: var(--text-sm);
   color: var(--ink-500);
@@ -167,6 +204,8 @@
 
 .trend {
   border: var(--hair);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   background: var(--paper-raised);
   padding: var(--space-4);
   margin-bottom: var(--space-5);
@@ -191,11 +230,15 @@
   background: var(--paper-raised);
   border: var(--hair);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   margin-bottom: var(--space-2);
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
+.log-entry:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
 .log-entry__thumb {
   width: 62px; height: 62px;
   object-fit: cover;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--rule);
   background: var(--ink-900);
   filter: grayscale(0.5);
@@ -219,8 +262,8 @@
 .log-entry__value { font-family: var(--font-num); font-size: var(--text-lg); font-weight: 500; }
 .log-entry__error { font-size: var(--text-xs); color: var(--ink-400); }
 .log-entry__flag {
-  width: 10px; height: 42px;
-  border-radius: 1px;
+  width: 8px; height: 42px;
+  border-radius: 999px;
 }
 .log-entry__flag[data-level='clear']   { background: var(--clear); }
 .log-entry__flag[data-level='monitor'] { background: var(--amber); }
@@ -230,7 +273,9 @@
 .empty {
   text-align: center;
   padding: var(--space-8) var(--space-4);
-  border: 1px dashed var(--rule);
+  border: 1px dashed var(--rule-control);
+  border-radius: var(--radius-lg);
+  animation: fade var(--dur) var(--ease) both;
   color: var(--ink-500);
 }
 
@@ -240,14 +285,14 @@
 
 .sway {
   margin-bottom: var(--space-4);
-  padding: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + 4px);
   border: var(--hair);
-  border-left: 3px solid var(--rule-control);
   border-radius: var(--radius);
+  box-shadow: inset 4px 0 0 var(--rule-control);
   background: var(--paper-raised);
 }
 
-.sway[data-wide] { border-left-color: var(--amber); }
+.sway[data-wide] { box-shadow: inset 4px 0 0 var(--amber); }
 
 .sway__kicker { color: var(--ink-500); margin-bottom: var(--space-3); }
 .sway[data-wide] .sway__kicker { color: var(--amber-text); }
@@ -275,4 +320,31 @@
   font-size: var(--text-xs);
   line-height: 1.6;
   color: var(--ink-500);
+}
+
+/* ---------- Wide screens --------------------------------------------- */
+
+@media (min-width: 960px) {
+  /* Photo on the left, held in view, with the numbers and advice beside it. */
+  .result__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-6);
+    align-items: start;
+  }
+  .result__media {
+    position: sticky;
+    top: calc(var(--masthead-h) + var(--space-5));
+  }
+  .result__media .plate canvas { max-height: calc(100dvh - var(--masthead-h) - 220px); width: 100%; object-fit: contain; }
+  .plate__legend { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .plate__key { flex-wrap: wrap; row-gap: 2px; }
+
+  /* The scan log as cards in a grid rather than one long list. */
+  #history-body .log-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  #history-body .log-list .log-entry { margin-bottom: 0; }
 }

@@ -28,7 +28,7 @@ export function renderHistory() {
   append(body,
     trendChart(chronological),
     intakeRow(),
-    ...scans.map(entryRow),
+    el('div', { class: 'log-list reveal' }, ...scans.map(entryRow)),
     el('div', { style: 'margin-top:var(--space-5)' },
       el('button', {
         class: 'btn btn--ghost btn--block',

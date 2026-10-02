@@ -5,18 +5,19 @@
 .intake__section { margin-bottom: var(--space-6); }
 
 .intake__q {
-  margin: 0 0 var(--space-4);
-  padding: var(--space-4) 0 0;
-  border: 0;
-  border-top: var(--hair);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-4);
+  border: var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur) var(--ease), background var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
 
 .intake__q[data-flagged] {
-  border-top-color: var(--marker);
-  border-left: 2px solid var(--marker);
-  padding-left: var(--space-3);
-  margin-left: calc(var(--space-3) * -1);
-  background: linear-gradient(90deg, var(--marker-wash), transparent 60%);
+  border-color: transparent;
+  box-shadow: inset 4px 0 0 var(--marker), var(--shadow-sm);
+  background: linear-gradient(90deg, var(--marker-wash), var(--paper-raised) 70%);
 }
 
 .intake__prompt {
@@ -56,17 +57,19 @@
   display: inline-flex;
   align-items: center;
   min-height: 44px;
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-5);
   /* A control's boundary has to clear 3:1 against the page, which --rule does
      not — it is a drawing hairline, not a control border. */
   border: 1px solid var(--rule-control);
-  border-radius: var(--radius);
+  border-radius: var(--radius-pill);
   background: var(--paper-raised);
   color: var(--ink-700);
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+  transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+              color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
 }
+.intake__options label:active { transform: scale(0.96); }
 
 .intake__options label:hover { border-color: var(--ink-500); }
 
@@ -129,15 +132,15 @@
 
 .redflag {
   margin-bottom: var(--space-5);
-  padding: var(--space-4);
-  border: 1px solid var(--amber);
-  border-left-width: 3px;
-  border-radius: var(--radius);
+  padding: var(--space-4) var(--space-4) var(--space-4) calc(var(--space-4) + 5px);
+  border-radius: var(--radius-lg);
+  box-shadow: inset 5px 0 0 var(--amber), var(--shadow-sm);
   background: var(--amber-wash);
+  animation: rise var(--dur-slow) var(--ease) both;
 }
 
 .redflag[data-urgency='urgent'] {
-  border-color: var(--marker);
+  box-shadow: inset 5px 0 0 var(--marker), var(--shadow-sm);
   background: var(--marker-wash);
 }
 
@@ -168,12 +171,18 @@
   gap: var(--space-3);
   margin-bottom: var(--space-4);
   padding: var(--space-4);
-  border: 1px dashed var(--rule);
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   background: var(--paper-raised);
+  box-shadow: var(--shadow-sm);
 }
 
 .intake-prompt__text { flex: 1 1 14rem; }
 .intake-prompt__text b { display: block; color: var(--ink-700); margin-bottom: 2px; }
 .intake-prompt__text span { font-size: var(--text-sm); color: var(--ink-500); line-height: 1.5; }
 .intake-prompt .btn { flex: 0 0 auto; }
+
+@media (min-width: 960px) {
+  #screen-intake { max-width: var(--read-max); }
+  #screen-history { max-width: 980px; }
+}

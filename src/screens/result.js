@@ -12,7 +12,7 @@ import { nextSteps, shortSide } from '../lib/screening.js';
 import { highestUrgency } from '../lib/intake.js';
 import { intakeState, openIntake } from './intake.js';
 import { openReport } from './report.js';
-import { prepareCanvas, drawOverlay } from './overlay.js';
+import { prepareCanvas, drawOverlay, OVERLAY_COLOURS } from './overlay.js';
 
 const REVEAL_MS = 1200;
 
@@ -30,21 +30,25 @@ export function renderResult(payload) {
   const pass = reading.primary;
   const intake = intakeState();
 
+  /* On a phone this is one column in reading order. On a wide screen the photo
+     holds the left column while the numbers and advice scroll beside it. */
   append(body,
     intake.flags.length ? redFlagBlock(intake.flags) : null,
     verdictBlock(verdict),
-    pass ? plate(pass, entry, reading) : null,
-    reading.usable ? tiltReadout(reading) : null,
-    reading.usable ? metricGrid(reading) : null,
-    reading.usable && reading.swayDeg !== null && reading.swayDeg !== undefined ? swayPanel(reading) : null,
-    reliabilityPanel(reading),
-    adjustments?.rotationDeg ? rotationNote(adjustments.rotationDeg) : null,
-    methodPanel(),
-    reading.warnings?.length ? qualityNote(reading.warnings) : null,
-    nextStepsBlock(verdict.level),
-    intake.answered ? null : intakePrompt(),
-    actions(entry),
-    disclaimer(),
+    el('div', { class: 'result__grid' },
+      pass ? el('div', { class: 'result__media' }, plate(pass, entry, reading)) : null,
+      el('div', { class: 'result__details reveal' },
+        reading.usable ? tiltReadout(reading) : null,
+        reading.usable ? metricGrid(reading) : null,
+        reading.usable && reading.swayDeg !== null && reading.swayDeg !== undefined ? swayPanel(reading) : null,
+        reliabilityPanel(reading),
+        adjustments?.rotationDeg ? rotationNote(adjustments.rotationDeg) : null,
+        methodPanel(),
+        reading.warnings?.length ? qualityNote(reading.warnings) : null,
+        nextStepsBlock(verdict.level),
+        intake.answered ? null : intakePrompt(),
+        actions(entry),
+        disclaimer())),
   );
 
   if (pass) {
@@ -116,12 +120,27 @@ function plate(pass, entry, reading) {
     'aria-label': 'Your photo with the detected shoulder and hip landmarks and the measured tilt lines drawn on it' });
   prepareCanvas(canvas, pass.canvas);
 
+  const { shoulders, hips } = pass.measurements;
+
   return el('div', {},
     el('div', { class: 'plate' }, canvas),
+    /* The key to the drawing, in the page rather than on the photo. */
+    el('ul', { class: 'plate__legend', 'aria-label': 'What the lines on the photo show' },
+      legendItem('line', OVERLAY_COLOURS.measure, 'Shoulder line', `${shoulders.tiltDeg.toFixed(1)}°`),
+      legendItem('line', OVERLAY_COLOURS.measure, 'Hip line', `${hips.tiltDeg.toFixed(1)}°`),
+      legendItem('dash', OVERLAY_COLOURS.marker, 'Plumb line', 'vertical'),
+      legendItem('dot', OVERLAY_COLOURS.marker, 'Measured points', '4')),
     el('div', { class: 'plate__caption' },
       el('span', { class: 'label' }, `Framing shown: ${pass.framing}`),
       el('span', { class: 'label' },
         entry ? `Logged ${formatDate(entry.timestamp)}` : `Confidence ${(reading.landmarkConfidence ?? 0).toFixed(2)}`)));
+}
+
+function legendItem(kind, colour, name, value) {
+  return el('li', { class: 'plate__key' },
+    el('i', { class: `plate__swatch plate__swatch--${kind}`, style: `--swatch:${colour}`, 'aria-hidden': 'true' }),
+    el('span', { class: 'plate__keyname' }, name),
+    el('b', { class: 'plate__keyvalue mono' }, value));
 }
 
 function photoOnlyCanvas(photo) {
@@ -148,6 +167,12 @@ function tiltReadout(reading) {
 function thresholdRuler(value) {
   const max = THRESHOLDS.rulerMaxDeg;
   const pct = (deg) => `${Math.min(100, (deg / max) * 100)}%`;
+  /* The needle starts at zero and travels to the reading, using the transition
+     result.css already puts on its position. */
+  const needle = el('div', { class: 'ruler__needle', style: 'left:0%' });
+  const target = pct(Math.max(value, 0));
+  if (prefersReducedMotion()) needle.style.left = target;
+  else requestAnimationFrame(() => requestAnimationFrame(() => { needle.style.left = target; }));
   const track = el('div', { class: 'ruler__track' },
     el('div', { class: 'ruler__band', 'data-band': 'clear', style: `left:0;width:${pct(THRESHOLDS.shoulderMonitorDeg)}` }),
     el('div', { class: 'ruler__band', 'data-band': 'monitor', style: `left:${pct(THRESHOLDS.shoulderMonitorDeg)};width:calc(${pct(THRESHOLDS.shoulderReferDeg)} - ${pct(THRESHOLDS.shoulderMonitorDeg)})` }),
@@ -156,7 +181,7 @@ function thresholdRuler(value) {
       class: `ruler__tick${[0, 2, 3.5].includes(tick) ? ' ruler__tick--major' : ''}`,
       style: `left:${pct(tick)}`,
     }, el('span', {}, `${tick}°`))),
-    el('div', { class: 'ruler__needle', style: `left:${pct(Math.max(value, 0))}` }));
+    needle);
 
   return el('div', { class: 'ruler' }, track,
     el('div', { class: 'ruler__legend' },

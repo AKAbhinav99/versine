@@ -70,7 +70,10 @@ function draw() {
   const stage = $('#adjust-stage');
 
   const maxWidth = stage.clientWidth || 360;
-  const maxHeight = Math.round(window.innerHeight * 0.36);
+  /* On a wide screen the photo has a column of its own beside the controls, so
+     it can take most of the window height rather than a third of it. */
+  const share = window.matchMedia('(min-width: 960px)').matches ? 0.72 : 0.36;
+  const maxHeight = Math.round(window.innerHeight * share);
   const aspect = photo.height / photo.width;
 
   let width = maxWidth;

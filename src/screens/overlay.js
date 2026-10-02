@@ -2,7 +2,11 @@
  *
  * This is the transparency layer: the same points the math used, drawn where they
  * were found, plus the two lines whose tilt produced the shoulder and hip numbers
- * and the vertical plumb reference everything is measured against. */
+ * and the vertical plumb reference everything is measured against.
+ *
+ * No text is drawn on the photo. Labels on top of an arbitrary photograph are
+ * legible on some backgrounds and not others, so the numbers live in the legend
+ * under the image (result.js), keyed to these colours. */
 
 import { POSE, toPixels, midpoint } from '../lib/geometry.js';
 
@@ -64,8 +68,10 @@ export function drawOverlay(canvas, photo, landmarks, measurements, progress = 1
   drawMeasureLine(ctx, hipL, hipR, unit, stage(progress, 0.58, 0.8));
   drawTrunkAxis(ctx, shoulderMid, hipMid, unit, stage(progress, 0.62, 0.82));
   drawDots(ctx, point, unit, stage(progress, 0.28, 0.7));
-  drawAngleLabels(ctx, canvas, { shoulderL, shoulderR, hipL, hipR }, measurements, unit, stage(progress, 0.8, 1));
 }
+
+/* The colours the legend under the photo needs to match. */
+export const OVERLAY_COLOURS = { measure: MEASURE, marker: MARKER, paper: PAPER };
 
 /* The vertical reference the whole test is against, dropped through the pelvis. */
 function drawPlumbLine(ctx, canvas, hipMid, unit, t) {
@@ -161,43 +167,4 @@ function drawDots(ctx, point, unit, t) {
     ctx.stroke();
     ctx.restore();
   });
-}
-
-function drawAngleLabels(ctx, canvas, points, measurements, unit, t) {
-  if (t <= 0) return;
-  const size = Math.max(11, unit * 3);
-  ctx.save();
-  ctx.globalAlpha = t;
-  ctx.font = `500 ${size}px "IBM Plex Mono", ui-monospace, monospace`;
-  ctx.textBaseline = 'middle';
-
-  label(ctx, canvas, midpoint(points.shoulderL, points.shoulderR),
-    `SHOULDERS ${measurements.shoulders.tiltDeg.toFixed(1)}°`, size, unit);
-  label(ctx, canvas, midpoint(points.hipL, points.hipR),
-    `HIPS ${measurements.hips.tiltDeg.toFixed(1)}°`, size, unit);
-  ctx.restore();
-}
-
-function label(ctx, canvas, anchor, text, size, unit) {
-  const padding = unit * 0.9;
-  const width = ctx.measureText(text).width + padding * 2;
-  const height = size + padding * 1.4;
-  /* Flip the label to the other side if it would run off the image. */
-  const preferRight = anchor.x + unit * 2 + width < canvas.width;
-  const x = preferRight ? anchor.x + unit * 1.5 : anchor.x - unit * 1.5 - width;
-  /* Sit the label above its line so it never covers the landmark dots it describes. */
-  const y = Math.min(Math.max(anchor.y - height * 1.5, 0), canvas.height - height);
-
-  ctx.fillStyle = 'rgba(11,22,34,0.86)';
-  ctx.fillRect(x, y, width, height);
-  ctx.strokeStyle = MEASURE;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, width, height);
-  /* Leader line down to the measurement it labels. */
-  ctx.beginPath();
-  ctx.moveTo(preferRight ? x : x + width, y + height);
-  ctx.lineTo(anchor.x, anchor.y);
-  ctx.stroke();
-  ctx.fillStyle = PAPER;
-  ctx.fillText(text, x + padding, y + height / 2);
 }

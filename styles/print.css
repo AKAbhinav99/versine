@@ -34,7 +34,12 @@ html, body {
 
 /* Only the report prints, whichever screen happens to be active. */
 .screen { display: none !important; }
-#screen-report { display: block !important; padding: 0 !important; }
+#screen-report { display: block !important; padding: 0 !important; max-width: none !important; }
+
+/* On screen, accents are drawn as inset shadows and cards rise in. Neither
+   belongs on paper: shadows rarely print, and an animation caught mid-frame
+   prints half-faded. The borders below restate every accent that carries meaning. */
+*, *::before, *::after { box-shadow: none !important; animation: none !important; transition: none !important; }
 
 /* Hairlines survive at print resolution; washes and tints mostly do not, so the
    ones carrying meaning are re-stated as borders that will always show. */

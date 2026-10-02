@@ -7,7 +7,7 @@ import { PLACES } from '../config.js';
 import { findClinicians, clinicProviders } from '../lib/clinics.js';
 import { geocode, describePlace } from '../lib/geocoding.js';
 import { currentPosition } from '../lib/geolocation.js';
-import { CancelledError } from '../lib/net.js';
+import { CancelledError, fetchWithTimeout } from '../lib/net.js';
 import { PROVIDER_KEYS, getKey, setKey, configuredKeys, testKey } from '../lib/keys.js';
 import { localInView, indexCoverage, clearLearned } from '../lib/clinic-index.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
@@ -36,8 +36,8 @@ let inFlight = null;   // AbortController for the search currently running
 let providerHasRatings = () => false;
 
 let map = null;
-let markerLayer = null;   // numbered pins for the current result list
-let indexLayer = null;    // every clinic the local index knows about, in view
+let resultMarkers = [];   // numbered pins for the current result list, by list index
+let hereMarker = null;    // the search centre
 
 export function initDoctors() {
   initCountrySelect();
@@ -78,7 +78,7 @@ export function initDoctors() {
 /** Called by the router each time this screen is shown. */
 export function showDoctors() {
   ensureMap();
-  if (map) setTimeout(() => map.invalidateSize(), 60);
+  if (map) setTimeout(() => map.resize(), 60);
   if (!state.results.length && state.center) search();
   if (!state.center) renderNotice();
 }
@@ -199,6 +199,14 @@ async function search({ skipLocal = false } = {}) {
   setStatus('Searching for clinicians nearby…');
   $('#places-list').replaceChildren(el('div', { class: 'empty' }, 'Searching…'));
 
+  /* OpenStreetMap's free query service routinely takes 15 to 20 seconds when it
+     is busy. Without a word about that, a working search looks like a hung one. */
+  const slowNotice = setTimeout(() => {
+    if (token === searchToken) {
+      setStatus('Still searching. The free OpenStreetMap service can take up to 20 seconds when it is busy.');
+    }
+  }, 5000);
+
   try {
     const answer = await findClinicians(state.center, state.radiusM, { signal: controller.signal, skipLocal });
     if (token !== searchToken) return false;   // a newer search has taken over
@@ -223,6 +231,7 @@ async function search({ skipLocal = false } = {}) {
     setStatus(error.message, true, { retry: true });
     return false;
   } finally {
+    clearTimeout(slowNotice);
     if (inFlight === controller) inFlight = null;
   }
 }
@@ -290,10 +299,17 @@ function clinicCard(clinic, index) {
         el('b', {}, clinic.rating.toFixed(1)), ` / 5 · ${clinic.reviewCount ?? 0} reviews`)
     : el('div', { class: 'clinic__rating muted' }, 'No rating data in OpenStreetMap');
 
-  return el('div', { class: 'clinic' },
+  return el('div', { class: 'clinic', 'data-index': index },
     el('div', { class: 'clinic__head' },
       el('span', { class: 'clinic__index' }, String(index + 1)),
-      el('div', {},
+      /* The name doubles as a "show me where" control: it flies the map to this
+         pin and opens its label. */
+      el('button', {
+        class: 'clinic__locate',
+        type: 'button',
+        'aria-label': `Show ${clinic.name} on the map`,
+        onClick: () => focusClinic(index, { fromList: true }),
+      },
         el('div', { class: 'clinic__name' }, clinic.name),
         el('div', { class: 'clinic__addr' }, clinic.address || 'Address not listed')),
       el('div', { class: 'clinic__dist' }, formatDistance(clinic.distanceM))),
@@ -434,8 +450,7 @@ function clearStatus() {
 function flyTo(center) {
   ensureMap();
   if (!map) return;
-  map.setView([center.lat, center.lng], 13);
-  drawIndexMarkers();
+  map.flyTo({ center: [center.lng, center.lat], zoom: 13, duration: 1400 });
 }
 
 function setBusy(button, busy, label) {
@@ -445,118 +460,263 @@ function setBusy(button, busy, label) {
 
 /* -------------------------------------------------------------------- map --- */
 
-/* Leaflet is 46 KB across two files on a second origin, and it is only ever
-   needed on this one screen. Loading it from the document head made every other
-   screen — including the one the app opens on — wait for a host it never uses.
-   It is fetched the first time the map is actually wanted. */
-const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-const LEAFLET_JS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-let leafletPromise = null;
+/* MapLibre GL drawing OpenFreeMap's vector tiles.
+ *
+ * This replaced Leaflet over CARTO raster tiles, after CARTO's basemaps began
+ * answering every keyless request with a placeholder tile reading "API KEY
+ * REQUIRED": the map loaded, drew nothing but those placeholders, and failed
+ * no request, so nothing reported it. OpenFreeMap is free, needs no key or
+ * account, and sets no request limit. Vector tiles also stay sharp at any zoom
+ * and let the camera fly between places rather than jump.
+ *
+ * If OpenFreeMap is unreachable, the map falls back to OpenStreetMap's own raster
+ * tiles, which are keyless too. Losing the basemap never loses the list.
+ *
+ * Pinned to 5.x: 6.x ships ES modules only and dropped the single-file build
+ * this lazy loader uses. Like Leaflet before it, it is fetched only the first
+ * time the map is wanted, so no other screen pays for it. */
+const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.24.0/dist';
+const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+const RASTER_STYLE = {
+  version: 8,
+  sources: {
+    osm: {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      maxzoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    },
+  },
+  layers: [{ id: 'osm', type: 'raster', source: 'osm' }],
+};
+/* Tile failures tolerated from the vector source before switching to raster. */
+const VECTOR_FAILURES_BEFORE_FALLBACK = 4;
 
-function loadLeaflet() {
-  if (window.L) return Promise.resolve(window.L);
-  if (leafletPromise) return leafletPromise;
+const SCRUB = '#1F6E8C';
+const PAPER = '#F7F9F9';
 
-  leafletPromise = new Promise((resolve, reject) => {
+let mapLibPromise = null;
+let mapBuilding = false;
+let usingRaster = false;
+let vectorFailures = 0;
+
+function loadMapLibrary() {
+  if (window.maplibregl) return Promise.resolve(window.maplibregl);
+  if (mapLibPromise) return mapLibPromise;
+
+  mapLibPromise = new Promise((resolve, reject) => {
     const css = document.createElement('link');
     css.rel = 'stylesheet';
-    css.href = LEAFLET_CSS;
+    css.href = `${MAPLIBRE}/maplibre-gl.css`;
     document.head.append(css);
 
     const script = document.createElement('script');
-    script.src = LEAFLET_JS;
-    script.onload = () => resolve(window.L);
+    script.src = `${MAPLIBRE}/maplibre-gl.js`;
+    script.onload = () => resolve(window.maplibregl);
     script.onerror = () => {
-      leafletPromise = null;     // a later visit can retry a transient failure
-      reject(new Error('LEAFLET_UNAVAILABLE'));
+      mapLibPromise = null;      // a later visit can retry a transient failure
+      reject(new Error('MAP_LIBRARY_UNAVAILABLE'));
     };
     document.head.append(script);
   });
 
-  return leafletPromise;
+  return mapLibPromise;
+}
+
+/* The vector style is fetched up front so an outage is caught before the map
+   exists, rather than as a blank canvas afterwards. */
+async function chooseStyle() {
+  try {
+    const response = await fetchWithTimeout(VECTOR_STYLE_URL, {}, 6000);
+    if (!response.ok) throw new Error(String(response.status));
+    return await response.json();
+  } catch {
+    usingRaster = true;
+    return RASTER_STYLE;
+  }
 }
 
 function ensureMap() {
-  if (map) return;
-  if (!window.L) { requestLeaflet(); return; }
-  buildMap();
-}
+  if (map || mapBuilding) return;
+  mapBuilding = true;
 
-/* Every caller of ensureMap already copes with the map not existing yet, so the
-   load can resolve later and catch up. */
-function requestLeaflet() {
-  loadLeaflet()
-    .then(() => {
-      buildMap();
+  /* Every caller of ensureMap already copes with the map not existing yet, so
+     the load can resolve later and catch up. */
+  Promise.all([loadMapLibrary(), chooseStyle()])
+    .then(([maplibregl, style]) => {
+      buildMap(maplibregl, style);
       if (!map) return;
-      map.invalidateSize();
-      drawIndexMarkers();
-      if (state.results.length) drawMarkers(state.results);
+      if (state.results.length) drawMarkers(visibleResults());
     })
     .catch(() => {
       const host = $('#map');
       if (host) host.textContent = 'The map could not load. The list below still works.';
       host?.classList.add('map--failed');
+    })
+    .finally(() => { mapBuilding = false; });
+}
+
+function buildMap(maplibregl, style) {
+  if (map) return;
+  try {
+    map = new maplibregl.Map({
+      container: 'map',
+      style,
+      center: state.center ? [state.center.lng, state.center.lat] : [-98.35, 39.5],
+      zoom: state.center ? 12 : 3,
+      attributionControl: { compact: true },
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      cooperativeGestures: false,
     });
-}
+  } catch {
+    /* No WebGL, most often. The list still works without a map. */
+    map = null;
+    throw new Error('MAP_UNSUPPORTED');
+  }
 
-function buildMap() {
-  if (map || typeof window.L === 'undefined') return;
-  map = window.L.map('map', { zoomControl: false, attributionControl: true });
+  map.touchZoomRotate.disableRotation();
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+  /* Fires for the first style and again after any fallback swaps it, since a
+     style swap discards every source and layer added on top. */
+  map.on('style.load', () => {
+    addIndexLayer();
+    drawIndexMarkers();
+  });
   map.on('moveend', drawIndexMarkers);
-  window.L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-  }).addTo(map);
-  indexLayer = window.L.layerGroup().addTo(map);
-  markerLayer = window.L.layerGroup().addTo(map);
-  map.setView(state.center ? [state.center.lat, state.center.lng] : [39.5, -98.35], state.center ? 12 : 3);
+
+  /* Tiles that fail after the style loaded: switch to raster rather than leave
+     holes in the map. */
+  map.on('error', (event) => {
+    if (usingRaster || event.sourceId !== 'openmaptiles') return;
+    vectorFailures += 1;
+    if (vectorFailures >= VECTOR_FAILURES_BEFORE_FALLBACK) {
+      usingRaster = true;
+      map.setStyle(RASTER_STYLE);
+    }
+  });
 }
 
-/* Everything the local index holds for the visible area, drawn as plain dots so
-   the map is populated before anyone searches anything. Costs no network. */
+/* Every clinic the local index holds for the visible area, drawn as a GPU
+   circle layer so hundreds of them cost nothing. Populated before anyone
+   searches, and costs no network. */
+function addIndexLayer() {
+  if (!map || map.getSource('index')) return;
+  map.addSource('index', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'index-dots',
+    type: 'circle',
+    source: 'index',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3, 15, 6],
+      'circle-color': PAPER,
+      'circle-stroke-color': SCRUB,
+      'circle-stroke-width': 1.75,
+    },
+  });
+
+  map.on('click', 'index-dots', (event) => {
+    const feature = event.features?.[0];
+    if (!feature) return;
+    new window.maplibregl.Popup({ offset: 10 })
+      .setLngLat(feature.geometry.coordinates)
+      .setHTML(popupHtml(feature.properties))
+      .addTo(map);
+  });
+  map.on('mouseenter', 'index-dots', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'index-dots', () => { map.getCanvas().style.cursor = ''; });
+}
+
+const popupHtml = (clinic) => `<b>${escapeHtml(clinic.name)}</b>${escapeHtml(clinic.address || '')}`;
+
 async function drawIndexMarkers() {
-  if (!map || !indexLayer) return;
+  const source = map?.getSource('index');
+  if (!source) return;
   const b = map.getBounds();
   const clinics = await localInView({
     south: b.getSouth(), west: b.getWest(), north: b.getNorth(), east: b.getEast(),
   });
 
-  indexLayer.clearLayers();
   const listed = new Set(state.results.map((clinic) => `${clinic.name}|${Math.round(clinic.lat * 1e4)}`));
+  const features = clinics
+    .filter((clinic) => !listed.has(`${clinic.name}|${Math.round(clinic.lat * 1e4)}`))
+    .map((clinic) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [clinic.lng, clinic.lat] },
+      properties: { name: clinic.name, address: clinic.address || '' },
+    }));
 
-  for (const clinic of clinics) {
-    if (listed.has(`${clinic.name}|${Math.round(clinic.lat * 1e4)}`)) continue;
-    window.L.circleMarker([clinic.lat, clinic.lng], {
-      radius: 4, color: '#1F6E8C', weight: 1.5, fillColor: '#EDF0F1', fillOpacity: 0.9,
-    }).addTo(indexLayer).bindPopup(`<b>${escapeHtml(clinic.name)}</b><br>${escapeHtml(clinic.address || '')}`);
-  }
-
+  source.setData({ type: 'FeatureCollection', features });
   $('#map-count').textContent = clinics.length ? `${clinics.length} in view` : '';
 }
 
 function drawMarkers(results) {
   ensureMap();
-  if (!map || !markerLayer) return;
-  markerLayer.clearLayers();
+  if (!map) return;
+  const maplibregl = window.maplibregl;
+
+  resultMarkers.forEach((marker) => marker?.remove());
+  resultMarkers = [];
+  hereMarker?.remove();
+  hereMarker = null;
   if (!state.center) return;
 
-  window.L.circleMarker([state.center.lat, state.center.lng], {
-    radius: 6, color: '#D6402A', fillColor: '#D6402A', fillOpacity: 1, weight: 2,
-  }).addTo(markerLayer).bindPopup('You are here');
+  const here = el('div', { class: 'here', title: 'Search centre' });
+  hereMarker = new maplibregl.Marker({ element: here })
+    .setLngLat([state.center.lng, state.center.lat])
+    .setPopup(new maplibregl.Popup({ offset: 12 }).setHTML('<b>Searching from here</b>'))
+    .addTo(map);
 
-  const bounds = [[state.center.lat, state.center.lng]];
+  const bounds = new maplibregl.LngLatBounds([state.center.lng, state.center.lat], [state.center.lng, state.center.lat]);
   results.forEach((clinic, index) => {
-    if (!clinic.lat || !clinic.lng) return;
-    window.L.marker([clinic.lat, clinic.lng], {
-      icon: window.L.divIcon({ className: '', html: `<div class="pin">${index + 1}</div>`, iconSize: [26, 26] }),
-    }).addTo(markerLayer).bindPopup(
-      `<b>${escapeHtml(clinic.name)}</b><br>${escapeHtml(clinic.address || '')}`,
-    );
-    bounds.push([clinic.lat, clinic.lng]);
+    if (!clinic.lat || !clinic.lng) { resultMarkers.push(null); return; }
+
+    /* MapLibre positions the outer element with a transform, so the pin that
+       animates is the inner one. The drop is staggered down the list. */
+    const pin = el('div', { class: 'pin', style: `animation-delay:${Math.min(index, 20) * 25}ms` }, String(index + 1));
+    const wrap = el('div', { class: 'pin-wrap' }, pin);
+    wrap.addEventListener('click', () => highlight(index, { scrollList: true }));
+
+    const marker = new maplibregl.Marker({ element: wrap })
+      .setLngLat([clinic.lng, clinic.lat])
+      .setPopup(new maplibregl.Popup({ offset: 18 }).setHTML(popupHtml(clinic)))
+      .addTo(map);
+    resultMarkers.push(marker);
+    bounds.extend([clinic.lng, clinic.lat]);
   });
 
-  if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
-  else map.setView([state.center.lat, state.center.lng], 12);
+  if (resultMarkers.some(Boolean)) {
+    map.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 1100 });
+  } else {
+    map.flyTo({ center: [state.center.lng, state.center.lat], zoom: 12, duration: 1100 });
+  }
   drawIndexMarkers();
+}
+
+/** Mark one clinic as current, in the list and on the map. */
+function highlight(index, { scrollList = false } = {}) {
+  $$('.clinic').forEach((card) => card.classList.toggle('clinic--active', Number(card.dataset.index) === index));
+  resultMarkers.forEach((marker, i) => marker?.getElement().firstChild.classList.toggle('pin--active', i === index));
+  if (scrollList) {
+    $(`.clinic[data-index="${index}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+/** Fly to a clinic picked from the list and open its label. */
+function focusClinic(index, { fromList = false } = {}) {
+  const marker = resultMarkers[index];
+  highlight(index);
+  if (!map || !marker) return;
+
+  /* On a phone the map sits above the list, out of view once you have scrolled
+     down to a card, so bring it back first. */
+  if (fromList && !window.matchMedia('(min-width: 960px)').matches) {
+    $('#map').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  map.flyTo({ center: marker.getLngLat(), zoom: Math.max(map.getZoom(), 15), duration: 1000 });
+  resultMarkers.forEach((other) => { if (other?.getPopup()?.isOpen()) other.togglePopup(); });
+  marker.togglePopup();
 }
