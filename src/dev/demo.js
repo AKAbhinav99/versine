@@ -57,7 +57,7 @@ function placeholderPhoto() {
   ctx.closePath();
   ctx.fill();
 
-  ctx.font = '500 20px "IBM Plex Mono", monospace';
+  ctx.font = '600 20px "Archivo", sans-serif';
   ctx.fillStyle = 'rgba(237,240,241,0.75)';
   ctx.fillText('DEMO IMAGE, NOT A REAL SCAN', 150, 40);
   return canvas;

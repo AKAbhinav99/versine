@@ -51,7 +51,8 @@
   /* --- Type ---------------------------------------------------------- */
   --font-display: 'Schibsted Grotesk', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
   --font-ui:      'Archivo', 'Helvetica Neue', Arial, sans-serif;
-  --font-num:     'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Numbers share the UI face, with tabular figures so readouts do not jitter. */
+  --font-num:     'Archivo', 'Helvetica Neue', Arial, sans-serif;
 
   --text-xs:   0.6875rem;
   --text-sm:   0.8125rem;
@@ -62,7 +63,7 @@
   --text-hero: clamp(2.4rem, 1.4rem + 4.2vw, 4.2rem);
   --text-readout: clamp(2.6rem, 1.6rem + 4.6vw, 3.6rem);
 
-  --track-label: 0.12em;
+  --track-label: 0.005em;
 
   /* --- Space --------------------------------------------------------- */
   --space-1: 0.25rem;

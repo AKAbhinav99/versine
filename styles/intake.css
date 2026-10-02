@@ -100,7 +100,6 @@
   font-family: var(--font-num);
   font-size: var(--text-xs);
   letter-spacing: var(--track-label);
-  text-transform: uppercase;
   cursor: pointer;
 }
 .intake__clear:hover { color: var(--ink-700); }

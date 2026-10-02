@@ -96,7 +96,6 @@
   font-family: var(--font-num);
   font-size: var(--text-xs);
   letter-spacing: var(--track-label);
-  text-transform: uppercase;
   color: var(--ink-500);
   text-align: right;
 }
@@ -241,7 +240,7 @@
   background: var(--paper-sunk);
   filter: grayscale(0.5);
 }
-.log-entry__date { font-family: var(--font-num); font-size: var(--text-xs); color: var(--ink-500); text-transform: uppercase; letter-spacing: 0.08em; }
+.log-entry__date { font-family: var(--font-num); font-size: var(--text-xs); color: var(--ink-500); }
 .log-entry__links { display: flex; gap: var(--space-4); padding-top: var(--space-1); }
 .log-entry__link {
   background: none;
@@ -251,8 +250,6 @@
   padding: var(--space-1) 0;
   font-family: var(--font-num);
   font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
   color: var(--ink-400);
 }
 .log-entry__link:first-child:hover { color: var(--scrub); }

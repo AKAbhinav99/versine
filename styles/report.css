@@ -103,7 +103,6 @@
   font-family: var(--font-num);
   font-size: var(--text-xs);
   letter-spacing: var(--track-label);
-  text-transform: uppercase;
   color: var(--ink-500);
 }
 
@@ -202,7 +201,6 @@
 .report__footnote {
   font-size: var(--text-xs);
   letter-spacing: var(--track-label);
-  text-transform: uppercase;
   color: var(--ink-400);
 }
 

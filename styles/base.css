@@ -231,35 +231,30 @@ html.pointer-fine .spot {
 
 /* ---------- Shared components ---------------------------------------- */
 
-/* An eyebrow: where you are in the flow. */
+/* An eyebrow: where you are in the flow. No chip around it; it floats on the
+   page like the hero's line, number in the accent, a short tick, the name. */
 .step-label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: 4px 12px 4px 6px;
+  gap: var(--space-3);
   margin-bottom: var(--space-3);
-  border: var(--hair);
-  border-radius: var(--radius-pill);
-  background: var(--paper-raised);
-  font-family: var(--font-num);
-  font-size: var(--text-xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--ink-500);
-  box-shadow: var(--shadow-sm);
 }
 .step-label__num {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: var(--radius-pill);
-  background: var(--scrub-wash);
+  order: -2;
   color: var(--scrub-dim);
-  font-weight: 600;
+  font-weight: 700;
 }
-.step-label__rule { display: none; }
+.step-label__rule {
+  order: -1;
+  flex: none;
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--scrub);
+}
 
 .panel {
   position: relative;
@@ -290,10 +285,9 @@ html.pointer-fine .spot {
 .small { font-size: var(--text-sm); }
 .mono { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 .label {
-  font-family: var(--font-num);
-  font-size: var(--text-xs);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--ink-500);
 }
 
