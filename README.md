@@ -161,6 +161,23 @@ dialog including iOS Safari's. Nothing is uploaded to produce it.
 
 ## Finding care
 
+**Ratings.** OpenStreetMap has no ratings at all; it is a map, not a review
+site. Ratings come from Google Places, through this site's own function
+([`api/places.mjs`](api/places.mjs)) so no visitor needs a key. To switch them
+on, create a Google Maps Platform key with only "Places API (New)" enabled,
+set a daily quota on it in the Cloud console, and add it to the Vercel project:
+
+```bash
+vercel env add GOOGLE_PLACES_API_KEY production
+```
+
+then redeploy. Until then `/api/places?probe=1` answers `configured: false` and
+the finder runs on OpenStreetMap exactly as before. The function rounds the
+point to two decimal places (about a kilometre) before asking Google, and the
+edge caches each rounded point for a day, which is both the privacy measure
+and the cost control. Rating fields bill at one of Google's higher Places
+tiers, so check its current pricing before relying on the free allowance.
+
 Two provider chains, each trying the next when one fails. Everything is optional:
 with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 
