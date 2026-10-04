@@ -109,17 +109,17 @@
 /* On a phone the pinned scene has to fit one screen: only the step being
    drawn is shown (it changes as the scroll moves on), and the drawing is
    capped lower. The steps share one grid cell, so the box is as tall as the
-   longest and they cross-fade, the old one lifting away as the new one rises
-   in, instead of snapping. */
+   longest, and each new one swings in as the old one tips away. */
 @media (max-width: 959px) {
   .gsap .how__steps { align-content: start; }
+  /* GSAP (scenes.js) moves and fades them; no CSS transition on transform or
+     opacity here, or it would fight the tweens. */
+  .gsap .how__steps { perspective: 700px; }
   .gsap .how__steps li {
     grid-area: 1 / 1;
-    transition: opacity 420ms var(--ease), transform 520ms var(--ease-out), background var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+    transition: background var(--dur) var(--ease), box-shadow var(--dur) var(--ease), color var(--dur) var(--ease);
   }
-  .gsap .how .how__steps li:not([data-active]) { opacity: 0; transform: translateY(-14px) scale(0.98); pointer-events: none; }
-  .gsap .how__steps li[data-active] { opacity: 1; transform: none; transition-delay: 90ms; }
-  .gsap .how .how__steps li[data-active] ~ li:not([data-active]) { transform: translateY(14px) scale(0.98); }
+  .gsap .how .how__steps li:not([data-active]) { pointer-events: none; }
   .gsap .how__svg { max-height: 42svh; }
   .gsap .how__pin { align-content: center; gap: var(--space-4); padding-top: var(--masthead-h); }
 }
@@ -190,6 +190,7 @@
 .how__steps li { transition: color var(--dur) var(--ease), background var(--dur) var(--ease), opacity var(--dur) var(--ease), box-shadow var(--dur) var(--ease); }
 
 .how__stage {
+  position: relative;
   margin: 0;
   padding: var(--space-4);
   border: var(--hair);
@@ -209,21 +210,28 @@
 .how__art.is-dragging .how__canvas { cursor: grabbing; }
 .how__hint {
   position: absolute;
-  left: 50%; bottom: var(--space-2);
+  top: var(--space-2);
+  right: var(--space-2);
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
-  font-size: var(--text-sm);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--ink-500);
+  letter-spacing: -0.01em;
+  color: var(--ink-700);
   white-space: nowrap;
-  /* A halo instead of a chip, so it reads where it crosses the plumb line. */
+  /* A halo instead of a chip, so it reads over the figure's lines. */
   text-shadow: 0 0 4px var(--paper-raised), 0 0 10px var(--paper-raised), 0 0 16px var(--paper-raised);
   pointer-events: none;
   opacity: 0;
-  transform: translate(-50%, 6px);
+  transform: translateY(-6px);
   transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
-.how__art.is-3d:not(.was-dragged) .how__hint { opacity: 1; transform: translate(-50%, 0); }
+.how__hint svg { flex: none; color: var(--scrub); }
+.how__art.is-3d:not(.was-dragged) .how__hint { opacity: 1; transform: none; }
 /* Once the 3D figure is up, the SVG keeps the box its size and steps aside. */
 .how__art.is-3d .how__svg { visibility: hidden; }
 .how__svg * { vector-effect: non-scaling-stroke; }
@@ -238,15 +246,26 @@
 .how__arc { fill: none; stroke: var(--scrub); stroke-width: 1.6; }
 .how__points circle { fill: var(--marker); stroke: #fff; stroke-width: 2; }
 
+/* The reading sits on the drawing, bottom left, as if printed on the floor
+   the figure stands on: a soft drop shadow like the figure's own, and a pale
+   halo so the lines behind it never cut through the digits. */
 .how__readout {
+  position: absolute;
+  left: var(--space-6);
+  bottom: var(--space-5);
+  z-index: 1;
   display: flex;
   align-items: baseline;
-  flex-wrap: wrap;
   gap: var(--space-2) var(--space-3);
-  margin-top: var(--space-3);
+  margin: 0;
+  pointer-events: none;
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.9),
+    0 2px 2px rgba(14, 34, 48, 0.08),
+    0 10px 24px rgba(14, 34, 48, 0.22);
 }
 .how__value { font-size: var(--text-readout); font-weight: 500; letter-spacing: -0.03em; color: var(--ink-900); line-height: 1; }
-.how__pm { font-size: var(--text-lg); color: var(--ink-500); }
+.how__pm { font-size: var(--text-lg); font-weight: 500; color: var(--ink-500); }
 
 /* --- Journey: the scan, scrolled sideways --------------------------------- */
 

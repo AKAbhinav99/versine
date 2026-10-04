@@ -444,30 +444,68 @@ function buildHow(gsap, ScrollTrigger) {
   });
 
   const counter = { angle: 0, pm: 0 };
-  const setStep = (index) => steps.forEach((step, i) => step.toggleAttribute('data-active', i === index));
+
+  /* Each step arrives with some weight: it swings in from behind the page,
+     out of focus, and lands. Going back up, it comes in from the other side.
+     On a phone only the current step shows, so the old one also leaves; on a
+     desktop the list stays, and CSS dims the old one. */
+  const single = window.matchMedia('(max-width: 959px)').matches;
+  let current = -1;
+  if (single) gsap.set(steps, { autoAlpha: 0 });
+  const setStep = (index) => {
+    if (index === current) return;
+    const forward = index > current;
+    const leaving = steps[current];
+    current = index;
+    steps.forEach((step, i) => step.toggleAttribute('data-active', i === index));
+    const arriving = steps[index];
+    gsap.killTweensOf([arriving, leaving].filter(Boolean));
+    gsap.fromTo(arriving, {
+      x: single ? 0 : -42,
+      y: single ? (forward ? 46 : -46) : 0,
+      rotationX: single ? (forward ? -55 : 55) : 0,
+      rotationY: single ? 0 : 18,
+      scale: 0.92,
+      filter: 'blur(8px)',
+      transformPerspective: 700,
+      transformOrigin: single ? '50% 50%' : '0% 50%',
+      ...(single ? { autoAlpha: 0 } : {}),
+    }, {
+      x: 0, y: 0, rotationX: 0, rotationY: 0, scale: 1, filter: 'blur(0px)',
+      ...(single ? { autoAlpha: 1 } : {}),
+      duration: 0.85, ease: 'expo.out', delay: single && leaving ? 0.12 : 0,
+      clearProps: 'filter',
+    });
+    if (leaving && single) {
+      gsap.to(leaving, {
+        y: forward ? -40 : 40, rotationX: forward ? 50 : -50, scale: 0.94,
+        filter: 'blur(6px)', autoAlpha: 0, duration: 0.45, ease: 'power2.in',
+      });
+    } else if (leaving) {
+      /* Settle it fully, even if its own entrance was cut short by a fast
+         scroll, or it would stay half blurred in the list. */
+      gsap.to(leaving, {
+        x: 0, y: 0, rotationX: 0, rotationY: 0, scale: 1, filter: 'blur(0px)',
+        duration: 0.5, ease: 'power3.out', clearProps: 'filter',
+      });
+    }
+  };
   setStep(0);
 
-  /* The drawing plays at its own pace, and the section holds still between
-     its stages so each one can be looked at (and the figure turned) before
-     the next begins. HOLD is in the timeline's units; each unit is a fixed
-     amount of scroll (SCROLL_PER_UNIT screens), so the holds add scroll
-     without slowing the drawing. STAGES are when each step's drawing starts,
-     in drawing time, i.e. with the holds left out. */
+  /* Every stretch of the pin draws something: an earlier version paused
+     between stages, and scrolling through a pause that moved nothing felt
+     like the page had stuck. The extra time comes from drawing more slowly
+     instead, SCROLL_PER_UNIT screens of scroll per unit of the timeline.
+     STAGES are when each step's drawing starts. */
   const STAGES = [0, 1.15, 2.0, 3.05];
-  const HOLD = 0.6;
-  const END_HOLD = 0.9;
-  const SCROLL_PER_UNIT = 0.66;
-  const holds = STAGES.slice(1).map((at, i) => ({ at: at + HOLD * i, length: HOLD }));
-  /* Timeline time to drawing time: the clock stops during a hold. */
-  const drawingTime = (t) => t - holds.reduce((sum, hold) => sum + Math.max(0, Math.min(hold.length, t - hold.at)), 0);
+  const SCROLL_PER_UNIT = 0.88;
 
   let figure3d = null;
-  let drawingDuration = 1;
   const tl = gsap.timeline({
     defaults: { ease: 'power2.inOut' },
     onUpdate: () => {
-      const t = drawingTime(tl.time());
-      figure3d?.setProgress(t / drawingDuration);
+      const t = tl.time();
+      figure3d?.setProgress(tl.progress());
       /* A step lights when its drawing starts, so each hold keeps the stage
          just finished, with its own text, on screen. */
       let step = 0;
@@ -506,12 +544,6 @@ function buildHow(gsap, ScrollTrigger) {
     }, 3.1)
     .to({}, { duration: 0.3 });   // a beat at the end before the pin releases
 
-  /* Open the holds, last first so each shift leaves the earlier ones where
-     they were, then a longer rest on the finished drawing. */
-  drawingDuration = tl.duration();
-  STAGES.slice(1).reverse().forEach((at) => tl.shiftChildren(HOLD, false, at));
-  tl.to({}, { duration: END_HOLD });
-
   angle.textContent = '0.0';
   pm.textContent = '0.0';
 
@@ -520,12 +552,12 @@ function buildHow(gsap, ScrollTrigger) {
   let alive = true;
   const art = section.querySelector('.how__art');
   const load = () => import('./figure3d.js')
-    .then((module) => module.mountFigure(art, drawingDuration))
+    .then((module) => module.mountFigure(art, tl.duration()))
     .then((mounted) => {
       if (!mounted) return;
       if (!alive) { mounted.destroy(); return; }
       figure3d = mounted;
-      figure3d.setProgress(drawingTime(tl.time()) / drawingDuration);
+      figure3d.setProgress(tl.progress());
     })
     .catch(() => { /* the SVG drawing stays */ });
   const timer = setTimeout(() => (window.requestIdleCallback || setTimeout)(load), 900);
