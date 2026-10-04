@@ -240,7 +240,7 @@ function buildJourney(gsap, ScrollTrigger) {
     }
   };
 
-  gsap.to(track, {
+  const sideways = gsap.to(track, {
     x: () => -distance(),
     ease: 'none',
     onUpdate: turn,
@@ -257,6 +257,7 @@ function buildJourney(gsap, ScrollTrigger) {
     },
   });
   turn();
+  steerSideways(sideways.scrollTrigger, viewport, 1.15);
 
   /* The heading and counter rise in before the pin takes over. */
   gsap.fromTo(section.querySelectorAll('.journey__title, .journey__count'), { y: 50, autoAlpha: 0 }, {
@@ -319,6 +320,99 @@ function strokeLength(node) {
   const length = typeof node.getTotalLength === 'function' ? node.getTotalLength() : 0;
   node.style.strokeDasharray = `${length}`;
   return length;
+}
+
+/* The carousel moves with the page's vertical scroll, but a sideways gesture
+   over it should move it too: a trackpad swipe (or shift + wheel) on a
+   desktop, a horizontal swipe on a phone. Both are turned into vertical
+   scroll inside the pin's range, so the page, the pin and the cards stay one
+   state. At either end of the range the gesture is left to the browser.
+   `ratio` is page scroll per pixel of track travel. */
+function steerSideways(trigger, surface, ratio) {
+  const inRange = (y) => y >= trigger.start - 1 && y <= trigger.end + 1;
+  const clampY = (y) => Math.max(trigger.start, Math.min(trigger.end, y));
+  /* Lenis, when it runs, owns the scroll position and undoes a direct
+     window.scrollTo, so every move goes through it. */
+  const scrollY = () => (lenis ? lenis.scroll : window.scrollY);
+  const scrollToY = (y, immediate) => {
+    if (lenis) lenis.scrollTo(y, { immediate });
+    else window.scrollTo(0, y);
+  };
+
+  /* Wheel and trackpad. A trackpad sends a stream of small deltas; they add
+     up on a target of our own, since Lenis is still gliding toward the last
+     one when the next arrives. */
+  let wheelTarget = 0;
+  let wheelAt = 0;
+  const onWheel = (event) => {
+    const scale = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1;
+    const dx = (event.deltaX || (event.shiftKey ? event.deltaY : 0)) * scale;
+    const dy = event.shiftKey ? 0 : event.deltaY * scale;
+    if (Math.abs(dx) <= Math.abs(dy)) return;
+    const from = event.timeStamp - wheelAt < 250 ? wheelTarget : scrollY();
+    if (!inRange(from)) return;
+    const to = clampY(from + dx * ratio);
+    if (to === from) return;
+    event.preventDefault();
+    event.stopPropagation();   // keep Lenis from also reading it
+    wheelTarget = to;
+    wheelAt = event.timeStamp;
+    scrollToY(to, false);
+  };
+  surface.addEventListener('wheel', onWheel, { passive: false });
+
+  /* Touch. The surface takes horizontal pans (touch-action: pan-y in CSS
+     leaves vertical ones to the browser); a swipe follows the finger, and a
+     flick carries on and slows, as a native scroller would. */
+  let drag = null;
+  let glide = 0;
+  const stopGlide = () => { cancelAnimationFrame(glide); glide = 0; };
+  const onDown = (event) => {
+    if (event.pointerType !== 'touch') return;
+    stopGlide();
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, scroll: scrollY(), axis: null, lastX: event.clientX, lastT: event.timeStamp, v: 0 };
+  };
+  const onMove = (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const dx = event.clientX - drag.x;
+    const dy = event.clientY - drag.y;
+    if (!drag.axis && Math.hypot(dx, dy) > 8) {
+      drag.axis = Math.abs(dx) > Math.abs(dy) && inRange(drag.scroll) ? 'x' : 'y';
+    }
+    if (drag.axis !== 'x') return;
+    const dt = Math.max(1, event.timeStamp - drag.lastT);
+    drag.v = drag.v * 0.6 + ((event.clientX - drag.lastX) / dt) * 0.4;   // px per ms
+    drag.lastX = event.clientX;
+    drag.lastT = event.timeStamp;
+    scrollToY(clampY(drag.scroll - dx * ratio), true);
+  };
+  const onUp = (event) => {
+    if (!drag || event.pointerId !== drag.id) return;
+    const flick = drag.axis === 'x' ? drag.v : 0;
+    drag = null;
+    if (Math.abs(flick) < 0.05) return;
+    let v = -flick * ratio * 16;   // px per frame
+    const step = () => {
+      v *= 0.94;
+      const y = clampY(scrollY() + v);
+      scrollToY(y, true);
+      glide = Math.abs(v) > 0.4 && y !== trigger.start && y !== trigger.end ? requestAnimationFrame(step) : 0;
+    };
+    glide = requestAnimationFrame(step);
+  };
+  surface.addEventListener('pointerdown', onDown);
+  surface.addEventListener('pointermove', onMove);
+  surface.addEventListener('pointerup', onUp);
+  surface.addEventListener('pointercancel', onUp);
+
+  onRevert(() => {
+    stopGlide();
+    surface.removeEventListener('wheel', onWheel);
+    surface.removeEventListener('pointerdown', onDown);
+    surface.removeEventListener('pointermove', onMove);
+    surface.removeEventListener('pointerup', onUp);
+    surface.removeEventListener('pointercancel', onUp);
+  });
 }
 
 /* "How a reading is made": pinned while scrolling scrubs through four stages,

@@ -273,6 +273,9 @@
   scrollbar-width: none;
 }
 .journey__viewport::-webkit-scrollbar { display: none; }
+/* Horizontal pans over the carousel drive it (scenes.js); vertical ones
+   scroll the page as usual. */
+.gsap .journey__viewport { touch-action: pan-y; }
 .journey__track {
   display: flex;
   gap: var(--space-5);
