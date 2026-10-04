@@ -49,13 +49,19 @@ export async function mountFigure(host, timelineDuration) {
     return null;
   }
 
+  /* Phones get a lighter figure: fewer pixels, a smaller shadow map, and no
+     idle loop drifting the light. At full weight it rendered every frame
+     while on screen, and the work competed with the scroll it sits inside,
+     so the whole pinned section shook. */
+  const lite = window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 960;
+
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
   } catch {
     return null;   // no WebGL: the SVG stays
   }
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+  renderer.setPixelRatio(Math.min(lite ? 1.5 : 2, window.devicePixelRatio || 1));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -93,7 +99,7 @@ export async function mountFigure(host, timelineDuration) {
   const key = new THREE.DirectionalLight('#FFF6EC', 3.2);
   key.position.set(-1.8, 5, 2.6);
   key.castShadow = true;
-  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.mapSize.setScalar(lite ? 1024 : 2048);
   key.shadow.radius = 7;
   key.shadow.camera.left = -3.5; key.shadow.camera.right = 3.5;
   key.shadow.camera.top = 3.5; key.shadow.camera.bottom = -3.5;
@@ -350,25 +356,33 @@ export async function mountFigure(host, timelineDuration) {
     for (const ray of fan) ray.line.draw(span(t, ray.at, ray.at + 0.3));
 
     /* The key light drifts slowly, so the glints travel over the clay. */
-    const drift = now / 1000;
-    key.position.x = -1.8 + Math.sin(drift * 0.5) * 0.8;
-    key.position.z = 2.6 + Math.cos(drift * 0.4) * 0.6;
+    if (!lite) {
+      const drift = now / 1000;
+      key.position.x = -1.8 + Math.sin(drift * 0.5) * 0.8;
+      key.position.z = 2.6 + Math.cos(drift * 0.4) * 0.6;
+    }
 
     placeCamera(t);
     renderer.render(scene, camera);
   }
 
-  /* Render on demand from the scrub, plus a slow loop for the light while the
-     figure is on screen. */
+  /* Render on demand, at most once a frame: the scrub can report progress
+     several times between frames, and rendering inside the scroll handler
+     each time is what a phone cannot keep up with. On a desktop a slow loop
+     also runs while the figure is on screen, for the drifting light. The
+     loop also runs while a released drag eases back to square on. */
   let visible = false;
   let loop = 0;
+  const settling = () => !orbit.dragging && (Math.abs(orbit.yaw) > 0.0005 || Math.abs(orbit.pitch) > 0.0005);
   const tick = (now) => {
+    loop = 0;
     render(now);
-    loop = visible ? requestAnimationFrame(tick) : 0;
+    if (visible && (!lite || settling())) loop = requestAnimationFrame(tick);
   };
+  const requestRender = () => { if (!loop) loop = requestAnimationFrame(tick); };
   const io = new IntersectionObserver(([entry]) => {
     visible = entry.isIntersecting;
-    if (visible && !loop) loop = requestAnimationFrame(tick);
+    if (visible) requestRender();
   });
   io.observe(host);
 
@@ -389,14 +403,14 @@ export async function mountFigure(host, timelineDuration) {
     if (event.pointerType !== 'touch') orbit.pitch = Math.max(-0.2, Math.min(0.8, orbit.pitch + (event.clientY - orbit.y) * 0.006));
     orbit.x = event.clientX;
     orbit.y = event.clientY;
-    if (!loop) render();
+    requestRender();
   });
   const release = () => {
     if (!orbit.dragging) return;
     orbit.dragging = false;
     orbit.releasedAt = performance.now();
     host.classList.remove('is-dragging');
-    if (!loop) loop = requestAnimationFrame(tick);
+    requestRender();
   };
   canvas.addEventListener('pointerup', release);
   canvas.addEventListener('pointercancel', release);
@@ -410,8 +424,10 @@ export async function mountFigure(host, timelineDuration) {
 
   return {
     setProgress(p) {
-      progress = clamp01(p);
-      if (!loop) render();
+      const next = clamp01(p);
+      if (next === progress) return;
+      progress = next;
+      requestRender();
     },
     destroy() {
       visible = false;

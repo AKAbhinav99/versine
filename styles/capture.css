@@ -216,6 +216,8 @@
   font-weight: 600;
   color: var(--ink-500);
   white-space: nowrap;
+  /* A halo instead of a chip, so it reads where it crosses the plumb line. */
+  text-shadow: 0 0 4px var(--paper-raised), 0 0 10px var(--paper-raised), 0 0 16px var(--paper-raised);
   pointer-events: none;
   opacity: 0;
   transform: translate(-50%, 6px);

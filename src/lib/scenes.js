@@ -247,6 +247,7 @@ function buildJourney(gsap, ScrollTrigger) {
     scrollTrigger: {
       trigger: section,
       pin,
+      anticipatePin: 1,
       start: 'top top',
       end: () => `+=${Math.round(distance() * 1.15)}`,
       scrub: 0.7,
@@ -352,18 +353,41 @@ function buildHow(gsap, ScrollTrigger) {
   const setStep = (index) => steps.forEach((step, i) => step.toggleAttribute('data-active', i === index));
   setStep(0);
 
+  /* The drawing plays at its own pace, and the section holds still between
+     its stages so each one can be looked at (and the figure turned) before
+     the next begins. HOLD is in the timeline's units; each unit is a fixed
+     amount of scroll (SCROLL_PER_UNIT screens), so the holds add scroll
+     without slowing the drawing. STAGES are when each step's drawing starts,
+     in drawing time, i.e. with the holds left out. */
+  const STAGES = [0, 1.15, 2.0, 3.05];
+  const HOLD = 0.6;
+  const END_HOLD = 0.9;
+  const SCROLL_PER_UNIT = 0.66;
+  const holds = STAGES.slice(1).map((at, i) => ({ at: at + HOLD * i, length: HOLD }));
+  /* Timeline time to drawing time: the clock stops during a hold. */
+  const drawingTime = (t) => t - holds.reduce((sum, hold) => sum + Math.max(0, Math.min(hold.length, t - hold.at)), 0);
+
   let figure3d = null;
+  let drawingDuration = 1;
   const tl = gsap.timeline({
     defaults: { ease: 'power2.inOut' },
-    onUpdate: () => figure3d?.setProgress(tl.progress()),
+    onUpdate: () => {
+      const t = drawingTime(tl.time());
+      figure3d?.setProgress(t / drawingDuration);
+      /* A step lights when its drawing starts, so each hold keeps the stage
+         just finished, with its own text, on screen. */
+      let step = 0;
+      STAGES.forEach((at, i) => { if (t > at + 0.001) step = i; });
+      setStep(step);
+    },
     scrollTrigger: {
       trigger: section,
       start: 'top top',
-      end: () => `+=${Math.round(window.innerHeight * 2.6)}`,
+      end: () => `+=${Math.round(window.innerHeight * tl.duration() * SCROLL_PER_UNIT)}`,
       pin,
+      anticipatePin: 1,
       scrub: 0.8,
       invalidateOnRefresh: true,
-      onUpdate: (self) => setStep(Math.min(steps.length - 1, Math.floor(self.progress * steps.length * 0.999))),
     },
   });
 
@@ -388,6 +412,12 @@ function buildHow(gsap, ScrollTrigger) {
     }, 3.1)
     .to({}, { duration: 0.3 });   // a beat at the end before the pin releases
 
+  /* Open the holds, last first so each shift leaves the earlier ones where
+     they were, then a longer rest on the finished drawing. */
+  drawingDuration = tl.duration();
+  STAGES.slice(1).reverse().forEach((at) => tl.shiftChildren(HOLD, false, at));
+  tl.to({}, { duration: END_HOLD });
+
   angle.textContent = '0.0';
   pm.textContent = '0.0';
 
@@ -396,12 +426,12 @@ function buildHow(gsap, ScrollTrigger) {
   let alive = true;
   const art = section.querySelector('.how__art');
   const load = () => import('./figure3d.js')
-    .then((module) => module.mountFigure(art, tl.duration()))
+    .then((module) => module.mountFigure(art, drawingDuration))
     .then((mounted) => {
       if (!mounted) return;
       if (!alive) { mounted.destroy(); return; }
       figure3d = mounted;
-      figure3d.setProgress(tl.progress());
+      figure3d.setProgress(drawingTime(tl.time()) / drawingDuration);
     })
     .catch(() => { /* the SVG drawing stays */ });
   const timer = setTimeout(() => (window.requestIdleCallback || setTimeout)(load), 900);
