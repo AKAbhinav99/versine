@@ -470,10 +470,12 @@ becomes one shoulder blade riding higher across the bent back, the plumb line
 steps aside, and the camera rises behind and a little to one side, since
 square behind, the bend foreshortens away. The capture guide draws the same clay figure as
 shaded flat shapes, so the overlay costs nothing to render over the camera,
-with the same Standing / Forward bend switch (`src/lib/poseswitch.js`): the
-bent figure is drawn as the phone sees it from behind and above, hips nearest,
-the arms hanging beside the upper back and the bowed head mostly hidden past
-the shoulders. The landmarks and lines
+with the same Standing / Forward bend switch (`src/lib/poseswitch.js`). The
+camera stays put and the figure bends: the back tips away about the hips,
+which from a phone a little above reads as it shortening into a low mound,
+the shoulders and their marks drop toward hip height with the arms still
+hanging, and the head goes out of sight. A Guide button hides the overlay
+altogether, and the choice is remembered. The landmarks and lines
 sit on one plane just behind the back, nearer the camera than the body, so
 the pelvis never swallows the hip line.
 

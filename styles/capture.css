@@ -516,7 +516,7 @@ html:not(.gsap) .journey__progress { display: none; }
    the light catches, so the flat shapes read as the rounded 3D figure. */
 .capture__guide .clay { fill: url(#clay-shade); stroke: rgba(255, 255, 255, 0.92); stroke-width: 1.4; }
 .capture__guide .clay--round { fill: url(#clay-round); }
-.capture__guide .guide-glints ellipse { fill: #fff; opacity: 0.85; }
+.capture__guide .guide-glint { fill: #fff; opacity: 0.85; }
 .capture__guide .guide-plumb { stroke: var(--marker); stroke-width: 1.5; }
 .capture__guide .guide-plumb-pin,
 .capture__guide .guide-plumb-bob { fill: var(--marker); }
@@ -551,17 +551,45 @@ html:not(.gsap) .journey__progress { display: none; }
 .capture__ghost[data-facing='user'] { transform: scaleX(-1); }
 .capture__stage[data-ghost='on'] .capture__guide .guide-figure { opacity: 0.45; }
 
-/* One figure at a time, cross-faded when the pose switch changes. These
-   come after the ghost rule above, which they must override for the figure
-   that is off. */
-.capture__guide .guide-figure { transition: opacity 360ms var(--ease); }
-.capture__stage:not([data-pose='bend']) .capture__guide .guide-figure--bend,
-.capture__stage[data-pose='bend'] .capture__guide .guide-figure--stand { opacity: 0; }
+/* The forward bend, with the camera held where it was. The back tips away
+   about the hips (306 in the guide's units), which from a camera a little
+   above reads as the back shortening to a low mound: a vertical squash about
+   the hip line. The shoulders land at about 230, 104 lower than standing,
+   and the arms and the shoulder marks drop the same distance; the head goes
+   over the top and out of sight. All of it eases both ways. */
+.capture__guide .guide-back,
+.capture__guide .guide-arms,
+.capture__guide .guide-head,
+.capture__guide .guide-marks-shoulders {
+  transform-box: view-box;
+  transition: transform 1100ms cubic-bezier(0.65, 0, 0.35, 1), opacity 700ms var(--ease);
+}
+.capture__guide .guide-back { transform-origin: 150px 306px; }
+.capture__guide .guide-head { transform-origin: 150px 110px; }
+.capture__stage[data-pose='bend'] .capture__guide .guide-back { transform: scaleY(0.42); }
+.capture__stage[data-pose='bend'] .capture__guide .guide-arms,
+.capture__stage[data-pose='bend'] .capture__guide .guide-marks-shoulders { transform: translateY(104px); }
+.capture__stage[data-pose='bend'] .capture__guide .guide-head { transform: translateY(150px) scale(0.7); opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .capture__guide .guide-back,
+  .capture__guide .guide-arms,
+  .capture__guide .guide-head,
+  .capture__guide .guide-marks-shoulders { transition: none; }
+}
+
 .capture__poses { position: absolute; top: var(--space-3); left: var(--space-3); background: rgba(255, 255, 255, 0.9); }
+
+/* Guide on or off (capture.js remembers the choice). Off, the pose switch
+   goes too: it only says which figure the guide draws. */
+.capture__guide,
+.capture__poses { transition: opacity var(--dur) var(--ease); }
+.capture__stage[data-guide='off'] .capture__guide,
+.capture__stage[data-guide='off'] .capture__poses { opacity: 0; pointer-events: none; }
 
 /* Corner controls: solid white pills, legible over any image. */
 .capture__flip,
-.capture__ghost-btn {
+.capture__ghost-btn,
+.capture__guide-btn {
   position: absolute;
   bottom: var(--space-3);
   right: var(--space-3);
@@ -581,11 +609,17 @@ html:not(.gsap) .journey__progress { display: none; }
   transition: transform var(--dur) var(--ease-spring), background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 .capture__flip:hover,
-.capture__ghost-btn:hover { transform: translateY(-1px); }
+.capture__ghost-btn:hover,
+.capture__guide-btn:hover { transform: translateY(-1px); }
 .capture__flip:active,
-.capture__ghost-btn:active { transform: scale(0.95); }
+.capture__ghost-btn:active,
+.capture__guide-btn:active { transform: scale(0.95); }
 .capture__flip[disabled] { opacity: 0.5; }
 .capture__ghost-btn { right: auto; left: var(--space-3); }
+.capture__guide-btn { top: var(--space-3); bottom: auto; }
+.capture__guide-btn .capture__guide-btn-off { opacity: 0; transition: opacity var(--dur-fast) var(--ease); }
+.capture__guide-btn[aria-pressed='false'] { color: var(--ink-500); }
+.capture__guide-btn[aria-pressed='false'] .capture__guide-btn-off { opacity: 1; }
 .capture__ghost-btn[aria-pressed='true'] { background: var(--marker); color: #fff; }
 
 .capture__timer {

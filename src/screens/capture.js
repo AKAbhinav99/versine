@@ -17,6 +17,7 @@ const DEFAULT_TIMER_SECONDS = 10;
 const CUE_FROM = 3;             // start the audible countdown this many seconds out
 const MAX_ANALYSIS_EDGE = 1440; // downscale huge uploads before pose detection
 const GHOST_STORAGE = 'versine.ghost';
+const GUIDE_STORAGE = 'versine.guide';
 
 /* A scan is a short burst rather than one frame. Three frames roughly a second
    apart is enough to see whether the person is holding still, and short enough
@@ -41,6 +42,8 @@ export function initCapture() {
   $('#capture-ghost-toggle').addEventListener('click', toggleGhost);
   $('#capture-upload-btn').addEventListener('click', () => $('#capture-file').click());
   $('#capture-file').addEventListener('change', onFileChosen);
+  $('#capture-guide-toggle').addEventListener('click', toggleGuide);
+  restoreGuide();
   const poses = $('.capture__poses');
   if (poses) bindPoseSwitch(poses, (pose) => { $('.capture__stage').dataset.pose = pose; });
 
@@ -114,6 +117,28 @@ function toggleGhost() {
   ghostOn = !ghostOn;
   try { localStorage.setItem(GHOST_STORAGE, ghostOn ? 'on' : 'off'); } catch { /* not persisted */ }
   applyGhostState();
+}
+
+/* ---------------------------------------------------------------- guide --- */
+
+/* The framing figure can be put away for anyone who would rather see the
+   whole live image; the choice is kept, like the ghost's. */
+function restoreGuide() {
+  let stored = null;
+  try { stored = localStorage.getItem(GUIDE_STORAGE); } catch { /* storage blocked */ }
+  setGuide(stored !== 'off');
+}
+
+function setGuide(on) {
+  $('.capture__stage').dataset.guide = on ? 'on' : 'off';
+  const button = $('#capture-guide-toggle');
+  button.setAttribute('aria-pressed', String(on));
+}
+
+function toggleGuide() {
+  const on = $('.capture__stage').dataset.guide === 'off';
+  setGuide(on);
+  try { localStorage.setItem(GUIDE_STORAGE, on ? 'on' : 'off'); } catch { /* not persisted */ }
 }
 
 /* ---------------------------------------------------------------- camera --- */
