@@ -493,7 +493,69 @@ function setBusy(button, busy, label) {
  * this lazy loader uses. Like Leaflet before it, it is fetched only the first
  * time the map is wanted, so no other screen pays for it. */
 const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.24.0/dist';
-const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
+
+/* Liberty has the right layers (parks, water, road classes, buildings) but
+   OpenStreetMap's own colours; these repaint it in Apple Maps' light palette:
+   warm pale land, soft green parks, clear blue water, white streets, pale
+   yellow main roads and saturated yellow motorways, pink hospital grounds,
+   grey type. Rules run in order and the first id match wins. The low-zoom
+   satellite raster is dropped, Apple's map has none. */
+const APPLE_TINT = [
+  [/^background$/, { 'background-color': '#F3F1EC' }],
+  [/^landuse_residential$/, { 'fill-color': '#EDEAE4', 'fill-opacity': 0.7 }],
+  [/^park$/, { 'fill-color': '#C6E6B3', 'fill-outline-color': 'rgba(0,0,0,0)' }],
+  [/^park_outline$/, { 'line-color': 'rgba(0,0,0,0)' }],
+  [/^landcover_wood$/, { 'fill-color': '#BCE0A8', 'fill-opacity': 0.8 }],
+  [/^landcover_grass$|^landuse_pitch$|^landuse_track$/, { 'fill-color': '#CBE8BA' }],
+  [/^landuse_cemetery$/, { 'fill-color': '#D2E5C6' }],
+  [/^landcover_ice$/, { 'fill-color': '#EEF4F6' }],
+  [/^landcover_sand$/, { 'fill-color': '#F4ECCB' }],
+  [/^landuse_hospital$/, { 'fill-color': '#F8DADD' }],
+  [/^landuse_school$/, { 'fill-color': '#F1EAD8' }],
+  [/^water$/, { 'fill-color': '#9ACEF3' }],
+  [/^waterway/, { 'line-color': '#9ACEF3' }],
+  [/^aeroway_fill$/, { 'fill-color': '#E6E3EB' }],
+  [/^aeroway_/, { 'line-color': '#FFFFFF' }],
+  [/motorway.*casing$/, { 'line-color': '#E3A43A' }],
+  [/motorway/, { 'line-color': '#FFCC4D' }],
+  [/(trunk_primary|_link).*casing$/, { 'line-color': '#E2C57A' }],
+  [/trunk_primary|_link$/, { 'line-color': '#FFEFA6' }],
+  [/casing$/, { 'line-color': '#DBD7D0' }],
+  [/secondary_tertiary|minor|street|service_track|path_pedestrian/, { 'line-color': '#FFFFFF' }],
+  [/rail/, { 'line-color': '#CBC7C1' }],
+  [/^building$/, { 'fill-color': '#E3E0DA', 'fill-outline-color': '#D6D2CB' }],
+  [/^building-3d$/, { 'fill-extrusion-color': '#E3E0DA' }],
+  [/^boundary/, { 'line-color': '#BDB6CF' }],
+  [/water.*label$/, { 'text-color': '#3F7EB3', 'text-halo-color': 'rgba(255,255,255,0.8)' }],
+  [/^poi_transit$/, { 'text-color': '#2F6FB1' }],
+  [/^poi_/, { 'text-color': '#7A7A7F', 'text-halo-color': '#FFFFFF' }],
+  [/^highway-name/, { 'text-color': '#6E6E73', 'text-halo-color': '#FFFFFF' }],
+  [/^airport$/, { 'text-color': '#6E6E73' }],
+  [/^label_/, { 'text-color': '#3A3A3C', 'text-halo-color': '#FFFFFF' }],
+];
+
+/* A paint property belongs to one layer type: line-color to lines, text-color
+   to symbols. A rule only matches layers it can paint, so a road rule whose
+   pattern also matches a road's name label passes it on to the label rules. */
+const paints = (key, layer) => (layer.type === 'symbol'
+  ? key.startsWith('text-') || key.startsWith('icon-')
+  : key.startsWith(`${layer.type}-`) || (layer.type === 'fill' && key.startsWith('fill-') && !key.startsWith('fill-extrusion')));
+
+function appleTint(style) {
+  style.layers = style.layers.filter((layer) => layer.id !== 'natural_earth');
+  for (const layer of style.layers) {
+    const rule = APPLE_TINT.find(([pattern, props]) => pattern.test(layer.id)
+      && Object.keys(props).some((key) => paints(key, layer)));
+    if (!rule) continue;
+    const paint = { ...(layer.paint || {}) };
+    for (const [key, value] of Object.entries(rule[1])) {
+      if (paints(key, layer)) paint[key] = value;
+    }
+    layer.paint = paint;
+  }
+  return style;
+}
 const RASTER_STYLE = {
   version: 8,
   sources: {
@@ -547,7 +609,7 @@ async function chooseStyle() {
   try {
     const response = await fetchWithTimeout(VECTOR_STYLE_URL, {}, 6000);
     if (!response.ok) throw new Error(String(response.status));
-    return await response.json();
+    return appleTint(await response.json());
   } catch {
     usingRaster = true;
     return RASTER_STYLE;

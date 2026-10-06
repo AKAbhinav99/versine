@@ -280,8 +280,9 @@ any other provider the rating chips are disabled with an explanation rather than
 silently emptying the list. Empty results name the filter responsible. Nobody
 publishes insurance acceptance, so the app doesn't invent it.
 
-The map is MapLibre GL drawing [OpenFreeMap](https://openfreemap.org)'s Positron
-vector style: free, no key, no account, no request limit. It used to be Leaflet
+The map is MapLibre GL drawing [OpenFreeMap](https://openfreemap.org)'s Liberty
+vector style, repainted on load in Apple Maps' light palette (`appleTint()` in
+`src/screens/doctors.js`): free, no key, no account, no request limit. It used to be Leaflet
 over CARTO raster tiles, until CARTO started answering keyless requests with a
 placeholder tile reading "API KEY REQUIRED". That is a 200 and a valid image, so
 nothing failed and the map silently drew no streets. If OpenFreeMap is
