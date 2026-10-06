@@ -1,11 +1,10 @@
 /* Page motion: scroll reveal, a cursor spotlight on cards, cards that tilt in
- * 3D toward the cursor, buttons that lean toward it, and the masthead's
- * scrolled state.
+ * 3D toward the cursor, and buttons that lean toward it.
  *
  * Everything here is progressive. The hidden "before" state of a reveal only
  * applies under html.motion, which is set here, so content is never invisible
  * when this script fails to run. prefers-reduced-motion skips all of it except
- * the masthead border, which is not motion. The pointer effects only run on a
+ * the tab indicator, which is not motion. The pointer effects only run on a
  * real hover-capable pointer, so a phone never pays for them. */
 
 /* Things that arrive one by one as they scroll into view. Kept to card-level
@@ -47,7 +46,6 @@ const MAX_STAGGER = 8;
 const REVEAL_MS = 700;
 
 export function initMotion() {
-  initMasthead();
   initTabIndicator();
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -57,16 +55,6 @@ export function initMotion() {
   if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
     initPointerEffects();
   }
-}
-
-/* --------------------------------------------------------------- masthead --- */
-
-function initMasthead() {
-  const bar = document.querySelector('.masthead');
-  if (!bar) return;
-  const update = () => bar.classList.toggle('is-scrolled', window.scrollY > 4);
-  window.addEventListener('scroll', update, { passive: true });
-  update();
 }
 
 /* ---------------------------------------------------------- tab indicator --- */

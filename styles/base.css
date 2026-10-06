@@ -120,13 +120,13 @@ html.lenis, html.lenis body { height: auto; }
   background: rgba(242, 245, 246, 0.82);
   -webkit-backdrop-filter: saturate(1.6) blur(14px);
   backdrop-filter: saturate(1.6) blur(14px);
-  border-bottom: 1px solid transparent;
-  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  /* Always the frosted bar, edge and shadow included. It used to show them
+     only once the page had scrolled, which left the top of every screen
+     without a bar, and the look changing under the reader. */
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 6px 24px rgba(14,34,48,0.06);
   animation: drop-in var(--dur-slow) var(--ease-out) both;
 }
-/* Set by motion.js once the page has scrolled, so the bar only separates itself
-   from the content when there is content underneath it. */
-.masthead.is-scrolled { border-bottom-color: var(--rule); box-shadow: 0 6px 24px rgba(14,34,48,0.06); }
 
 /* Reading progress, shown only while scenes.js drives it on the Learn screen. */
 .read-progress {
