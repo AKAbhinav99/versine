@@ -496,43 +496,44 @@ const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.24.0/dist';
 const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 /* Liberty has the right layers (parks, water, road classes, buildings) but
-   OpenStreetMap's own colours; these repaint it in Apple Maps' light palette:
-   warm pale land, soft green parks, clear blue water, white streets, pale
-   yellow main roads and saturated yellow motorways, pink hospital grounds,
-   grey type. Rules run in order and the first id match wins. The low-zoom
-   satellite raster is dropped, Apple's map has none. */
+   OpenStreetMap's own colours; these repaint it the way Apple Maps reads in
+   light mode, which differs from Google's in a few telling ways: warm cream
+   land rather than grey, lime-leaning parks, a brighter cyan-blue water,
+   arterials left white (only motorways carry colour, a soft apricot yellow
+   with almost no darker edge), near-white buildings, and near-black place
+   names over pale grey road names. Rules run in order; the first one that
+   matches a layer's id and can paint its type wins. The low-zoom satellite
+   raster is dropped, Apple's map has none. */
 const APPLE_TINT = [
-  [/^background$/, { 'background-color': '#F3F1EC' }],
-  [/^landuse_residential$/, { 'fill-color': '#EDEAE4', 'fill-opacity': 0.7 }],
-  [/^park$/, { 'fill-color': '#C6E6B3', 'fill-outline-color': 'rgba(0,0,0,0)' }],
+  [/^background$/, { 'background-color': '#F7F4EE' }],
+  [/^landuse_residential$/, { 'fill-color': '#F2EFE9', 'fill-opacity': 0.6 }],
+  [/^park$/, { 'fill-color': '#BEE3A4', 'fill-outline-color': 'rgba(0,0,0,0)' }],
   [/^park_outline$/, { 'line-color': 'rgba(0,0,0,0)' }],
-  [/^landcover_wood$/, { 'fill-color': '#BCE0A8', 'fill-opacity': 0.8 }],
-  [/^landcover_grass$|^landuse_pitch$|^landuse_track$/, { 'fill-color': '#CBE8BA' }],
-  [/^landuse_cemetery$/, { 'fill-color': '#D2E5C6' }],
-  [/^landcover_ice$/, { 'fill-color': '#EEF4F6' }],
-  [/^landcover_sand$/, { 'fill-color': '#F4ECCB' }],
-  [/^landuse_hospital$/, { 'fill-color': '#F8DADD' }],
-  [/^landuse_school$/, { 'fill-color': '#F1EAD8' }],
-  [/^water$/, { 'fill-color': '#9ACEF3' }],
-  [/^waterway/, { 'line-color': '#9ACEF3' }],
-  [/^aeroway_fill$/, { 'fill-color': '#E6E3EB' }],
+  [/^landcover_wood$/, { 'fill-color': '#B2DB98', 'fill-opacity': 0.85 }],
+  [/^landcover_grass$|^landuse_pitch$|^landuse_track$/, { 'fill-color': '#C6E7B0' }],
+  [/^landuse_cemetery$/, { 'fill-color': '#CFE6C0' }],
+  [/^landcover_ice$/, { 'fill-color': '#F0F6F8' }],
+  [/^landcover_sand$/, { 'fill-color': '#F5EDD0' }],
+  [/^landuse_hospital$/, { 'fill-color': '#FADDE0' }],
+  [/^landuse_school$/, { 'fill-color': '#F4EDDC' }],
+  [/^water$/, { 'fill-color': '#86C6F1' }],
+  [/^waterway/, { 'line-color': '#86C6F1' }],
+  [/^aeroway_fill$/, { 'fill-color': '#ECE9F1' }],
   [/^aeroway_/, { 'line-color': '#FFFFFF' }],
-  [/motorway.*casing$/, { 'line-color': '#E3A43A' }],
-  [/motorway/, { 'line-color': '#FFCC4D' }],
-  [/(trunk_primary|_link).*casing$/, { 'line-color': '#E2C57A' }],
-  [/trunk_primary|_link$/, { 'line-color': '#FFEFA6' }],
-  [/casing$/, { 'line-color': '#DBD7D0' }],
-  [/secondary_tertiary|minor|street|service_track|path_pedestrian/, { 'line-color': '#FFFFFF' }],
-  [/rail/, { 'line-color': '#CBC7C1' }],
-  [/^building$/, { 'fill-color': '#E3E0DA', 'fill-outline-color': '#D6D2CB' }],
-  [/^building-3d$/, { 'fill-extrusion-color': '#E3E0DA' }],
-  [/^boundary/, { 'line-color': '#BDB6CF' }],
-  [/water.*label$/, { 'text-color': '#3F7EB3', 'text-halo-color': 'rgba(255,255,255,0.8)' }],
-  [/^poi_transit$/, { 'text-color': '#2F6FB1' }],
-  [/^poi_/, { 'text-color': '#7A7A7F', 'text-halo-color': '#FFFFFF' }],
-  [/^highway-name/, { 'text-color': '#6E6E73', 'text-halo-color': '#FFFFFF' }],
+  [/motorway.*casing$/, { 'line-color': '#F0C873' }],
+  [/motorway/, { 'line-color': '#FFD98A' }],
+  [/casing$/, { 'line-color': '#E7E2DA' }],
+  [/trunk_primary|_link$|secondary_tertiary|minor|street|service_track|path_pedestrian/, { 'line-color': '#FFFFFF' }],
+  [/rail/, { 'line-color': '#D3CFC9' }],
+  [/^building$/, { 'fill-color': '#EDEAE5', 'fill-outline-color': '#E1DDD6' }],
+  [/^building-3d$/, { 'fill-extrusion-color': '#EDEAE5' }],
+  [/^boundary/, { 'line-color': '#C6BEDA' }],
+  [/water.*label$/, { 'text-color': '#2C7BC0', 'text-halo-color': 'rgba(255,255,255,0.85)' }],
+  [/^poi_transit$/, { 'text-color': '#2C6FB5' }],
+  [/^poi_/, { 'text-color': '#6E6E73', 'text-halo-color': '#FFFFFF' }],
+  [/^highway-name/, { 'text-color': '#8A8A8F', 'text-halo-color': '#FFFFFF' }],
   [/^airport$/, { 'text-color': '#6E6E73' }],
-  [/^label_/, { 'text-color': '#3A3A3C', 'text-halo-color': '#FFFFFF' }],
+  [/^label_/, { 'text-color': '#1D1D1F', 'text-halo-color': '#FFFFFF' }],
 ];
 
 /* A paint property belongs to one layer type: line-color to lines, text-color
