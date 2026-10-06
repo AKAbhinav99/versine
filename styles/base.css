@@ -153,9 +153,8 @@ html.lenis, html.lenis body { height: auto; }
 
 .masthead__mark { width: 30px; height: 30px; flex: none; overflow: visible; }
 .mark__tile { fill: url(#mark-tile); }
-.mark__plumb { stroke: #fff; stroke-opacity: 0.38; stroke-width: 1; stroke-dasharray: 1.6 1.9; stroke-linecap: round; }
-/* Each vertebra is drawn on the plumb line and set into the curve here, so
-   hovering can straighten the spine by dropping the offset. */
+/* Each vertebra is drawn straight in the middle and set into the curve here,
+   so hovering can straighten the spine by dropping the offset. */
 .mark__v {
   fill: #fff;
   transform-box: fill-box;
@@ -167,12 +166,10 @@ html.lenis, html.lenis body { height: auto; }
 .mark__v--apex { fill: var(--marker); }
 .masthead__home:hover .mark__v { transform: none; }
 
-/* On load the vertebrae stack down onto the line, top first. `translate`, not
+/* On load the vertebrae stack down into place, top first. `translate`, not
    `transform`, so it composes with the curve instead of replacing it. */
 .motion .mark__v { animation: mark-stack 700ms var(--ease-out) both; animation-delay: calc(200ms + var(--i, 0) * 70ms); }
-.motion .mark__plumb { animation: mark-plumb 900ms var(--ease-out) 100ms both; }
 @keyframes mark-stack { from { translate: 0 -6px; opacity: 0; } }
-@keyframes mark-plumb { from { stroke-dashoffset: 24; opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .mark__v { transition: none; } }
 
 .masthead__name {
