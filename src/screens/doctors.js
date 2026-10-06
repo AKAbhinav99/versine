@@ -650,7 +650,7 @@ function buildMap(maplibregl, style) {
       style,
       center: state.center ? [state.center.lng, state.center.lat] : [-98.35, 39.5],
       zoom: state.center ? 12 : 3,
-      attributionControl: { compact: true },
+      attributionControl: false,   // no (i) button in the corner
       dragRotate: false,
       pitchWithRotate: false,
       touchPitch: false,
