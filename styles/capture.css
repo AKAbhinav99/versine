@@ -231,6 +231,57 @@
   transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
 }
 .how__hint svg { flex: none; color: var(--scrub); }
+
+/* Standing / Forward bend, top left of the stage. A thumb slides under the
+   chosen pose. Hidden until the 3D figure is up. */
+.how__poses {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 2;
+  display: none;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  background: rgba(241, 244, 245, 0.86);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 0 0 1px var(--rule), 0 4px 14px rgba(14, 34, 48, 0.08);
+}
+.how__art.is-3d .how__poses { display: grid; animation: rise var(--dur) var(--ease-out) both; }
+.how__poses button {
+  position: relative;
+  z-index: 1;
+  min-height: 30px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink-500);
+  cursor: pointer;
+  transition: color var(--dur) var(--ease);
+}
+.how__poses button[aria-pressed='true'] { color: var(--ink-900); }
+.how__poses button:hover { color: var(--ink-900); }
+.how__poses button:focus-visible { outline: 2px solid var(--scrub); outline-offset: 1px; }
+.how__poses-thumb {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 0;
+  width: 0;
+  border-radius: var(--radius-pill);
+  background: var(--paper-raised);
+  box-shadow: 0 1px 2px rgba(14, 34, 48, 0.08), 0 3px 10px rgba(14, 34, 48, 0.1);
+  transition: transform 420ms var(--ease-spring), width 420ms var(--ease-spring);
+}
+/* Narrow stages: the hint keeps its icon and gives the switcher the room. */
+@media (max-width: 520px) { .how__hint span { display: none; } }
 .how__art.is-3d:not(.was-dragged) .how__hint { opacity: 1; transform: none; }
 /* Once the 3D figure is up, the SVG keeps the box its size and steps aside. */
 .how__art.is-3d .how__svg { visibility: hidden; }

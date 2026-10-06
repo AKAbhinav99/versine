@@ -10,6 +10,13 @@
  * swings round from three-quarters to dead behind. It must end square on: the
  * measurement is a straight-on reading, so the drawing finishes as one.
  *
+ * Two poses, switched with setPose(): standing, and the forward bend the test
+ * is actually done in. Bending pivots the upper body at the hips while the
+ * arms keep hanging; the shoulder asymmetry moves with it from a tilt in the
+ * frame (standing) to one shoulder blade riding higher across the bent back,
+ * which is what the forward bend shows; the plumb line steps aside, and the
+ * camera rises to look down the back as the phone does.
+ *
  * Progressive: three.js is fetched only when this runs, from jsDelivr's single
  * file ESM build. If WebGL or the fetch fails, the SVG drawing under the canvas
  * stays, and that is a complete figure on its own. */
@@ -39,7 +46,7 @@ const easeOutBack = (x) => {
  * Mounts the figure into `host` (an element the canvas fills).
  * @param {number} timelineDuration the scrub timeline's length, in its own
  *   time units, so stage timings here can be written in the same units.
- * @returns {Promise<{setProgress(p:number):void, destroy():void}|null>}
+ * @returns {Promise<{setProgress(p:number):void, setPose(name:string):void, destroy():void}|null>}
  */
 export async function mountFigure(host, timelineDuration) {
   let THREE;
@@ -129,6 +136,21 @@ export async function mountFigure(host, timelineDuration) {
   scene.add(figure);
   const parts = [];   // { mesh, at } popped in at time `at`
 
+  const tilt = (deg) => (deg * Math.PI) / 180;
+  const shoulderY = 1.46;
+  const hipY = 0.93;
+  const BEND = tilt(88);
+
+  /* Everything above the pelvis hangs from a pivot at the hips, so the bend
+     is one rotation. Its contents are placed in the figure's own coordinates
+     (the inner group cancels the pivot's offset). */
+  const upperPivot = new THREE.Group();
+  upperPivot.position.set(0, hipY, 0);
+  const upper = new THREE.Group();
+  upper.position.set(0, -hipY, 0);
+  upperPivot.add(upper);
+  figure.add(upperPivot);
+
   const capsule = (radius, length, material = clay) => {
     const mesh = new THREE.Mesh(new THREE.CapsuleGeometry(radius, length, 8, 24), material);
     mesh.castShadow = true;
@@ -143,21 +165,17 @@ export async function mountFigure(host, timelineDuration) {
   };
   /* Each part pops in by scaling about a pivot, so it grows from where it
      joins the body rather than from its own centre. */
-  const addPart = (mesh, at, pivot = null) => {
+  const addPart = (mesh, at, pivot = null, parent = figure) => {
     const holder = new THREE.Group();
     if (pivot) {
       holder.position.copy(pivot);
       mesh.position.sub(pivot);
     }
     holder.add(mesh);
-    figure.add(holder);
+    parent.add(holder);
     parts.push({ holder, at });
     return holder;
   };
-
-  const tilt = (deg) => (deg * Math.PI) / 180;
-  const shoulderY = 1.46;
-  const hipY = 0.93;
 
   /* Legs. */
   for (const side of [-1, 1]) {
@@ -175,7 +193,7 @@ export async function mountFigure(host, timelineDuration) {
   const trunk = capsule(0.16, 0.34);
   trunk.scale.set(1.12, 1, 0.66);
   trunk.position.set(0, 1.2, 0);
-  addPart(trunk, 0.42, new THREE.Vector3(0, hipY, 0));
+  addPart(trunk, 0.42, new THREE.Vector3(0, hipY, 0), upper);
   /* Shoulder girdle: a horizontal capsule, tilted by the reading's angle. */
   const girdle = new THREE.Group();
   girdle.position.set(0, shoulderY, 0);
@@ -185,8 +203,10 @@ export async function mountFigure(host, timelineDuration) {
   yoke.scale.set(1, 1, 0.8);
   girdle.add(yoke);
   /* Arms hang from the girdle's ends, so they ride its tilt. */
+  const arms = [];
   for (const side of [-1, 1]) {
     const arm = new THREE.Group();
+    arms.push({ arm, side });
     arm.position.set(side * 0.24, -0.02, 0);
     arm.rotation.z = side * tilt(5) - tilt(SHOULDER_TILT_DEG);
     const upper = capsule(0.056, 0.52);
@@ -200,15 +220,15 @@ export async function mountFigure(host, timelineDuration) {
   girdleHolder.position.set(0, shoulderY, 0);
   girdle.position.set(0, 0, 0);
   girdleHolder.add(girdle);
-  figure.add(girdleHolder);
+  upper.add(girdleHolder);
   parts.push({ holder: girdleHolder, at: 0.55 });
   /* Neck and head. */
   const neck = capsule(0.046, 0.06);
   neck.position.set(0, 1.585, 0);
-  addPart(neck, 0.68, new THREE.Vector3(0, 1.53, 0));
+  addPart(neck, 0.68, new THREE.Vector3(0, 1.53, 0), upper);
   const head = sphere(0.118);
   head.position.set(0, 1.735, 0.01);
-  addPart(head, 0.78, new THREE.Vector3(0, 1.62, 0));
+  addPart(head, 0.78, new THREE.Vector3(0, 1.62, 0), upper);
 
   /* Landmarks, computed from the posed girdle and pelvis, then laid on one
      measuring plane just behind the back (nearer the camera than any of the
@@ -232,21 +252,24 @@ export async function mountFigure(host, timelineDuration) {
     emissive: color, emissiveIntensity: emissive,
   });
   const markerMat = glossy(COLORS.marker, 0.25);
+  /* The shoulder marks live on the girdle, in its own coordinates, so they
+     ride whatever pose it takes; the hips stay with the pelvis. */
+  const inGirdle = (v) => girdle.worldToLocal(v.clone());
   const points = [shoulderL, shoulderR, hipL, hipR].map((at, i) => {
     const dot = new THREE.Mesh(new THREE.SphereGeometry(0.03, 24, 16), markerMat);
-    dot.position.copy(at);
+    dot.position.copy(i < 2 ? inGirdle(at) : at);
     dot.castShadow = true;
-    scene.add(dot);
+    (i < 2 ? girdle : scene).add(dot);
     return { dot, at: 1.15 + i * 0.12 };
   });
 
   /* Lines as tubes, drawn on by revealing their segments in order. */
-  const tube = (from, to, radius, material) => {
+  const tube = (from, to, radius, material, parent = scene) => {
     const geometry = new THREE.TubeGeometry(new THREE.LineCurve3(from, to), 64, radius, 10, false);
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     geometry.setDrawRange(0, 0);
-    scene.add(mesh);
+    parent.add(mesh);
     const total = geometry.index.count;
     return { mesh, draw: (p) => geometry.setDrawRange(0, Math.floor(total * clamp01(p) / 60) * 60) };
   };
@@ -266,8 +289,10 @@ export async function mountFigure(host, timelineDuration) {
 
   const levelFrom = shoulderL.clone().add(new THREE.Vector3(-0.22, 0, 0));
   const levelTo = new THREE.Vector3(shoulderR.x + 0.22, shoulderL.y, shoulderL.z);
-  const level = tube(levelFrom, levelTo, 0.0045, levelMat);
-  const shoulderLine = tube(shoulderL, shoulderR, 0.011, scrubMat);
+  /* The level reference bends with the back, staying level across it; the
+     shoulder line and its fan ride the girdle. */
+  const level = tube(levelFrom, levelTo, 0.0045, levelMat, upper);
+  const shoulderLine = tube(inGirdle(shoulderL), inGirdle(shoulderR), 0.011, scrubMat, girdle);
   const hipLine = tube(hipL, hipR, 0.009, scrubMat);
 
   /* The self-check: the same shoulders measured at five framings come out at
@@ -279,7 +304,7 @@ export async function mountFigure(host, timelineDuration) {
   const fan = [-0.8, -0.35, 0.4, 0.75].map((spreadDeg, i) => {
     const angle = tilt(SHOULDER_TILT_DEG + spreadDeg * 4);   // spread drawn four times life size so it reads
     const offset = new THREE.Vector3(Math.cos(angle) * half, Math.sin(angle) * half, 0.004 * (i + 1));
-    return { line: tube(middle.clone().sub(offset), middle.clone().add(offset), 0.006, fanMat), at: 3.05 + i * 0.14 };
+    return { line: tube(inGirdle(middle.clone().sub(offset)), inGirdle(middle.clone().add(offset)), 0.006, fanMat, girdle), at: 3.05 + i * 0.14 };
   });
 
   /* ------------------------------------------------------------ camera --- */
@@ -293,13 +318,21 @@ export async function mountFigure(host, timelineDuration) {
      anything square on. */
   const orbit = { yaw: 0, pitch: 0, dragging: false, x: 0, y: 0, releasedAt: 0, id: null, used: false };
 
-  const placeCamera = (t) => {
+  /* The bent pose is looked at from behind and above, as the phone sees it,
+     and a little from one side: square behind, the bend is foreshortened
+     away and the figure just reads as short. The target drops and moves
+     toward the head. */
+  const standTarget = new THREE.Vector3(0, 0.98, 0);
+  const bendTarget = new THREE.Vector3(0, 0.8, -0.3);
+
+  const placeCamera = (t, b) => {
     /* Three-quarters and a little above, swinging to square on by the time
        the lines are measured, and holding there. */
     const k = easeInOut(span(t, 0, 2.6));
-    const azimuth = (1 - k) * 0.72 + orbit.yaw;
-    const elevation = Math.max(-0.2, Math.min(0.95, (1 - k) * 0.3 + 0.015 + orbit.pitch));
-    const distance = FINAL_DISTANCE * (1 + (1 - k) * 0.12);
+    target.lerpVectors(standTarget, bendTarget, b);
+    const azimuth = (1 - k) * 0.72 + b * 0.55 + orbit.yaw;
+    const elevation = Math.max(-0.2, Math.min(1.3, (1 - k) * 0.3 + 0.015 + b * 0.62 + orbit.pitch));
+    const distance = FINAL_DISTANCE * (1 + (1 - k) * 0.12 - b * 0.16);
     camera.position.set(
       target.x + distance * Math.sin(azimuth) * Math.cos(elevation),
       target.y + distance * Math.sin(elevation),
@@ -326,8 +359,32 @@ export async function mountFigure(host, timelineDuration) {
 
   let lastNow = performance.now();
 
+  /* Pose: 0 standing, 1 bent. Eased over POSE_MS whenever it is switched. */
+  const POSE_MS = 1100;
+  const pose = { from: 0, to: 0, at: 0 };
+  const poseValue = (now) => {
+    const k = Math.min(1, (now - pose.at) / POSE_MS);
+    return pose.from + (pose.to - pose.from) * easeInOut(k);
+  };
+  const posing = (now) => now - pose.at < POSE_MS;
+
+  function applyPose(b) {
+    upperPivot.rotation.x = -BEND * b;
+    /* The shoulder asymmetry turns from a tilt in the frame into a twist
+       about the spine, so bent over, one shoulder blade sits higher. */
+    girdle.rotation.z = tilt(SHOULDER_TILT_DEG) * (1 - b);
+    girdle.rotation.y = -tilt(SHOULDER_TILT_DEG) * 2.2 * b;
+    for (const { arm, side } of arms) {
+      arm.rotation.x = BEND * b;   // still hanging straight down
+      arm.rotation.z = side * tilt(5) * (1 - b * 0.6) - tilt(SHOULDER_TILT_DEG) * (1 - b);
+    }
+    plumb.mesh.visible = b < 0.5;
+    bob.visible = bob.visible && b < 0.5;
+  }
+
   function render(now = performance.now()) {
     const t = progress * timelineDuration;
+    const b = poseValue(now);
     const dt = Math.min(0.05, Math.max(0, (now - lastNow) / 1000));
     lastNow = now;
     if (!orbit.dragging && now - orbit.releasedAt > 1100) {
@@ -362,7 +419,8 @@ export async function mountFigure(host, timelineDuration) {
       key.position.z = 2.6 + Math.cos(drift * 0.4) * 0.6;
     }
 
-    placeCamera(t);
+    applyPose(b);
+    placeCamera(t, b);
     renderer.render(scene, camera);
   }
 
@@ -377,7 +435,7 @@ export async function mountFigure(host, timelineDuration) {
   const tick = (now) => {
     loop = 0;
     render(now);
-    if (visible && (!lite || settling())) loop = requestAnimationFrame(tick);
+    if (visible && (!lite || settling() || posing(now))) loop = requestAnimationFrame(tick);
   };
   const requestRender = () => { if (!loop) loop = requestAnimationFrame(tick); };
   const io = new IntersectionObserver(([entry]) => {
@@ -423,6 +481,14 @@ export async function mountFigure(host, timelineDuration) {
   host.classList.add('is-3d');
 
   return {
+    /** 'stand' or 'bend'; eases between them. */
+    setPose(name) {
+      const now = performance.now();
+      pose.from = poseValue(now);
+      pose.to = name === 'bend' ? 1 : 0;
+      pose.at = now;
+      requestRender();
+    },
     setProgress(p) {
       const next = clamp01(p);
       if (next === progress) return;

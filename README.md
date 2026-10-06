@@ -463,7 +463,12 @@ three-quarters to square on, and finally fans out the four other framings'
 shoulder lines around the reading (their spread is the error bar, drawn four
 times life size so it shows). Dragging orbits the camera; let go and it eases
 back, because it always finishes square on: the reading it illustrates is a
-straight-on measurement. The capture guide draws the same clay figure as
+straight-on measurement. A switch in the stage's corner moves it between
+standing (the default) and the forward bend the test is done in: the upper
+body pivots at the hips with the arms still hanging, the shoulder asymmetry
+becomes one shoulder blade riding higher across the bent back, the plumb line
+steps aside, and the camera rises behind and a little to one side, since
+square behind, the bend foreshortens away. The capture guide draws the same clay figure as
 shaded flat shapes, so the overlay costs nothing to render over the camera. The landmarks and lines
 sit on one plane just behind the back, nearer the camera than the body, so
 the pelvis never swallows the hip line.

@@ -145,6 +145,13 @@
           <!-- The SVG is the complete drawing. figure3d.js lays a 3D version over it
                when WebGL and the library load; otherwise this is what shows. -->
           <div class="how__art">
+            <!-- Pose switcher for the 3D figure; shown once it has loaded
+                 (.is-3d), since the SVG drawing has only the standing pose. -->
+            <div class="how__poses" role="group" aria-label="Pose">
+              <span class="how__poses-thumb" aria-hidden="true"></span>
+              <button type="button" data-pose="stand" aria-pressed="true">Standing</button>
+              <button type="button" data-pose="bend" aria-pressed="false">Forward bend</button>
+            </div>
             <p class="how__hint" aria-hidden="true">
               <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="10" cy="10" rx="8" ry="3.4" stroke-dasharray="3 2.4" opacity="0.55" /><path d="M14.6 12.7C13.3 13.2 11.7 13.4 10 13.4" /><path d="M12.3 11.4 14.6 12.7 13 14.6" /><circle cx="10" cy="7.2" r="2.2" /></svg>
               <span>Drag to look around</span>
