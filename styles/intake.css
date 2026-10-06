@@ -20,13 +20,21 @@
   background: linear-gradient(90deg, var(--marker-wash), var(--paper-raised) 70%);
 }
 
+/* A legend sits on its fieldset's top border by default, which put each
+   question astride the card's edge. Floated, it drops inside the card like any
+   other block; whatever follows clears it. */
 .intake__prompt {
+  float: left;
+  width: 100%;
+  margin: 0 0 var(--space-3);
   padding: 0;
   font-size: var(--text-base);
   font-weight: 600;
   color: var(--ink-700);
   line-height: 1.35;
 }
+
+.intake__prompt + * { clear: both; }
 
 .intake__help {
   margin: var(--space-2) 0 0;

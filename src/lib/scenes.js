@@ -13,6 +13,8 @@
  * (blocked CDN) or prefers-reduced-motion, nothing here runs and the page is
  * simply static and complete. */
 
+import { bindPoseSwitch } from './poseswitch.js';
+
 const SCREENS = {
   intro: buildIntro,
   resources: buildLearn,
@@ -561,34 +563,13 @@ function buildHow(gsap, ScrollTrigger) {
       bindPoses();
     })
     .catch(() => { /* the SVG drawing stays */ });
-  /* Standing / Forward bend. Standing is where every visit starts. The thumb
-     is measured onto the chosen button, so it fits either label. */
-  const poses = section.querySelector('.how__poses');
-  const thumb = poses?.querySelector('.how__poses-thumb');
-  const placeThumb = () => {
-    const on = poses?.querySelector('[aria-pressed="true"]');
-    if (!on || !thumb) return;
-    thumb.style.width = `${on.offsetWidth}px`;
-    thumb.style.transform = `translateX(${on.offsetLeft}px)`;
-  };
-  const choosePose = (event) => {
-    const button = event.target.closest('[data-pose]');
-    if (!button) return;
-    poses.querySelectorAll('[data-pose]').forEach((b) => b.setAttribute('aria-pressed', String(b === button)));
-    placeThumb();
-    figure3d?.setPose(button.dataset.pose);
-  };
+  /* Standing / Forward bend (poseswitch.js), live once the figure is up. */
+  let poseSwitch = null;
   const bindPoses = () => {
-    if (!poses) return;
-    poses.querySelectorAll('[data-pose]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.pose === 'stand')));
-    poses.addEventListener('click', choosePose);
-    window.addEventListener('resize', placeThumb);
-    requestAnimationFrame(placeThumb);
+    const root = section.querySelector('.pose-switch');
+    if (root) poseSwitch = bindPoseSwitch(root, (pose) => figure3d?.setPose(pose));
   };
-  onRevert(() => {
-    poses?.removeEventListener('click', choosePose);
-    window.removeEventListener('resize', placeThumb);
-  });
+  onRevert(() => poseSwitch?.destroy());
 
   const timer = setTimeout(() => (window.requestIdleCallback || setTimeout)(load), 900);
   onRevert(() => { alive = false; clearTimeout(timer); figure3d?.destroy(); figure3d = null; });

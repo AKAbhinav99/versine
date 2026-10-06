@@ -6,6 +6,7 @@ import { $ } from '../lib/dom.js';
 import { onEnter, onLeave } from '../router.js';
 import { listScans } from '../lib/storage.js';
 import { openAdjust } from './adjust.js';
+import { bindPoseSwitch } from '../lib/poseswitch.js';
 
 /* Getting into a forward bend and settling takes longer than a snapshot timer
    usually allows, so the choices run past the usual 3 and 10 seconds. Off is for
@@ -40,6 +41,8 @@ export function initCapture() {
   $('#capture-ghost-toggle').addEventListener('click', toggleGhost);
   $('#capture-upload-btn').addEventListener('click', () => $('#capture-file').click());
   $('#capture-file').addEventListener('change', onFileChosen);
+  const poses = $('.capture__poses');
+  if (poses) bindPoseSwitch(poses, (pose) => { $('.capture__stage').dataset.pose = pose; });
 
   onEnter('capture', () => { refreshGhost(); startCamera(); });
   onLeave('capture', stopCamera);
