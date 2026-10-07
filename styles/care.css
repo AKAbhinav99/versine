@@ -176,7 +176,7 @@
 .chip[aria-pressed='true'] {
   border-color: var(--scrub);
   background: var(--scrub);
-  color: #fff;
+  color: var(--on-scrub);
 }
 
 #map {
@@ -218,7 +218,7 @@
   place-items: center;
   width: 28px; height: 28px;
   background: var(--scrub);
-  color: #fff;
+  color: var(--on-scrub);
   border: 2px solid #fff;
   border-radius: 50%;
   box-shadow: 0 2px 8px rgba(11,22,34,0.3);
@@ -281,7 +281,7 @@
 .clinic__index {
   font-family: var(--font-num);
   font-size: var(--text-xs);
-  color: #fff;
+  color: var(--on-scrub);
   background: var(--scrub);
   width: 22px; height: 22px;
   display: grid; place-items: center;
@@ -434,3 +434,21 @@
   .article { max-width: var(--read-max); }
   .article .link-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* --- Dark theme ------------------------------------------------------------ */
+
+/* MapLibre's own controls and popups come in white from its stylesheet. */
+:root[data-theme='dark'] .maplibregl-ctrl-group { background: var(--paper-raised); }
+:root[data-theme='dark'] .maplibregl-ctrl-group button + button { border-top-color: var(--rule); }
+:root[data-theme='dark'] .maplibregl-ctrl button .maplibregl-ctrl-icon { filter: invert(0.88); }
+:root[data-theme='dark'] .maplibregl-ctrl button:not(:disabled):hover { background-color: var(--hover-wash); }
+:root[data-theme='dark'] .maplibregl-popup-content { background: var(--paper-raised); }
+:root[data-theme='dark'] .maplibregl-popup-close-button { color: var(--ink-500); }
+:root[data-theme='dark'] .maplibregl-popup-anchor-top .maplibregl-popup-tip,
+:root[data-theme='dark'] .maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+:root[data-theme='dark'] .maplibregl-popup-anchor-top-right .maplibregl-popup-tip { border-bottom-color: var(--paper-raised); }
+:root[data-theme='dark'] .maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+:root[data-theme='dark'] .maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+:root[data-theme='dark'] .maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip { border-top-color: var(--paper-raised); }
+:root[data-theme='dark'] .maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--paper-raised); }
+:root[data-theme='dark'] .maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--paper-raised); }

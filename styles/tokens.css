@@ -1,6 +1,7 @@
 /* Versine design tokens.
  *
- * Light only. The visual idea is a physio's posture board: a field of dots on a
+ * Light by default, with a dark theme further down (data-theme on <html>, set
+ * before first paint by boot.js). The visual idea is a physio's posture board: a field of dots on a
  * clean surface with a plumb line hanging through it, the reference every
  * measurement in this app is taken against. Dots stand in for the old blueprint
  * line grid and appear as texture in a few deliberate places, never everywhere.
@@ -42,6 +43,19 @@
   --marker-text: #B8341F;
   --amber-text:  #8F5A0E;
   --clear-text:  #276E52;
+
+  /* Text and icons sitting on a scrub fill (primary buttons, numbered pins). */
+  --on-scrub: #FFFFFF;
+
+  /* Frosted surfaces over moving content: the masthead, the phone tab bar,
+     the small switches over the 3D figure and the camera. */
+  --glass:        rgba(242, 245, 246, 0.82);
+  --glass-raised: rgba(255, 255, 255, 0.88);
+  --hover-wash:   rgba(14, 34, 48, 0.055);
+  /* A pale glow behind text drawn over artwork, and the light a tilted card
+     catches under the cursor. */
+  --halo:         rgba(255, 255, 255, 0.9);
+  --sheen:        rgba(255, 255, 255, 0.55);
 
   /* --- Dots ---------------------------------------------------------- */
   --dot:      rgba(31, 110, 140, 0.26);
@@ -109,6 +123,62 @@
   --ease: cubic-bezier(0.2, 0, 0, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.45, 0.64, 1);
+}
+
+/* --- Dark ----------------------------------------------------------- *
+ * The same posture board at night: deep blue slate rather than black, so the
+ * scrub blue still reads as part of the page. Signal colours step up in
+ * lightness to keep their contrast, and a scrub fill carries dark text.
+ * Screen only: a printed report is always on white paper. */
+@media screen {
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+
+    --paper:        #0B161D;
+    --paper-raised: #13222B;
+    --paper-sunk:   #0F1C24;
+
+    --ink-900: #ECF2F5;
+    --ink-700: #C8D5DC;
+    --ink-500: #98ABB6;
+    --ink-400: #8A9EAA;
+    --ink-300: #4E6370;
+
+    --rule:         #22343F;
+    --rule-soft:    #1A2A33;
+    --rule-control: #6C8592;
+
+    --scrub:      #5AB0D4;
+    --scrub-dim:  #8CCAE4;
+    --scrub-wash: #16303D;
+    --marker:      #EC6A52;
+    --marker-wash: #3A1F1B;
+    --amber:      #DDA24A;
+    --amber-wash: #33291A;
+    --clear:      #4DB38A;
+    --clear-wash: #163029;
+
+    --marker-text: #F4907C;
+    --amber-text:  #E9B868;
+    --clear-text:  #74CBA6;
+
+    --on-scrub: #06151D;
+
+    --glass:        rgba(11, 22, 29, 0.8);
+    --glass-raised: rgba(19, 34, 43, 0.88);
+    --hover-wash:   rgba(236, 242, 245, 0.07);
+    --halo:         rgba(11, 22, 29, 0.85);
+    --sheen:        rgba(255, 255, 255, 0.12);
+
+    --dot: rgba(90, 176, 212, 0.24);
+
+    --shadow-sm: 0 1px 1px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.2), 0 6px 16px rgba(0,0,0,0.22);
+    --shadow:    0 1px 2px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.24), 0 14px 32px rgba(0,0,0,0.3), 0 28px 60px rgba(0,0,0,0.22);
+    --shadow-lg: 0 2px 4px rgba(0,0,0,0.3), 0 10px 22px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.38), 0 60px 120px rgba(0,0,0,0.3);
+    --shadow-lift: calc(var(--sx, 0px) * 0.3) calc(4px + var(--sy, 0px) * 0.3) 10px rgba(0,0,0,0.3),
+                   var(--sx, 0px) calc(24px + var(--sy, 0px)) 48px -8px rgba(0,0,0,0.5),
+                   calc(var(--sx, 0px) * 1.6) calc(48px + var(--sy, 0px) * 1.6) 90px -20px rgba(90,176,212,0.18);
+  }
 }
 
 @media (min-width: 960px) {

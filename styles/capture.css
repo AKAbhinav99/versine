@@ -267,7 +267,7 @@
   margin: 0;
   pointer-events: none;
   text-shadow:
-    0 0 6px rgba(255, 255, 255, 0.9),
+    0 0 6px var(--halo),
     0 2px 2px rgba(14, 34, 48, 0.08),
     0 10px 24px rgba(14, 34, 48, 0.22);
 }
@@ -411,8 +411,8 @@ html:not(.gsap) .journey__progress { display: none; }
 .stat__num { margin: 0 0 var(--space-2); font-size: clamp(3rem, 2rem + 4vw, 5.5rem); font-weight: 500; letter-spacing: -0.05em; line-height: 0.95; color: var(--ink-900); font-variant-numeric: tabular-nums; }
 .stat__label { margin: 0; color: var(--ink-500); font-size: var(--text-sm); max-width: 22ch; }
 .stat--accent .stat__card { background: var(--scrub); }
-.stat--accent .stat__num { color: #fff; }
-.stat--accent .stat__label { color: rgba(255, 255, 255, 0.92); }
+.stat--accent .stat__num { color: var(--on-scrub); }
+.stat--accent .stat__label { color: var(--on-scrub); opacity: 0.92; }
 
 /* --- Limits --------------------------------------------------------------- */
 
@@ -577,7 +577,7 @@ html:not(.gsap) .journey__progress { display: none; }
   .capture__guide .guide-marks-shoulders { transition: none; }
 }
 
-.capture__poses { position: absolute; top: var(--space-3); left: var(--space-3); background: rgba(255, 255, 255, 0.9); }
+.capture__poses { position: absolute; top: var(--space-3); left: var(--space-3); background: var(--glass-raised); }
 
 /* Guide on or off (capture.js remembers the choice). Off, the pose switch
    goes too: it only says which figure the guide draws. */
@@ -631,7 +631,7 @@ html:not(.gsap) .journey__progress { display: none; }
   font-size: 4.5rem;
   font-weight: 600;
   color: var(--ink-900);
-  background: rgba(242, 245, 246, 0.55);
+  background: color-mix(in srgb, var(--paper) 55%, transparent);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
@@ -784,7 +784,7 @@ html:not(.gsap) .journey__progress { display: none; }
 .analyze__log li[data-state='active'] { color: var(--ink-900); border-color: var(--scrub); box-shadow: 0 0 0 4px var(--scrub-wash); }
 .analyze__log li[data-state='active']::before { border-color: var(--scrub); border-right-color: transparent; animation: spin 0.9s linear infinite; }
 .analyze__log li[data-state='done'] { color: var(--ink-700); }
-.analyze__log li[data-state='done']::before { border-color: var(--clear); background: var(--clear); box-shadow: inset 0 0 0 2px #fff; }
+.analyze__log li[data-state='done']::before { border-color: var(--clear); background: var(--clear); box-shadow: inset 0 0 0 2px var(--paper-raised); }
 
 .analyze__detail {
   margin-top: var(--space-3);
@@ -872,7 +872,7 @@ html:not(.gsap) .journey__progress { display: none; }
   width: 24px; height: 24px;
   margin-top: -10px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--paper-raised);
   border: 2px solid var(--scrub);
   box-shadow: var(--shadow);
   transition: transform var(--dur-fast) var(--ease);
@@ -881,7 +881,7 @@ html:not(.gsap) .journey__progress { display: none; }
 .adjust__row input[type='range']::-moz-range-track { height: 4px; border-radius: 999px; background: var(--rule); }
 .adjust__row input[type='range']::-moz-range-thumb {
   width: 24px; height: 24px; border-radius: 50%;
-  background: #fff; border: 2px solid var(--scrub);
+  background: var(--paper-raised); border: 2px solid var(--scrub);
 }
 
 .adjust__error {
@@ -969,3 +969,14 @@ html:not(.gsap) .journey__progress { display: none; }
   .analyze__log { grid-area: log; }
   .analyze__detail { grid-area: detail; }
 }
+
+/* --- Dark theme ------------------------------------------------------------ */
+
+/* The card art's fixed light greys, re-cut for the dark page. The phone screen
+   stays a screen: darker than the card, with an edge so it does not sink. */
+:root[data-theme='dark'] .jart__screen { fill: #050D12; stroke: var(--rule); stroke-width: 1; }
+:root[data-theme='dark'] .jart__clay { fill: #2B3F4B; stroke: #3E5562; }
+:root[data-theme='dark'] .jart__land { fill: #1B2C36; }
+:root[data-theme='dark'] .jart__road { stroke: #2C414D; }
+:root[data-theme='dark'] .jart__pin circle { fill: var(--paper-raised); }
+:root[data-theme='dark'] .jart__photo rect { fill: rgba(236, 242, 245, 0.06); }

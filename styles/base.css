@@ -117,7 +117,7 @@ html.lenis, html.lenis body { height: auto; }
   gap: var(--space-3);
   min-height: var(--masthead-h);
   padding: var(--space-3) var(--gutter);
-  background: rgba(242, 245, 246, 0.82);
+  background: var(--glass);
   -webkit-backdrop-filter: saturate(1.6) blur(14px);
   backdrop-filter: saturate(1.6) blur(14px);
   /* Always the frosted bar, edge and shadow included. It used to show them
@@ -127,6 +127,45 @@ html.lenis, html.lenis body { height: auto; }
   box-shadow: 0 6px 24px rgba(14,34,48,0.06);
   animation: drop-in var(--dur-slow) var(--ease-out) both;
 }
+
+/* Light / dark switch, at the right end of the masthead. On wide screens the
+   section links sit just left of it (see the tabbar's `right` below). */
+.theme-toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--paper-raised);
+  color: var(--ink-700);
+  box-shadow: var(--shadow-sm);
+  transition: color var(--dur-fast) var(--ease), transform var(--dur) var(--ease-spring);
+}
+.theme-toggle:hover { color: var(--ink-900); transform: rotate(-12deg); }
+.theme-toggle:active { transform: scale(0.92); }
+.theme-toggle:focus-visible { outline: 2px solid var(--scrub); outline-offset: 2px; border-radius: 50%; }
+.theme-toggle svg { width: 20px; height: 20px; overflow: visible; }
+.theme-toggle__disc { fill: currentColor; transform-box: fill-box; transform-origin: center; }
+.theme-toggle__rays { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; transform-origin: 12px 12px; }
+.theme-toggle__bite { transform: translate(0, 0); }
+.theme-toggle__disc,
+.theme-toggle__rays,
+.theme-toggle__bite { transition: transform 520ms var(--ease-spring), opacity var(--dur) var(--ease); }
+/* Dark: the sun swells, loses its rays, and a shadow slides across it. */
+[data-theme='dark'] .theme-toggle__disc { transform: scale(1.5); }
+[data-theme='dark'] .theme-toggle__rays { opacity: 0; transform: rotate(-60deg) scale(0.5); }
+[data-theme='dark'] .theme-toggle__bite { transform: translate(-7px, 6px); }
+
+/* For the two frames of a theme switch, nothing eases its colour: every
+   surface changes at once instead of each at its own transition speed. The
+   toggle's own icon is left to animate. */
+.theme-switching *:not(.theme-toggle, .theme-toggle *),
+.theme-switching *::before,
+.theme-switching *::after { transition-duration: 0s !important; }
 
 /* Reading progress, shown only while scenes.js drives it on the Learn screen. */
 .read-progress {
@@ -289,7 +328,7 @@ html.pointer-fine .spot {
   grid-auto-flow: column;
   padding: 3px;
   border-radius: var(--radius-pill);
-  background: rgba(241, 244, 245, 0.88);
+  background: var(--glass-raised);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   box-shadow: inset 0 0 0 1px var(--rule), 0 4px 14px rgba(14, 34, 48, 0.08);
@@ -340,7 +379,7 @@ html.pointer-fine .spot {
   border: 1px solid var(--scrub);
   border-radius: var(--radius-pill);
   background: var(--scrub);
-  color: #fff;
+  color: var(--on-scrub);
   font-weight: 600;
   font-size: var(--text-base);
   letter-spacing: 0.005em;
@@ -394,7 +433,7 @@ html.pointer-fine .spot {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 4px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--glass-raised);
   -webkit-backdrop-filter: saturate(1.6) blur(16px);
   backdrop-filter: saturate(1.6) blur(16px);
   border: var(--hair);
@@ -446,7 +485,7 @@ html.pointer-fine .spot {
   top: 0; left: 0;
   z-index: 0;
   border-radius: calc(var(--radius-lg) - 6px);
-  background: rgba(14, 34, 48, 0.055);
+  background: var(--hover-wash);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-fast) var(--ease);
@@ -488,7 +527,8 @@ html.pointer-fine .spot {
     top: 10px;
     bottom: auto;
     left: auto;
-    right: max(var(--gutter), calc((100vw - var(--content-max)) / 2));
+    /* Clear of the theme toggle: its 40px and a 12px gap. */
+    right: calc(max(var(--gutter), calc((100vw - var(--content-max)) / 2)) + 52px);
     margin: 0;
     max-width: none;
     height: 40px;
@@ -567,6 +607,6 @@ html.pointer-fine .spot {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.55), transparent 45%);
+  background: radial-gradient(420px circle at var(--gx, 50%) var(--gy, 50%), var(--sheen), transparent 45%);
   mix-blend-mode: soft-light;
 }

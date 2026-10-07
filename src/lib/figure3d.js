@@ -21,6 +21,8 @@
  * file ESM build. If WebGL or the fetch fails, the SVG drawing under the canvas
  * stays, and that is a complete figure on its own. */
 
+import { currentTheme, onThemeChange } from './theme.js';
+
 const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.186.1/+esm';
 
 const SHOULDER_TILT_DEG = 4.2;   // matches the readout beside the figure
@@ -118,8 +120,15 @@ export async function mountFigure(host, timelineDuration) {
   rim.position.set(2.6, 2.4, -3);
   scene.add(rim);
 
-  /* Floor: catches the shadow only, so the figure stands on the card. */
-  const floor = new THREE.Mesh(new THREE.CircleGeometry(6, 64), new THREE.ShadowMaterial({ color: '#0E2230', opacity: 0.14 }));
+  /* Floor: catches the shadow only, so the figure stands on the card. A dark
+     card needs a denser shadow for the figure to sit on it at all. */
+  const floorMat = new THREE.ShadowMaterial({ color: '#0E2230', opacity: 0.14 });
+  const shadeFloor = (theme) => {
+    floorMat.color.set(theme === 'dark' ? '#000000' : '#0E2230');
+    floorMat.opacity = theme === 'dark' ? 0.42 : 0.14;
+  };
+  shadeFloor(currentTheme());
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(6, 64), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   scene.add(floor);
@@ -479,6 +488,7 @@ export async function mountFigure(host, timelineDuration) {
   resize();
 
   host.classList.add('is-3d');
+  const offTheme = onThemeChange((theme) => { shadeFloor(theme); requestRender(); });
 
   return {
     /** 'stand' or 'bend'; eases between them. */
@@ -496,6 +506,7 @@ export async function mountFigure(host, timelineDuration) {
       requestRender();
     },
     destroy() {
+      offTheme();
       visible = false;
       cancelAnimationFrame(loop);
       io.disconnect();

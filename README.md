@@ -426,7 +426,7 @@ geometry, the consensus, or the thresholds.
 
 ## Design
 
-Light only. The visual idea is a physio's posture board: a field of dots on a
+Light by default, with a dark theme. The visual idea is a physio's posture board: a field of dots on a
 clean surface with a plumb line hanging through it, the vertical reference the
 whole test measures against. Page `#F2F5F6`, white cards, ink `#0E2230`, scrub
 blue `#1F6E8C` for measurement and action, marker red-orange `#D6402A` reserved
@@ -435,6 +435,17 @@ Grotesque, whose ink-trap quirks read as a generated-site default), Archivo for 
 and numbers (tabular figures only on readouts, since tabular punctuation spaces
 out commas in headings). Labels float as plain sentence-case text, never as
 chips; uppercase mono labels read as a template default.
+
+Dark mode is the same board at night: deep blue slate (`#0B161D`) rather than
+black, so scrub blue still belongs to the page, with signal colours lifted to
+keep their contrast and dark text on scrub fills. It follows the system
+setting until the reader uses the sun/moon button at the top right, then
+remembers that choice (`versine.theme` in localStorage). The theme is set in
+[`src/boot.js`](src/boot.js) before first paint, so a dark page never flashes
+light; [`src/lib/theme.js`](src/lib/theme.js) handles the toggle and fires a
+`themechange` event that the dot field, the 3D figure's floor shadow and the
+map (an Apple-style dark palette, repainted in place without refetching tiles)
+listen for. Printing always uses the light palette.
 
 That board is the page itself: one fixed canvas behind every screen
 ([`src/lib/field.js`](src/lib/field.js)). Each dot sits on a slightly

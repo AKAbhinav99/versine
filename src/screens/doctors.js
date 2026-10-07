@@ -11,6 +11,7 @@ import { CancelledError, fetchWithTimeout } from '../lib/net.js';
 import { PROVIDER_KEYS, getKey, setKey, configuredKeys, testKey } from '../lib/keys.js';
 import { localInView, indexCoverage, clearLearned } from '../lib/clinic-index.js';
 import { countryOptions, defaultCountry } from '../lib/countries.js';
+import { currentTheme, onThemeChange } from '../lib/theme.js';
 
 const LAST_CENTER_KEY = 'versine.lastCenter';
 
@@ -496,49 +497,71 @@ const MAPLIBRE = 'https://unpkg.com/maplibre-gl@5.24.0/dist';
 const VECTOR_STYLE_URL = 'https://tiles.openfreemap.org/styles/liberty';
 
 /* Liberty has the right layers (parks, water, road classes, buildings) but
-   OpenStreetMap's own colours; these repaint it after Apple Maps in light
-   mode, matched against a screenshot of it. What makes it Apple and not
-   Google: a saturated sky-blue sea, near-white neutral land, soft green
-   parks, every street white, and motorways drawn in grey rather than yellow
-   or orange. Type does the rest: road and district names in spaced capitals,
-   city names in bold, water names in blue italic. Each rule is [pattern,
-   paint, layout]; rules run in order, and the first that matches a layer's
-   id and can paint its type wins. The low-zoom satellite raster is dropped,
-   Apple's map has none. */
+   OpenStreetMap's own colours; these repaint it after Apple Maps, matched
+   against a screenshot of it. What makes it Apple and not Google: a saturated
+   sky-blue sea, near-white neutral land, soft green parks, every street
+   white, and motorways drawn in grey rather than yellow or orange. Type does
+   the rest: road and district names in spaced capitals, city names in bold,
+   water names in blue italic. The dark palette is Apple's own dark map:
+   neutral charcoal land, deep navy water, forest-dark parks, streets a step
+   lighter than the land. Each rule is [pattern, paint, layout]; rules run in
+   order, and the first that matches a layer's id and can paint its type wins.
+   The low-zoom satellite raster is dropped, Apple's map has none. */
+const MAP_PALETTES = {
+  light: {
+    land: '#F1F1EE', residential: '#ECECE8', park: '#C2E6A5', wood: '#B3DD96', grass: '#C9E9AE',
+    cemetery: '#CDE7BA', ice: '#F4F8FA', sand: '#F3EBC6', hospital: '#F7E1E3', school: '#EFEDE4',
+    water: '#7CCDF4', aeroway: '#E6E6EC', aerowayLine: '#FFFFFF',
+    motorwayCasing: '#E4E4E1', motorway: '#A3A7AD', casing: '#D9D9D5', street: '#FFFFFF', rail: '#D2D2CE',
+    building: '#E4E4E0', buildingEdge: '#D9D9D4', boundary: '#C3BDD6',
+    waterLabel: '#4A93C8', waterHalo: 'rgba(255,255,255,0.6)', transit: '#2C6FB5',
+    poi: '#6E6E73', road: '#5E5E63', district: '#6A6A6F', place: '#2B2B2E', halo: '#FFFFFF',
+  },
+  dark: {
+    land: '#232426', residential: '#2A2B2E', park: '#1F3A2B', wood: '#1C3527', grass: '#22402F',
+    cemetery: '#213B2C', ice: '#2E3338', sand: '#38352A', hospital: '#3A2A2D', school: '#2C2C2F',
+    water: '#1C3D5C', aeroway: '#2E2E33', aerowayLine: '#3D3D42',
+    motorwayCasing: '#2A2A2D', motorway: '#6B6F76', casing: '#2E2F32', street: '#3D3E42', rail: '#38383C',
+    building: '#2E2F33', buildingEdge: '#36373B', boundary: '#5A5470',
+    waterLabel: '#6FA8D6', waterHalo: 'rgba(0,0,0,0.45)', transit: '#6EA2E0',
+    poi: '#A0A0A6', road: '#9B9BA1', district: '#9A9AA0', place: '#E6E6EA', halo: '#1E1F22',
+  },
+};
 const LABEL_CAPS = { 'text-transform': 'uppercase', 'text-letter-spacing': 0.08, 'text-font': ['Noto Sans Bold'] };
-const APPLE_TINT = [
-  [/^background$/, { 'background-color': '#F1F1EE' }],
-  [/^landuse_residential$/, { 'fill-color': '#ECECE8', 'fill-opacity': 0.55 }],
-  [/^park$/, { 'fill-color': '#C2E6A5', 'fill-outline-color': 'rgba(0,0,0,0)' }],
+const appleRules = (c) => [
+  [/^background$/, { 'background-color': c.land }],
+  [/^landuse_residential$/, { 'fill-color': c.residential, 'fill-opacity': 0.55 }],
+  [/^park$/, { 'fill-color': c.park, 'fill-outline-color': 'rgba(0,0,0,0)' }],
   [/^park_outline$/, { 'line-color': 'rgba(0,0,0,0)' }],
-  [/^landcover_wood$/, { 'fill-color': '#B3DD96', 'fill-opacity': 0.9 }],
-  [/^landcover_grass$|^landuse_pitch$|^landuse_track$/, { 'fill-color': '#C9E9AE' }],
-  [/^landuse_cemetery$/, { 'fill-color': '#CDE7BA' }],
-  [/^landcover_ice$/, { 'fill-color': '#F4F8FA' }],
-  [/^landcover_sand$/, { 'fill-color': '#F3EBC6' }],
-  [/^landuse_hospital$/, { 'fill-color': '#F7E1E3' }],
-  [/^landuse_school$/, { 'fill-color': '#EFEDE4' }],
-  [/^water$/, { 'fill-color': '#7CCDF4' }],
-  [/^waterway/, { 'line-color': '#7CCDF4' }],
-  [/^aeroway_fill$/, { 'fill-color': '#E6E6EC' }],
-  [/^aeroway_/, { 'line-color': '#FFFFFF' }],
-  [/motorway.*casing$/, { 'line-color': '#E4E4E1' }],
-  [/motorway/, { 'line-color': '#A3A7AD' }],
-  [/casing$/, { 'line-color': '#D9D9D5' }],
-  [/trunk_primary|_link$|secondary_tertiary|minor|street|service_track|path_pedestrian/, { 'line-color': '#FFFFFF' }],
-  [/rail/, { 'line-color': '#D2D2CE' }],
-  [/^building$/, { 'fill-color': '#E4E4E0', 'fill-outline-color': '#D9D9D4' }],
-  [/^building-3d$/, { 'fill-extrusion-color': '#E4E4E0' }],
-  [/^boundary/, { 'line-color': '#C3BDD6' }],
-  [/water.*label$/, { 'text-color': '#4A93C8', 'text-halo-color': 'rgba(255,255,255,0.6)' }],
-  [/^poi_transit$/, { 'text-color': '#2C6FB5' }],
-  [/^poi_/, { 'text-color': '#6E6E73', 'text-halo-color': '#FFFFFF' }],
-  [/^highway-name/, { 'text-color': '#5E5E63', 'text-halo-color': '#FFFFFF' }, LABEL_CAPS],
-  [/^airport$/, { 'text-color': '#6E6E73' }],
-  [/^label_other$/, { 'text-color': '#6A6A6F', 'text-halo-color': '#FFFFFF' }, LABEL_CAPS],
-  [/^label_(city|town|city_capital)$/, { 'text-color': '#2B2B2E', 'text-halo-color': '#FFFFFF' }, { 'text-font': ['Noto Sans Bold'] }],
-  [/^label_/, { 'text-color': '#2B2B2E', 'text-halo-color': '#FFFFFF' }],
+  [/^landcover_wood$/, { 'fill-color': c.wood, 'fill-opacity': 0.9 }],
+  [/^landcover_grass$|^landuse_pitch$|^landuse_track$/, { 'fill-color': c.grass }],
+  [/^landuse_cemetery$/, { 'fill-color': c.cemetery }],
+  [/^landcover_ice$/, { 'fill-color': c.ice }],
+  [/^landcover_sand$/, { 'fill-color': c.sand }],
+  [/^landuse_hospital$/, { 'fill-color': c.hospital }],
+  [/^landuse_school$/, { 'fill-color': c.school }],
+  [/^water$/, { 'fill-color': c.water }],
+  [/^waterway/, { 'line-color': c.water }],
+  [/^aeroway_fill$/, { 'fill-color': c.aeroway }],
+  [/^aeroway_/, { 'line-color': c.aerowayLine }],
+  [/motorway.*casing$/, { 'line-color': c.motorwayCasing }],
+  [/motorway/, { 'line-color': c.motorway }],
+  [/casing$/, { 'line-color': c.casing }],
+  [/trunk_primary|_link$|secondary_tertiary|minor|street|service_track|path_pedestrian/, { 'line-color': c.street }],
+  [/rail/, { 'line-color': c.rail }],
+  [/^building$/, { 'fill-color': c.building, 'fill-outline-color': c.buildingEdge }],
+  [/^building-3d$/, { 'fill-extrusion-color': c.building }],
+  [/^boundary/, { 'line-color': c.boundary }],
+  [/water.*label$/, { 'text-color': c.waterLabel, 'text-halo-color': c.waterHalo }],
+  [/^poi_transit$/, { 'text-color': c.transit }],
+  [/^poi_/, { 'text-color': c.poi, 'text-halo-color': c.halo }],
+  [/^highway-name/, { 'text-color': c.road, 'text-halo-color': c.halo }, LABEL_CAPS],
+  [/^airport$/, { 'text-color': c.poi }],
+  [/^label_other$/, { 'text-color': c.district, 'text-halo-color': c.halo }, LABEL_CAPS],
+  [/^label_(city|town|city_capital)$/, { 'text-color': c.place, 'text-halo-color': c.halo }, { 'text-font': ['Noto Sans Bold'] }],
+  [/^label_/, { 'text-color': c.place, 'text-halo-color': c.halo }],
 ];
+const APPLE_TINT = { light: appleRules(MAP_PALETTES.light), dark: appleRules(MAP_PALETTES.dark) };
 
 /* A paint property belongs to one layer type: line-color to lines, text-color
    to symbols. A rule only matches layers it can paint, so a road rule whose
@@ -547,20 +570,38 @@ const paints = (key, layer) => (layer.type === 'symbol'
   ? key.startsWith('text-') || key.startsWith('icon-')
   : key.startsWith(`${layer.type}-`) || (layer.type === 'fill' && key.startsWith('fill-') && !key.startsWith('fill-extrusion')));
 
-function appleTint(style) {
-  style.layers = style.layers.filter((layer) => layer.id !== 'natural_earth');
-  for (const layer of style.layers) {
-    const rule = APPLE_TINT.find(([pattern, props]) => pattern.test(layer.id)
+/* Calls `set(layer, paint, layout)` for each layer the theme's rules cover,
+   with only the paint properties that layer can take. */
+function eachTint(layers, theme, set) {
+  for (const layer of layers) {
+    const rule = APPLE_TINT[theme].find(([pattern, props]) => pattern.test(layer.id)
       && Object.keys(props).some((key) => paints(key, layer)));
     if (!rule) continue;
     const [, paint, layout] = rule;
-    layer.paint = { ...(layer.paint || {}) };
-    for (const [key, value] of Object.entries(paint)) {
-      if (paints(key, layer)) layer.paint[key] = value;
-    }
-    if (layout) layer.layout = { ...(layer.layout || {}), ...layout };
+    set(layer, Object.fromEntries(Object.entries(paint).filter(([key]) => paints(key, layer))), layout);
   }
+}
+
+/* Tints a fetched style before the map is built. */
+function appleTint(style, theme) {
+  style.layers = style.layers.filter((layer) => layer.id !== 'natural_earth');
+  eachTint(style.layers, theme, (layer, paint, layout) => {
+    layer.paint = { ...(layer.paint || {}), ...paint };
+    if (layout) layer.layout = { ...(layer.layout || {}), ...layout };
+  });
   return style;
+}
+
+/* Repaints a live map in place when the theme changes: paint properties only,
+   so no tile is fetched again and the pins and the index layer stay put. */
+function retintMap(theme) {
+  if (!map || usingRaster || !map.isStyleLoaded()) return;
+  eachTint(map.getStyle().layers, theme, (layer, paint) => {
+    for (const [key, value] of Object.entries(paint)) map.setPaintProperty(layer.id, key, value);
+  });
+  if (!map.getLayer('index-dots')) return;
+  map.setPaintProperty('index-dots', 'circle-color', INDEX_DOT[theme].fill);
+  map.setPaintProperty('index-dots', 'circle-stroke-color', INDEX_DOT[theme].stroke);
 }
 const RASTER_STYLE = {
   version: 8,
@@ -578,8 +619,13 @@ const RASTER_STYLE = {
 /* Tile failures tolerated from the vector source before switching to raster. */
 const VECTOR_FAILURES_BEFORE_FALLBACK = 4;
 
-const SCRUB = '#1F6E8C';
-const PAPER = '#F7F9F9';
+onThemeChange(retintMap);
+
+/* The always-on index dots: a paper fill ringed in scrub, per theme. */
+const INDEX_DOT = {
+  light: { fill: '#F7F9F9', stroke: '#1F6E8C' },
+  dark: { fill: '#13222B', stroke: '#5AB0D4' },
+};
 
 let mapLibPromise = null;
 let mapBuilding = false;
@@ -615,7 +661,7 @@ async function chooseStyle() {
   try {
     const response = await fetchWithTimeout(VECTOR_STYLE_URL, {}, 6000);
     if (!response.ok) throw new Error(String(response.status));
-    return appleTint(await response.json());
+    return appleTint(await response.json(), currentTheme());
   } catch {
     usingRaster = true;
     return RASTER_STYLE;
@@ -672,6 +718,8 @@ function buildMap(maplibregl, style) {
     drawIndexMarkers();
   });
   map.on('moveend', drawIndexMarkers);
+  /* A theme switch before the style finished loading is caught up here. */
+  map.once('load', () => retintMap(currentTheme()));
 
   /* Tiles that fail after the style loaded: switch to raster rather than leave
      holes in the map. */
@@ -697,8 +745,8 @@ function addIndexLayer() {
     source: 'index',
     paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 3, 15, 6],
-      'circle-color': PAPER,
-      'circle-stroke-color': SCRUB,
+      'circle-color': INDEX_DOT[currentTheme()].fill,
+      'circle-stroke-color': INDEX_DOT[currentTheme()].stroke,
       'circle-stroke-width': 1.75,
     },
   });

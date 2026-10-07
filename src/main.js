@@ -7,12 +7,14 @@ import { initCapture } from './screens/capture.js';
 import { initAdjust } from './screens/adjust.js';
 import { initMotion } from './lib/motion.js';
 import { initField } from './lib/field.js';
+import { initTheme } from './lib/theme.js';
 import { initScenes } from './lib/scenes.js';
 
 /* Carry anything stored under the pre-rename namespace across first. Must run
    before any screen reads storage. */
 migrateLegacyStorage();
 
+initTheme();
 initCapture();
 initAdjust();
 /* Scenes first: it registers its screenchange listener before the first

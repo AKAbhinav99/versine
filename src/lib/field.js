@@ -20,15 +20,26 @@
  * all while the tab is hidden (requestAnimationFrame stops). Under
  * prefers-reduced-motion it draws one still frame, spine straight. */
 
+import { currentTheme, onThemeChange } from './theme.js';
+
 const GAP = 22;
 const DOT = 1.25;                       // resting radius
 const SHADES = 8;                       // fill buckets, from resting slate to scrub
-const REST_RGB = [86, 110, 126];
-const ACTIVE_RGB = [31, 110, 140];
-const INK = '#0E2230';
-const MARKER = '#D6402A';
-const MARKER_RGB = '214, 64, 42';
-const SCRUB_RGB = '31, 110, 140';
+/* One palette per theme (src/lib/theme.js). In the dark the bones are drawn
+   in the card colour with pale outlines, so the spine still reads as a white
+   anatomical drawing turned negative rather than as holes in the page. */
+const PALETTES = {
+  light: {
+    rest: [86, 110, 126], active: [31, 110, 140], restAlpha: 0.3,
+    ink: '#0E2230', inkRGB: '14, 34, 48', bone: '#FFFFFF',
+    marker: '#D6402A', markerRGB: '214, 64, 42', scrubRGB: '31, 110, 140',
+  },
+  dark: {
+    rest: [104, 132, 148], active: [90, 176, 212], restAlpha: 0.34,
+    ink: '#DCE7EC', inkRGB: '220, 231, 236', bone: '#13222B',
+    marker: '#EC6A52', markerRGB: '236, 106, 82', scrubRGB: '90, 176, 212',
+  },
+};
 
 const SPRING = 170;                     // dot spring stiffness
 const DAMPING = 13;                     // under-damped on purpose: a small wobble
@@ -76,12 +87,14 @@ export function initField() {
   let dpr = 1;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  const fills = Array.from({ length: SHADES }, (_, i) => {
+  let pal = PALETTES[currentTheme()];
+  const shadesOf = ({ rest, active, restAlpha }) => Array.from({ length: SHADES }, (_, i) => {
     const t = i / (SHADES - 1);
     const mix = (a, b) => Math.round(a + (b - a) * t);
-    const alpha = (0.3 + 0.62 * t).toFixed(2);
-    return `rgba(${mix(REST_RGB[0], ACTIVE_RGB[0])}, ${mix(REST_RGB[1], ACTIVE_RGB[1])}, ${mix(REST_RGB[2], ACTIVE_RGB[2])}, ${alpha})`;
+    const alpha = (restAlpha + (0.92 - restAlpha) * t).toFixed(2);
+    return `rgba(${mix(rest[0], active[0])}, ${mix(rest[1], active[1])}, ${mix(rest[2], active[2])}, ${alpha})`;
   });
+  let fills = shadesOf(pal);
 
   let width = 0;
   let height = 0;
@@ -174,7 +187,7 @@ export function initField() {
     /* The plumb line, dropped from the top vertebra past the sacrum. */
     fx.save();
     fx.setLineDash([5, 7]);
-    fx.strokeStyle = 'rgba(14, 34, 48, 0.35)';
+    fx.strokeStyle = `rgba(${pal.inkRGB}, 0.35)`;
     fx.lineWidth = 1.25;
     fx.beginPath();
     fx.moveTo(geo.cx, geo.top - spacing);
@@ -187,7 +200,7 @@ export function initField() {
     if (angle > 2) {
       const side = spine.amp >= 0 ? -1 : 1;
       fx.save();
-      fx.strokeStyle = `rgba(${alarm > 0.5 ? MARKER_RGB : SCRUB_RGB}, ${Math.min(0.9, angle / 12)})`;
+      fx.strokeStyle = `rgba(${alarm > 0.5 ? pal.markerRGB : pal.scrubRGB}, ${Math.min(0.9, angle / 12)})`;
       fx.lineWidth = 1.5;
       for (const t of [0, 0.5]) {
         const x = spineX(geo, t);
@@ -214,9 +227,9 @@ export function initField() {
     fx.quadraticCurveTo(sx, sy - spacing * 0.3, sx + sw, sy - spacing * 0.1);
     fx.quadraticCurveTo(sx + sw * 0.45, sy + spacing * 1.2, sx, sy + spacing * 1.35);
     fx.quadraticCurveTo(sx - sw * 0.45, sy + spacing * 1.2, sx - sw, sy - spacing * 0.1);
-    fx.fillStyle = '#FFFFFF';
+    fx.fillStyle = pal.bone;
     fx.lineWidth = 1.5;
-    fx.strokeStyle = INK;
+    fx.strokeStyle = pal.ink;
     fx.fill();
     fx.stroke();
 
@@ -238,22 +251,22 @@ export function initField() {
       const wing = hw * (1.55 - 0.25 * t);
       fx.beginPath();
       fx.roundRect(-wing, -hh * 0.32, wing * 2, hh * 0.64, hh * 0.32);
-      fx.fillStyle = '#FFFFFF';
+      fx.fillStyle = pal.bone;
       fx.fill();
       fx.lineWidth = 1.25;
-      fx.strokeStyle = heat > 0.5 ? MARKER : 'rgba(14, 34, 48, 0.55)';
+      fx.strokeStyle = heat > 0.5 ? pal.marker : `rgba(${pal.inkRGB}, 0.55)`;
       fx.stroke();
       fx.beginPath();
       fx.roundRect(-hw, -hh, hw * 2, hh * 2, Math.min(hh, 7 * geo.scale));
-      fx.fillStyle = heat > 0.05 ? `rgba(${MARKER_RGB}, ${0.1 + heat * 0.14})` : '#FFFFFF';
+      fx.fillStyle = heat > 0.05 ? `rgba(${pal.markerRGB}, ${0.1 + heat * 0.14})` : pal.bone;
       fx.fill();
       fx.lineWidth = 1.5;
-      fx.strokeStyle = heat > 0.5 ? MARKER : INK;
+      fx.strokeStyle = heat > 0.5 ? pal.marker : pal.ink;
       fx.stroke();
       /* The spinous process, the bump you can feel down a back. */
       fx.beginPath();
       fx.arc(0, 0, 2.2 * geo.scale + 0.6, 0, Math.PI * 2);
-      fx.fillStyle = heat > 0.5 ? MARKER : INK;
+      fx.fillStyle = heat > 0.5 ? pal.marker : pal.ink;
       fx.fill();
       fx.restore();
     }
@@ -261,13 +274,13 @@ export function initField() {
     /* The bob, a diamond as in the wordmark. */
     fx.save();
     fx.translate(geo.cx, base + spacing * 2.5);
-    fx.shadowColor = 'rgba(214, 64, 42, 0.35)';
+    fx.shadowColor = `rgba(${pal.markerRGB}, 0.35)`;
     fx.shadowBlur = 14;
     fx.shadowOffsetY = 4;
     fx.beginPath();
     fx.moveTo(0, -2); fx.lineTo(10, 12); fx.lineTo(0, 26); fx.lineTo(-10, 12);
     fx.closePath();
-    fx.fillStyle = MARKER;
+    fx.fillStyle = pal.marker;
     fx.fill();
     fx.restore();
 
@@ -483,6 +496,12 @@ export function initField() {
     if (reduced) draw(0, 0);
   };
   document.addEventListener('screenchange', findSpine);
+  onThemeChange((theme) => {
+    pal = PALETTES[theme];
+    fills = shadesOf(pal);
+    lastInput = performance.now();
+    if (reduced) draw(0, 0);
+  });
   resize();
   findSpine();
   if (!reduced) {
