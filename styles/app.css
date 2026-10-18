@@ -1,0 +1,900 @@
+/* App mode: the web app as an iOS app (src/app/shell.js explains why).
+ *
+ * Everything here is scoped to html[data-shell='app'], set by boot.js inside
+ * the iOS app or with ?app in a browser, so the website is untouched. Screen
+ * only: a printed referral summary looks the same whichever it came from.
+ *
+ * The idea is to look like iOS rather than like this website on a phone:
+ * system surfaces and type (SF, with SF Rounded for readings, as Health draws
+ * its numbers), cards without borders or shadows, a navigation bar with a large
+ * title, a camera screen that is all camera, and no scroll choreography. The
+ * scrub blue stays as the app's tint, and the signal colours keep their meaning. */
+
+@media screen {
+
+/* ---------------------------------------------------------------- tokens --- */
+
+:root[data-shell='app'] {
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  --font-num: ui-rounded, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* The iOS text styles: caption, footnote, subheadline, body, title 2, title 1. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.9375rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-readout: 3.5rem;
+
+  /* System grouped backgrounds and labels. */
+  --paper: #F2F2F7;
+  --paper-raised: #FFFFFF;
+  --paper-sunk: #E9E9EE;
+  --ink-900: #000000;
+  --ink-700: #1C1C1E;
+  --ink-500: #6C6C70;
+  --ink-400: #6C6C70;
+  --ink-300: #C7C7CC;
+  --rule: rgba(60, 60, 67, 0.16);
+  --rule-soft: rgba(60, 60, 67, 0.08);
+  --rule-control: rgba(60, 60, 67, 0.3);
+  --fill: rgba(118, 118, 128, 0.12);
+  --fill-strong: rgba(118, 118, 128, 0.2);
+  --glass: rgba(242, 242, 247, 0.7);
+  --glass-raised: rgba(255, 255, 255, 0.72);
+  --hover-wash: transparent;
+  --dots: none;
+
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
+
+  --radius-sm: 10px;
+  --radius: 18px;
+  --radius-lg: 22px;
+  --gutter: 16px;
+  --tap: 50px;
+  --nav-h: 0px;
+  --nav-gap: 0px;
+  --bar-h: 52px;
+  --bar: calc(env(safe-area-inset-top) + var(--bar-h));
+  --bottom: calc(env(safe-area-inset-bottom) + 28px);
+
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root[data-shell='app'][data-theme='dark'] {
+  --paper: #000000;
+  --paper-raised: #1C1C1E;
+  --paper-sunk: #2C2C2E;
+  --ink-900: #FFFFFF;
+  --ink-700: #E5E5EA;
+  --ink-500: #A1A1A6;
+  --ink-400: #A1A1A6;
+  --ink-300: #48484A;
+  --rule: rgba(84, 84, 88, 0.6);
+  --rule-soft: rgba(84, 84, 88, 0.36);
+  --rule-control: rgba(235, 235, 245, 0.3);
+  --fill: rgba(118, 118, 128, 0.24);
+  --fill-strong: rgba(118, 118, 128, 0.36);
+  --glass: rgba(0, 0, 0, 0.6);
+  --glass-raised: rgba(44, 44, 46, 0.7);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ------------------------------------------------------------------ base --- */
+
+[data-shell='app'] {
+  scroll-behavior: auto;
+  overscroll-behavior: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+[data-shell='app'] body {
+  overscroll-behavior: auto;
+  line-height: 1.38;
+  /* Interface text is not selectable in an app; reading text is (below). */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+[data-shell='app'] :is(.article, .report, input, textarea, .verdict__body, .readout__note) {
+  -webkit-user-select: text;
+  user-select: text;
+}
+[data-shell='app'] :is(h1, h2, h3, h4) { letter-spacing: normal; font-weight: 700; line-height: 1.2; }
+[data-shell='app'] h3 { font-weight: 600; }
+[data-shell='app'] :focus-visible { outline: none; }
+[data-shell='app'] a { text-decoration: none; }
+
+/* The website's chrome and decoration. */
+[data-shell='app'] :is(.field, .spine-canvas, .masthead__home, .theme-toggle, .read-progress, .tabbar, .step-label) {
+  display: none !important;
+}
+[data-shell='app'] .app { max-width: none; min-height: 100dvh; }
+
+/* ------------------------------------------------------- navigation bar --- */
+
+[data-shell='app'] .masthead {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  gap: 8px;
+  height: var(--bar);
+  min-height: 0;
+  padding: env(safe-area-inset-top) 16px 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: none;
+  pointer-events: none;
+}
+[data-shell='app'] .masthead[hidden] { display: none; }
+[data-shell='app'] .masthead > * { pointer-events: auto; }
+
+/* The scroll edge effect: content softens into a blur under the bar rather
+   than meeting a hard edge, once there is content under it. */
+[data-shell='app'] .masthead::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 -22px;
+  z-index: -1;
+  background: color-mix(in srgb, var(--paper) 86%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(20px) saturate(1.8);
+  -webkit-mask-image: linear-gradient(#000 calc(100% - 30px), transparent);
+  mask-image: linear-gradient(#000 calc(100% - 30px), transparent);
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+[data-shell='app'] .masthead.is-scrolled::before { opacity: 1; }
+
+/* A Liquid Glass circle, as iOS 26 draws a bar button. */
+[data-shell='app'] .appbar__back {
+  grid-column: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ink-900);
+  background: var(--glass-raised);
+  -webkit-backdrop-filter: blur(12px) saturate(1.8);
+  backdrop-filter: blur(12px) saturate(1.8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
+  transition: transform 160ms ease, opacity 160ms ease;
+}
+[data-shell='app'][data-theme='dark'] .appbar__back {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
+}
+[data-shell='app'] .appbar__back[hidden] { display: none; }
+[data-shell='app'] .appbar__back:active { transform: scale(0.92); opacity: 0.7; }
+[data-shell='app'] .appbar__back svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+[data-shell='app'] .appbar__title {
+  grid-column: 2;
+  text-align: center;
+  font: 600 1.0625rem/1.2 var(--font-ui);
+  color: var(--ink-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+[data-shell='app'] .masthead.shows-title .appbar__title { opacity: 1; }
+
+/* The large title names the screen, so a heading that only restates it goes
+   (it stays for VoiceOver, as the section's name). */
+[data-shell='app'] :is(#history-title, #doctors-title) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+[data-shell='app'] .app-title {
+  margin: 2px 0 14px;
+  font: 700 2.125rem/1.2 var(--font-display);
+  letter-spacing: 0.01em;
+  color: var(--ink-900);
+}
+
+/* ---------------------------------------------------------------- screens --- */
+
+[data-shell='app'] .screen[data-active] { animation: none; }
+[data-shell='app'] :is(.screen--pad, .result, .analyze, .adjust) {
+  max-width: none;
+  margin: 0;
+  padding: var(--bar) var(--gutter) var(--bottom);
+}
+
+/* A push slides the new screen in from the right edge, a pop brings the
+   earlier one back from a little way left, as UINavigationController does. */
+[data-shell='app'] .screen[data-enter='push'] { animation: app-push 460ms var(--ease-ios) both; }
+[data-shell='app'] .screen[data-enter='pop'] { animation: app-pop 380ms var(--ease-ios) both; }
+@keyframes app-push { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes app-pop { from { transform: translateX(-28%); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-shell='app'] .screen[data-enter] { animation: app-fade 200ms ease both; }
+}
+@keyframes app-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* --------------------------------------------------------------- controls --- */
+
+[data-shell='app'] .btn {
+  min-height: var(--tap);
+  padding: 0 22px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: normal;
+  box-shadow: none;
+  transform: none;
+  transition: opacity 120ms ease;
+}
+[data-shell='app'] .btn:hover { background: var(--scrub); box-shadow: none; }
+[data-shell='app'] .btn:active { opacity: 0.6; transform: none; }
+[data-shell='app'] .btn--lg { min-height: 54px; }
+/* Secondary: the tinted style, accent text on a wash of the accent. */
+[data-shell='app'] .btn--ghost,
+[data-shell='app'] .btn--ghost:hover {
+  background: color-mix(in srgb, var(--scrub) 14%, transparent);
+  color: var(--scrub);
+  box-shadow: none;
+}
+[data-shell='app'] .btn--quiet,
+[data-shell='app'] .btn--quiet:hover {
+  min-height: 44px;
+  background: none;
+  color: var(--scrub);
+  font-size: var(--text-base);
+  font-weight: 400;
+}
+
+[data-shell='app'] input[type='text'],
+[data-shell='app'] input[type='number'],
+[data-shell='app'] input[type='search'],
+[data-shell='app'] select {
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background-color: var(--fill);
+  color: var(--ink-900);
+  font-size: var(--text-base);
+  box-shadow: none;
+}
+
+[data-shell='app'] .chip {
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--ink-900);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  box-shadow: none;
+}
+[data-shell='app'] .chip[aria-pressed='true'] { background: var(--scrub); color: var(--on-scrub); }
+
+[data-shell='app'] .pose-switch {
+  background: var(--fill);
+  border: 0;
+  box-shadow: none;
+}
+
+/* Cards: grouped, flat, no outline. */
+[data-shell='app'] :is(.panel, .readout, .sway, .clinic, .log-entry, .trend, .intake__q, .intake-prompt,
+  .adjust__panel, .link-list a, .notice, .quality-note, .report__section, .empty) {
+  border-color: transparent;
+  box-shadow: none;
+}
+/* The verdict keeps its colour as the card's wash and its kicker, not a stripe. */
+[data-shell='app'] .verdict { border-color: transparent; box-shadow: none; padding-left: var(--space-5); }
+[data-shell='app'] .verdict[data-level='clear'] .verdict__kicker { color: var(--clear-text); }
+[data-shell='app'] .verdict[data-level='monitor'] .verdict__kicker { color: var(--amber-text); }
+[data-shell='app'] .verdict[data-level='refer'] .verdict__kicker { color: var(--marker-text); }
+[data-shell='app'] .plate__key { border-color: transparent; box-shadow: none; }
+[data-shell='app'] .sway { box-shadow: inset 4px 0 0 var(--rule-control); }
+[data-shell='app'] .plate { box-shadow: none; }
+[data-shell='app'] .disclaimer { border: 0; background: var(--fill); }
+[data-shell='app'] .next-steps li { border-top: 0.5px solid var(--rule); }
+[data-shell='app'] .readout__value { font-weight: 600; letter-spacing: -0.01em; }
+
+/* Where a screen offers several places to go next, they are rows in a
+   grouped list, each with a chevron, as in Settings or Health. */
+[data-shell='app'] .result__actions {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+[data-shell='app'] .result__actions > * + * { margin-top: 0; }
+[data-shell='app'] .result__actions .btn {
+  position: relative;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 0 16px;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-900);
+  font-weight: 400;
+  text-align: left;
+}
+[data-shell='app'] .result__actions .btn:first-child { color: var(--scrub); font-weight: 600; }
+[data-shell='app'] .result__actions .btn:active { opacity: 1; background: var(--fill); }
+[data-shell='app'] .result__actions .btn + .btn::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 16px;
+  border-top: 0.5px solid var(--rule);
+}
+[data-shell='app'] .result__actions .btn::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: 12px;
+  border-top: 2px solid var(--ink-300);
+  border-right: 2px solid var(--ink-300);
+  transform: rotate(45deg);
+}
+
+/* ------------------------------------------------------------------ home --- */
+
+/* Health's summary, in this app's colours: a date over the large title, cards
+   that press in slightly under a finger, and a grouped list of next steps. */
+[data-shell='app'] .home__date {
+  margin: 4px 0 -2px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+[data-shell='app'] .home-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 16px 18px 18px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+  color: var(--ink-700);
+  text-align: left;
+  transition: transform 160ms ease;
+}
+[data-shell='app'] button.home-card:active { transform: scale(0.98); }
+
+/* When to scan next: the icon's own tile, with its spine faint at the right. */
+[data-shell='app'] .home-scan {
+  position: relative;
+  overflow: hidden;
+  padding-right: 96px;
+  background: linear-gradient(135deg, #2A7FA0, #0E2230);
+  color: #fff;
+}
+[data-shell='app'] .home-scan::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  right: -6px;
+  width: 96px;
+  height: 120px;
+  opacity: 0.16;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='10 4 12 24'%3E%3Cg fill='%23fff'%3E%3Crect x='-3.5' y='-1.75' width='7' height='3.5' rx='1.75' transform='translate(16 7) rotate(-5.6)'/%3E%3Crect x='-3.8' y='-1.75' width='7.6' height='3.5' rx='1.75' transform='translate(18.2 11.5)'/%3E%3Crect x='-4.1' y='-1.75' width='8.2' height='3.5' rx='1.75' transform='translate(16 16) rotate(5.6)'/%3E%3Crect x='-4.4' y='-1.75' width='8.8' height='3.5' rx='1.75' transform='translate(13.8 20.5)'/%3E%3Crect x='-4.7' y='-1.75' width='9.4' height='3.5' rx='1.75' transform='translate(16 25) rotate(-5.6)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
+  pointer-events: none;
+}
+[data-shell='app'] .home-scan__kicker { font-size: 0.8125rem; font-weight: 600; color: rgba(255, 255, 255, 0.72); }
+[data-shell='app'] .home-scan__headline { margin: 2px 0 6px; font: 700 var(--text-xl)/1.2 var(--font-display); color: #fff; }
+[data-shell='app'] .home-scan__note { font-size: var(--text-sm); color: rgba(255, 255, 255, 0.82); }
+[data-shell='app'] .home-scan__start,
+[data-shell='app'] .home-scan__start:hover {
+  margin-top: 16px;
+  min-height: 44px;
+  background: #fff;
+  color: #12506A;
+}
+
+/* The latest reading, coloured by its band. */
+[data-shell='app'] .home-reading { --band: var(--scrub); --band-text: var(--scrub); }
+[data-shell='app'] .home-reading[data-level='clear'] { --band: var(--clear); --band-text: var(--clear-text); }
+[data-shell='app'] .home-reading[data-level='monitor'] { --band: var(--amber); --band-text: var(--amber-text); }
+[data-shell='app'] .home-reading[data-level='refer'] { --band: var(--marker); --band-text: var(--marker-text); }
+[data-shell='app'] .home-reading__head { display: flex; justify-content: space-between; align-self: stretch; gap: 12px; }
+[data-shell='app'] .home-reading__label { font-size: var(--text-sm); font-weight: 600; color: var(--scrub); }
+[data-shell='app'] .home-reading__date { font-size: 0.8125rem; color: var(--ink-500); }
+[data-shell='app'] .home-reading__row { display: flex; align-items: baseline; justify-content: space-between; align-self: stretch; gap: 12px; margin-top: 4px; }
+[data-shell='app'] .home-reading__value {
+  font: 700 2.5rem/1.1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-900);
+}
+[data-shell='app'] .home-reading__unit { font-size: 0.6em; vertical-align: 0.5em; }
+[data-shell='app'] .home-reading__error { font-size: var(--text-base); font-weight: 500; color: var(--ink-500); }
+[data-shell='app'] .home-reading__band {
+  flex: none;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--band) 16%, transparent);
+  color: var(--band-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+[data-shell='app'] .home-reading__spark { align-self: stretch; width: 100%; height: 56px; margin-top: 12px; overflow: visible; }
+[data-shell='app'] .spark-edge { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+[data-shell='app'] .spark-line { fill: none; stroke: var(--scrub); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+[data-shell='app'] .spark-point { fill: var(--scrub); }
+[data-shell='app'] .spark-dot { fill: var(--band); stroke: var(--paper-raised); stroke-width: 2; vector-effect: non-scaling-stroke; }
+[data-shell='app'] .home-reading__foot { margin-top: 10px; font-size: 0.8125rem; color: var(--ink-500); }
+
+/* Symptoms the intake flagged, above everything else. */
+[data-shell='app'] .home-flags { background: var(--amber-wash); }
+[data-shell='app'] .home-flags[data-urgency='urgent'] { background: var(--marker-wash); }
+[data-shell='app'] .home-flags__kicker { font-size: var(--text-sm); font-weight: 700; color: var(--amber-text); }
+[data-shell='app'] .home-flags[data-urgency='urgent'] .home-flags__kicker { color: var(--marker-text); }
+[data-shell='app'] .home-flags__body { margin: 4px 0 10px; font-size: var(--text-sm); color: var(--ink-700); }
+[data-shell='app'] .home-flags__action { font-size: var(--text-sm); font-weight: 600; color: var(--scrub); }
+
+[data-shell='app'] .home__section { margin: 26px 0 10px; font-size: var(--text-xl); font-weight: 700; color: var(--ink-900); }
+
+/* The next steps: a grouped list, a tinted icon tile on each row, as in Settings. */
+[data-shell='app'] .home-list { overflow: hidden; border-radius: var(--radius-lg); background: var(--paper-raised); }
+[data-shell='app'] .home-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 62px;
+  padding: 10px 16px;
+  border: 0;
+  background: none;
+  text-align: left;
+}
+[data-shell='app'] .home-row:active { background: var(--fill); }
+[data-shell='app'] .home-row + .home-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 60px;
+  border-top: 0.5px solid var(--rule);
+}
+[data-shell='app'] .home-row__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--scrub);
+}
+[data-shell='app'] .home-row__icon[data-tint='amber'] { background: var(--amber); }
+[data-shell='app'] .home-row__icon[data-tint='marker'] { background: var(--marker); }
+[data-shell='app'] .home-row__icon[data-tint='clear'] { background: var(--clear); }
+[data-shell='app'] .home-row__icon svg { width: 19px; height: 19px; fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+[data-shell='app'] .home-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+[data-shell='app'] .home-row__title { font-size: var(--text-base); color: var(--ink-900); }
+[data-shell='app'] .home-row__detail { font-size: 0.8125rem; color: var(--ink-500); }
+[data-shell='app'] .home-row__chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid var(--ink-300);
+  border-right: 2px solid var(--ink-300);
+  transform: rotate(45deg);
+}
+
+[data-shell='app'] .home__footnote { margin: 22px 8px 0; font-size: 0.8125rem; color: var(--ink-500); text-align: center; }
+
+/* ------------------------------------------------- intro: the welcome --- */
+
+/* The website's intro is a scroll story. In the app the disclaimer gate is
+   what an iOS app shows on first launch: the icon, what it is, what it does
+   and does not do, and one button. Same copy, rearranged: the hero and its
+   copy dissolve into the column so their parts can be ordered. */
+[data-shell='app'] .intro[data-active] {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: calc(env(safe-area-inset-top) + 36px) 28px 0;
+}
+[data-shell='app'] .intro > :is(.band, .how, .journey, .stats, .closer),
+[data-shell='app'] .intro :is(.hero__plumb, .hero__cue, .limits__head) { display: none; }
+[data-shell='app'] .intro :is(.hero, .hero__copy) { display: contents; }
+
+[data-shell='app'] .intro::before {
+  content: '';
+  order: 0;
+  align-self: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 20px;
+  background: url('../favicon.svg') center / cover;
+  box-shadow: 0 8px 24px rgba(14, 34, 48, 0.22);
+}
+[data-shell='app'] .hero__title {
+  order: 1;
+  margin: 22px 0 10px;
+  font: 700 2rem/1.15 var(--font-display);
+  text-align: center;
+  color: var(--ink-900);
+}
+[data-shell='app'] .hero__title em { font-style: normal; color: var(--scrub); }
+[data-shell='app'] .hero__lede {
+  order: 2;
+  margin: 0;
+  font-size: var(--text-base);
+  text-align: center;
+  color: var(--ink-500);
+}
+[data-shell='app'] .intro .limits {
+  order: 3;
+  margin: 28px 0 0;
+  padding: 0;
+  background: none;
+}
+[data-shell='app'] .limits__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 18px;
+}
+[data-shell='app'] .limits__list li {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 14px;
+  align-items: start;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--text-sm);
+  color: var(--ink-500);
+}
+[data-shell='app'] .limits__list b { display: block; margin-bottom: 1px; font-size: var(--text-base); font-weight: 600; color: var(--ink-900); }
+/* Does / Does not, as a tick or a cross. The words stay for VoiceOver. */
+[data-shell='app'] .limits__list .claim-list__key {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--clear) 16%, transparent);
+  font-size: 0;
+  color: transparent;
+  overflow: hidden;
+}
+[data-shell='app'] .limits__list .claim-list__key--no { background: color-mix(in srgb, var(--marker) 14%, transparent); }
+[data-shell='app'] .limits__list .claim-list__key::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 16px;
+  height: 16px;
+  background: var(--clear-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5 6.2 12 13.5 4' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2.5 8.5 6.2 12 13.5 4' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+[data-shell='app'] .limits__list .claim-list__key--no::before {
+  background: var(--marker-text);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+/* The button stays at the bottom of the screen while the list scrolls. */
+[data-shell='app'] .hero__cta {
+  order: 4;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: auto -28px 0;
+  padding: 28px 28px calc(env(safe-area-inset-bottom) + 12px);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  background: linear-gradient(transparent, var(--paper) 26px);
+  text-align: center;
+}
+[data-shell='app'] .hero__cta .btn { width: 100%; padding: 0; }
+[data-shell='app'] .hero__note { font-size: var(--text-xs); color: var(--ink-500); }
+
+/* --------------------------------------------------- capture: the camera --- */
+
+/* Black whatever the appearance, as every iOS camera is, with the shutter
+   row above the tab bar and nothing to scroll. */
+[data-shell='app'][data-screen='capture'],
+[data-shell='app'][data-screen='capture'] body { background-color: #000; }
+[data-shell='app'] .capture[data-active] {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100dvh;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+}
+[data-shell='app'] .capture__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 14px 10px 18px;
+}
+[data-shell='app'] .capture__hint {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-align: left;
+}
+[data-shell='app'] .capture__hint b { color: #fff; }
+[data-shell='app'] .capture__info {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font: italic 700 1rem/1 Georgia, 'Times New Roman', serif;
+}
+[data-shell='app'] .capture__info:active { opacity: 0.6; }
+
+[data-shell='app'] .capture__stage {
+  flex: 1;
+  min-height: 0;
+  margin: 0 8px;
+  border-radius: 24px;
+  background: #1C1C1E;
+  box-shadow: none;
+}
+[data-shell='app'] .capture__error {
+  border: 0;
+  box-shadow: none;
+  padding-left: var(--space-4);
+  background: rgba(28, 28, 30, 0.86);
+  color: #fff;
+}
+[data-shell='app'] .capture__error b { color: #fff; }
+
+/* No camera at all (the Simulator): a quiet panel with the explanation in the
+   middle, and none of the overlays meant to sit on a live image. */
+[data-shell='app'] .capture__stage[data-camera='none'] :is(.capture__guide, .capture__poses, .capture__guide-btn, .capture__ghost) {
+  display: none;
+}
+[data-shell='app'] .capture__stage[data-camera='none'] .capture__error {
+  inset: 0 24px;
+  height: fit-content;
+  margin: auto 0;
+  padding: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--text-base);
+  text-align: center;
+  animation: none;
+}
+[data-shell='app'] .capture__stage[data-camera='none'] .capture__error b { display: block; margin-bottom: 6px; font-size: var(--text-lg); }
+
+/* Overlay controls on the viewfinder: small glass capsules. */
+[data-shell='app'] :is(.capture__guide-btn, .capture__ghost-btn, .capture__flip, .capture__poses) {
+  border: 0;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  box-shadow: none;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+[data-shell='app'] .capture__poses .pose-switch__thumb { background: rgba(255, 255, 255, 0.9); box-shadow: none; }
+[data-shell='app'] .capture__poses button { color: rgba(255, 255, 255, 0.85); }
+[data-shell='app'] .capture__poses button[aria-pressed='true'] { color: #000; }
+[data-shell='app'] .capture__guide-btn[aria-pressed='false'] { color: rgba(255, 255, 255, 0.6); }
+
+[data-shell='app'] .capture__controls {
+  padding: 14px 24px 12px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+[data-shell='app'] .shutter {
+  width: 76px;
+  height: 76px;
+  border: 4px solid #fff;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+[data-shell='app'] .shutter:hover { box-shadow: none; }
+[data-shell='app'] .shutter__core { width: 62px; height: 62px; background: #fff; }
+[data-shell='app'] .shutter[data-armed='true'] .shutter__core { background: var(--marker); }
+[data-shell='app'] .capture__aux {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 0.8125rem;
+}
+[data-shell='app'] .capture__aux:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+[data-shell='app'] .capture__aux[aria-pressed='true'] { background: rgba(255, 255, 255, 0.14); color: #FFD60A; }
+
+/* The self-timer: big white digits over a dimmed preview, as the Camera app counts. */
+[data-shell='app'] .capture__timer {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.36);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-size: 7.5rem;
+  font-weight: 300;
+}
+
+/* ------------------------------------------------- adjust: line it up --- */
+
+[data-shell='app'] .adjust__stage { box-shadow: none; background: var(--paper-sunk); }
+[data-shell='app'] .adjust__frame canvas { box-shadow: none; }
+[data-shell='app'] .adjust__warn { box-shadow: none; padding-left: var(--space-4); background: var(--fill); }
+[data-shell='app'] .adjust__warn--active { background: var(--marker-wash); }
+[data-shell='app'] .adjust__error { box-shadow: none; padding-left: var(--space-4); }
+[data-shell='app'] .adjust__row .label { font-size: var(--text-base); font-weight: 400; color: var(--ink-900); }
+
+/* An iOS slider: a thin grey track and a white knob with a soft shadow. */
+[data-shell='app'] input[type='range']::-webkit-slider-runnable-track { height: 4px; background: var(--fill-strong); }
+[data-shell='app'] input[type='range']::-webkit-slider-thumb {
+  width: 28px;
+  height: 28px;
+  margin-top: -12px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 0.5px 4px rgba(0, 0, 0, 0.12), 0 6px 13px rgba(0, 0, 0, 0.12), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+}
+[data-shell='app'] input[type='range']:active::-webkit-slider-thumb { transform: none; }
+
+/* ------------------------------------------------- analyze: measuring --- */
+
+/* No bar while measuring: there is nothing to go back to mid-measurement,
+   and the heading itself is the title. */
+[data-shell='app'] .analyze { padding-top: calc(env(safe-area-inset-top) + 16px); min-height: 100dvh; }
+[data-shell='app'] .analyze > h2 { margin: 0 0 18px !important; font: 700 2.125rem/1.2 var(--font-display); color: var(--ink-900); }
+[data-shell='app'] .analyze__frame { margin: 0 auto 20px; box-shadow: none; }
+[data-shell='app'] .analyze__log {
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  font-size: var(--text-base);
+}
+[data-shell='app'] .analyze__log li,
+[data-shell='app'] .analyze__log li[data-state] {
+  position: relative;
+  min-height: 50px;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+[data-shell='app'] .analyze__log li + li::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 48px;
+  border-top: 0.5px solid var(--rule);
+}
+
+/* ---------------------------------------------------- intake: about you --- */
+
+/* Each question's answers as an iOS segmented control: one capsule track, the
+   chosen answer on a raised thumb. A flagged answer still turns red. */
+[data-shell='app'] .intake__q[data-flagged] { background: var(--marker-wash); box-shadow: none; }
+[data-shell='app'] .intake__options { gap: 0; flex-wrap: wrap; }
+[data-shell='app'] .intake__option {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 2px 0;
+  background: var(--fill);
+}
+[data-shell='app'] .intake__option:first-child { padding-left: 2px; border-radius: 999px 0 0 999px; }
+[data-shell='app'] .intake__option:nth-last-child(1 of .intake__option) { padding-right: 2px; border-radius: 0 999px 999px 0; }
+[data-shell='app'] .intake__options label {
+  justify-content: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-900);
+  font-size: 0.875rem;
+  text-align: center;
+  line-height: 1.15;
+  transform: none;
+}
+[data-shell='app'] .intake__options input:checked + label {
+  background: var(--paper-raised);
+  color: var(--ink-900);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+}
+[data-shell='app'][data-theme='dark'] .intake__options input:checked + label { background: #636366; }
+[data-shell='app'] .intake__options input:checked + label[data-flag] { background: var(--marker); color: #fff; }
+[data-shell='app'] .intake__clear {
+  flex-basis: 100%;
+  min-height: 36px;
+  padding: 0;
+  text-align: left;
+  color: var(--scrub);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+[data-shell='app'] .intake__number input { border: 0; background: var(--fill); }
+[data-shell='app'] .redflag,
+[data-shell='app'] .redflag[data-urgency='urgent'] { box-shadow: none; padding-left: var(--space-4); }
+
+/* Care: the resolved place is a plain callout, and the clinic buttons are
+   the compact size a card's actions take. */
+[data-shell='app'] .loc-resolved { box-shadow: none; border: 0; padding-left: var(--space-4); }
+[data-shell='app'] .clinic .btn { min-height: 44px; }
+
+/* The summary's own Back button repeats the navigation bar's. */
+[data-shell='app'] .report__actions .btn--ghost { display: none; }
+
+/* A destructive action reads in red, as in iOS. */
+[data-shell='app'] .btn.history__clear,
+[data-shell='app'] .btn.history__clear:hover { color: var(--marker-text); background: var(--paper-raised); }
+
+/* ------------------------------------------------------- the tips sheet --- */
+
+[data-shell='app'] .sheet {
+  position: fixed;
+  inset: auto 0 0;
+  width: auto;
+  max-width: none;
+  max-height: 80dvh;
+  margin: 0 8px 8px;
+  padding: 8px 20px calc(env(safe-area-inset-bottom) + 20px);
+  border: 0;
+  border-radius: 34px;
+  background: var(--paper-raised);
+  color: var(--ink-700);
+  box-shadow: var(--shadow-lg);
+}
+[data-shell='app'] .sheet[open] { animation: sheet-up 420ms var(--ease-ios) both; }
+[data-shell='app'] .sheet::backdrop { background: rgba(0, 0, 0, 0.32); animation: app-fade 300ms ease both; }
+@keyframes sheet-up { from { transform: translateY(105%); } to { transform: none; } }
+[data-shell='app'] .sheet__grabber { width: 36px; height: 5px; margin: 0 auto 10px; border-radius: 3px; background: var(--ink-300); }
+[data-shell='app'] .sheet__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+[data-shell='app'] .sheet__title { font-size: var(--text-xl); }
+[data-shell='app'] .sheet__done { border: 0; background: none; padding: 8px 0 8px 16px; color: var(--scrub); font-size: var(--text-base); font-weight: 600; }
+[data-shell='app'] .sheet .capture__steps { display: block; margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
+[data-shell='app'] .sheet .capture__steps ol { padding-left: 1.4rem; font-size: var(--text-base); }
+[data-shell='app'] .sheet .capture__steps li { margin-bottom: 12px; }
+
+}
+
+/* Printing: the referral summary prints as it always has (print.css). The
+   app's own additions are screen furniture. */
+@media print {
+  :is(.app-title, .appbar__back, .appbar__title, .capture__info, .sheet) { display: none !important; }
+}

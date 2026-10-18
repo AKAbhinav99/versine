@@ -1,6 +1,9 @@
 /* Getting a position out of the browser, with failures that explain themselves. */
 
-const DENIED_MESSAGE = 'Location is blocked for this site. Allow it from the padlock or ⓘ icon in the address bar, then try again, or just type a postal code or city, which works the same way.';
+/* The iOS app has no address bar; its location switch is in Settings. */
+const DENIED_MESSAGE = document.documentElement.dataset.shell === 'app'
+  ? 'Location is off for Versine. Turn it on in Settings, under Apps, Versine, then try again, or just type a postal code or city, which works the same way.'
+  : 'Location is blocked for this site. Allow it from the padlock or ⓘ icon in the address bar, then try again, or just type a postal code or city, which works the same way.';
 
 export async function currentPosition(options = {}) {
   if (!navigator.geolocation) {

@@ -2,7 +2,7 @@
  * Designed for one hand, the shutter is thumb-sized and centred, and the timer
  * exists because you cannot tap a phone while bent over with arms hanging. */
 
-import { $ } from '../lib/dom.js';
+import { $, el } from '../lib/dom.js';
 import { onEnter, onLeave } from '../router.js';
 import { listScans } from '../lib/storage.js';
 import { openAdjust } from './adjust.js';
@@ -31,6 +31,12 @@ let countdown = null;
 let facingMode = 'environment';   // the back camera is the one pointed at a back
 let switching = false;
 let ghostOn = true;
+
+/* The iOS Simulator (ios/ reports it through the native bridge) has no
+   camera, only a synthetic test feed: frame counters, a resolution readout and
+   moving shapes. Nothing in it can be measured, and on screen it reads as the
+   app glitching, so there the viewfinder says so and points to Upload. */
+const SIMULATOR = Boolean(window.VersineNative?.simulator);
 
 const video = () => $('#capture-video');
 
@@ -77,9 +83,10 @@ function refreshGhost() {
   const button = $('#capture-ghost-toggle');
   const image = $('#capture-ghost');
 
-  /* Nothing to match against on a first scan, the control would be a dead end. */
-  button.classList.toggle('hidden', !previous);
-  if (!previous) {
+  /* Nothing to match against on a first scan, the control would be a dead end,
+     and nothing to match it to without a live preview. */
+  button.classList.toggle('hidden', !previous || SIMULATOR);
+  if (!previous || SIMULATOR) {
     image.classList.add('hidden');
     image.removeAttribute('src');
     resetHint();
@@ -165,6 +172,13 @@ function startCamera() {
   showError(null);
   const mine = ++generation;
   starting = (async () => {
+    if (SIMULATOR) {
+      $('.capture__stage').dataset.camera = 'none';
+      showError(el('span', {},
+        el('b', {}, 'The Simulator has no camera.'),
+        ' Its stand-in is a test pattern, which cannot be measured. Use Upload to measure a photo. On an iPhone, the live camera shows here.'));
+      return;
+    }
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
       showError(window.isSecureContext
         ? 'This browser cannot open a camera. Use Upload to analyse a photo instead.'
@@ -198,7 +212,10 @@ function cameraMessage(error) {
   switch (error?.name) {
     case 'NotAllowedError':
     case 'SecurityError':
-      return 'Camera access is blocked for this page. Allow it from the camera icon in the address bar, then try again, or use Upload.';
+      /* The iOS app has no address bar; its camera switch is in Settings. */
+      return document.documentElement.dataset.shell === 'app'
+        ? 'Camera access is off for Versine. Turn it on in Settings, under Apps, Versine, then try again, or use Upload.'
+        : 'Camera access is blocked for this page. Allow it from the camera icon in the address bar, then try again, or use Upload.';
     case 'NotReadableError':
     case 'AbortError':
       return 'The camera is busy, probably open in another app or tab. Close it there, then try again.';

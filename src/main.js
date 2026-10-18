@@ -9,6 +9,7 @@ import { initMotion } from './lib/motion.js';
 import { initField } from './lib/field.js';
 import { initTheme } from './lib/theme.js';
 import { initScenes } from './lib/scenes.js';
+import { inApp, initShell } from './app/shell.js';
 
 /* Carry anything stored under the pre-rename namespace across first. Must run
    before any screen reads storage. */
@@ -17,12 +18,19 @@ migrateLegacyStorage();
 initTheme();
 initCapture();
 initAdjust();
-/* Scenes first: it registers its screenchange listener before the first
-   showScreen below, and marks html.gsap, which motion.js reads to leave
-   GSAP-driven elements alone. */
-initScenes();
-initMotion();
-initField();
+if (inApp) {
+  /* The iOS app: its own navigation bar and screen transitions instead of the
+     website's motion, dot field and scroll scenes. Before the first
+     showScreen below, for the same reason as the scenes. */
+  initShell();
+} else {
+  /* Scenes first: it registers its screenchange listener before the first
+     showScreen below, and marks html.gsap, which motion.js reads to leave
+     GSAP-driven elements alone. */
+  initScenes();
+  initMotion();
+  initField();
+}
 
 /* Only the capture flow is loaded up front. The other screens are whole
    subtrees, the clinician finder alone pulls eight modules and Leaflet, and
@@ -129,13 +137,17 @@ function migrateLegacyStorage() {
   }
 }
 
+/* Where the app opens once the disclaimer is accepted: the viewfinder on the
+   website, the home screen in the iOS app. */
+const START = inApp ? 'home' : 'capture';
+
 /* The intro offers the same button at the top and the bottom of the page. */
 document.querySelectorAll('[data-intro-accept]').forEach((button) => button.addEventListener('click', () => {
   localStorage.setItem(INTRO_KEY, String(Date.now()));
-  showScreen('capture');
+  showScreen(START);
 }));
 
-/* The disclaimer gate shows once; after that the app opens on the capture screen. */
+/* The disclaimer gate shows once; after that the app opens on START. */
 /* The logo goes home: back to the intro and its scroll story. A real link, so
    it still works (as a reload) if this script never runs. */
 $('[data-home]')?.addEventListener('click', (event) => {
@@ -144,7 +156,7 @@ $('[data-home]')?.addEventListener('click', (event) => {
   showScreen('intro');
 });
 
-showScreen(localStorage.getItem(INTRO_KEY) ? 'capture' : 'intro');
+showScreen(localStorage.getItem(INTRO_KEY) ? START : 'intro');
 
 /* ?demo renders the result screen from a hand-written fixture, for showing the
    app on a machine with no camera. Never runs during a real scan. */

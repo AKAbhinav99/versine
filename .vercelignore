@@ -6,3 +6,6 @@ bench/
 # Unit tests and editor config are not part of the site.
 tests/
 .claude/
+
+# The iOS app (ios/) bundles these same files itself; the site does not serve it.
+ios/

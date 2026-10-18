@@ -278,7 +278,7 @@ function nextStepsBlock(level) {
 }
 
 function actions(entry = null) {
-  return el('div', { class: 'stack-sm', style: 'margin-bottom:var(--space-5)' },
+  return el('div', { class: 'stack-sm result__actions', style: 'margin-bottom:var(--space-5)' },
     /* Only offered for a reading that was actually logged, a withheld reading
        has no number to summarise, and a page saying so helps nobody. */
     entry

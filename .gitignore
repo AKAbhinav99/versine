@@ -17,3 +17,18 @@ bench/set/
 *.png
 *.webp
 .vercel
+
+# The iOS app's icon and launch mark (drawn by ios/tools/make-icons.swift) are
+# part of the app, unlike the photographs above.
+!ios/Versine/Assets.xcassets/**/*.png
+
+# MediaPipe and the pose model, which the iOS app bundles. ios/bundle-web.sh
+# caches them outside the repository and copies them into the build; they are
+# never committed.
+vendor/
+*.task
+*.wasm
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate

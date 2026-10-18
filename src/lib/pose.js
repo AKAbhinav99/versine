@@ -1,6 +1,7 @@
 /* MediaPipe Pose (BlazePose) wrapper.
  * The model files load from a CDN on first use and are then cached by the browser,
- * so the first scan of a session takes a few seconds and later ones are instant. */
+ * so the first scan of a session takes a few seconds and later ones are instant.
+ * The iOS app loads them from its own bundle instead (POSE_MODEL in config.js). */
 
 import { POSE_MODEL } from '../config.js';
 

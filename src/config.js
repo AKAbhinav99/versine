@@ -1,12 +1,22 @@
 /* Tunables and thresholds in one place. */
 
-export const POSE_MODEL = {
+const POSE_MODEL_CDN = {
   /* MediaPipe Tasks Vision, loaded from CDN as an ES module. */
   visionBundle: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs',
   wasmRoot: 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm',
   /* "full" is the accuracy/size middle ground; "heavy" is more accurate and ~4x larger. */
   asset: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
 };
+
+/* The iOS app ships those same pinned files (ios/bundle-web.sh, which stops the
+   build if the URLs above change without it), so a scan works with no signal.
+   Keyed on the page being served from the app bundle rather than on app mode:
+   ?app in a browser is app mode too, and has no bundle to load them from. */
+export const POSE_MODEL = globalThis.location?.protocol === 'versine:' ? {
+  visionBundle: '/vendor/mediapipe/vision_bundle.mjs',
+  wasmRoot: '/vendor/mediapipe/wasm',
+  asset: '/vendor/mediapipe/pose_landmarker_full.task',
+} : POSE_MODEL_CDN;
 
 /* Screening bands.
  *

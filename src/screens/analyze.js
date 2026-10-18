@@ -75,7 +75,10 @@ function reportFailure(error, photoCanvas, step) {
     ? {
       photo: photoCanvas,
       headline: 'The pose model failed to load',
-      body: 'Versine downloads its landmark model the first time you scan, so this step needs a network connection. Check you are online and try the scan again.',
+      /* The iOS app ships the model (src/config.js), so there it is no download. */
+      body: location.protocol === 'versine:'
+        ? 'The landmark model ships inside the app, and it would not start. Close Versine and open it again; if it keeps happening, reinstalling the app restores it.'
+        : 'Versine downloads its landmark model the first time you scan, so this step needs a network connection. Check you are online and try the scan again.',
     }
     : {
       photo: photoCanvas,

@@ -23,6 +23,7 @@
 <link rel="modulepreload" href="src/lib/field.js" />
 <link rel="modulepreload" href="src/lib/theme.js" />
 <link rel="modulepreload" href="src/lib/scenes.js" />
+<link rel="modulepreload" href="src/app/shell.js" />
 
 <!-- Before first paint: hides the intro hero until GSAP takes it over (src/boot.js). -->
 <script src="src/boot.js"></script>
@@ -42,6 +43,8 @@
 <link rel="stylesheet" href="styles/report.css" />
 <link rel="stylesheet" href="styles/print.css" media="print" />
 <link rel="stylesheet" href="styles/care.css" />
+<!-- The iOS app's layout, inert on the website (scoped to html[data-shell="app"]). -->
+<link rel="stylesheet" href="styles/app.css" />
 </head>
 <body>
   <!-- Shared SVG paint, referenced by the capture guide and its copy in the
@@ -577,7 +580,7 @@
     <div class="care">
     <div class="care__panel">
     <div class="locbar">
-      <input type="text" id="loc-input" placeholder="ZIP or postal code, city, or address" autocomplete="postal-code" aria-label="Search location" />
+      <input type="text" id="loc-input" placeholder="ZIP or postal code, city, or address" autocomplete="postal-code" enterkeyhint="search" aria-label="Search location" />
       <button class="btn" id="loc-search">Find</button>
     </div>
     <div class="locbar locbar--secondary">

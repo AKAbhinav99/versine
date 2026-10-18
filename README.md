@@ -28,6 +28,64 @@ Then open `http://localhost:4321`. A few notes:
   landmark fixture, for showing the app on a machine with no camera. The demo
   photo is labelled as such on the image itself.
 
+## The iOS app
+
+`ios/` is an iPhone app, and it is this web app, not a port of it. Open
+`ios/Versine.xcodeproj` in Xcode and run it on a simulator or a phone; a build
+phase (`ios/bundle-web.sh`) copies `index.html`, `src/`, `styles/` and `data/`
+into the app, so the app and the site cannot drift apart.
+
+Put in a native shell as it is, the site reads as a website on a phone: a
+masthead with a logo, a floating tab bar, a dot field behind everything,
+reveal animations on scroll, and an intro told in scroll-scrubbed scenes. So
+the app runs it in **app mode** (`html[data-shell="app"]`, set by `boot.js`
+before first paint), which keeps every feature and changes how it looks and
+moves:
+
+- **Native where it matters.** The tab bar is UIKit's (Liquid Glass on iOS 26),
+  `alert`/`confirm` are iOS alerts, the referral summary prints through the iOS
+  print sheet (which also saves and shares it as a PDF), location comes from
+  Core Location so the prompt names Versine instead of "localhost", directions
+  open in Apple Maps, other links in an in-app Safari sheet, and the shutter
+  has a haptic.
+- **iOS layout in the web view.** System fonts (SF, with SF Rounded for
+  readings), grouped backgrounds, borderless cards, large titles that collapse
+  into the navigation bar, a back button and edge swipe on the steps of a scan,
+  push transitions between them, segmented controls for the intake answers, and
+  a camera screen that is all camera, with its tips in a sheet. The first
+  launch is a one-screen welcome instead of the scroll story. It follows the
+  system appearance.
+- **A home screen.** The app opens on a Home tab (`src/app/home.js`) that the
+  website does not have: when the next scan is due (from the rescan advice of
+  the last reading's band), the latest reading with its error bar and recent
+  trend, any symptoms the intake flagged, and rows into the intake, the
+  referral summary, care and background reading. It adds no new numbers; it
+  gathers what the app already keeps.
+- **None of the website's motion.** GSAP, Lenis, three.js and the web fonts are
+  blocked in the app rather than downloaded and left unused.
+
+The layout lives in `styles/app.css` and `src/app/shell.js`, scoped so the site
+is untouched. To work on it without Xcode, open the site with `?app`
+(`http://localhost:4321/?app`); it sticks for that tab. Inside the app the page
+is served from the bundle at `versine://localhost/`, which WebKit treats as a
+secure context, so the camera, location and module scripts behave exactly as on
+the deployed site; `/api/` is forwarded to the deployed site.
+
+The pose model ships inside the app, so a scan works with no signal, the first
+one included. `bundle-web.sh` downloads the same pinned files the site loads from
+jsDelivr and Google's model bucket (the MediaPipe tasks-vision bundle, its SIMD
+wasm, and the float16 pose landmarker, about 19 MB) once into
+`~/Library/Caches/versine-model/`, checks them against pinned SHA-256 hashes, and
+copies them to `Web/vendor/mediapipe/` in the app. `config.js` points there when
+the page is served from the bundle (not in a browser with `?app`, which has no
+bundle). The files are not in the repository, so the first build needs a
+connection and later ones do not. Changing the MediaPipe version or model in
+`config.js` stops the build until `bundle-web.sh` names the same files and their
+new hashes.
+
+`ios/tools/make-icons.swift` draws the app icon from the masthead logo's
+geometry. In a Debug build, the `-demo` launch argument opens the `?demo` result.
+
 ## The measurement
 
 All of it is trigonometry on pose landmarks, in [`src/lib/geometry.js`](src/lib/geometry.js).
@@ -296,10 +354,12 @@ picking a pin highlights its card.
 
 ```
 index.html              app shell, all screens, resources copy
-styles/                 tokens, base, capture, result, care, intake, report, print
+styles/                 tokens, base, capture, result, care, intake, report, print, app
 src/
   config.js             model URLs, thresholds, places config
   router.js             screen switching with enter/leave hooks
+  app/shell.js          app mode: the iOS app's navigation bar, transitions and bridge
+  app/home.js           the iOS app's home screen
   lib/
     geometry.js         the asymmetry math (pure, testable)
     screening.js        quality checks, banding, next steps
@@ -324,6 +384,7 @@ src/
     clinics.js          clinician search across three providers
     geolocation.js      browser position, with failures that explain themselves
   dev/demo.js           ?demo fixture, never used in a real scan
+ios/                    the iPhone app: a native shell around these same files
 bench/                  labelled-image benchmark for the detector
 tests/                  unit tests for the math and the consensus
 ```
@@ -359,9 +420,9 @@ ES modules resolve their imports only after each file is fetched and parsed, so
 a module graph costs one round trip per level of depth, not one for the whole
 thing. The graph was 26 modules and four levels deep, every one of them blocking
 the first screen, on a high-latency connection that alone is over a second of
-nothing happening. It is now ten modules (the seven of the capture flow plus the
-three that run the page's motion), all named in `<link rel="modulepreload">` so
-they fetch in parallel as a single round.
+nothing happening. It is now eleven modules (the seven of the capture flow, the
+three that run the page's motion, and the app-mode shell), all named in
+`<link rel="modulepreload">` so they fetch in parallel as a single round.
 
 Everything else arrives when it is wanted:
 
@@ -369,6 +430,7 @@ Everything else arrives when it is wanted:
 |---|---|
 | capture flow, router, capture, adjust, storage | at load, 7 modules |
 | motion: motion, field, scenes | at load, 3 modules |
+| app mode: shell | at load, 1 module; on the website it only checks `html[data-shell]` and stops |
 | GSAP, ScrollTrigger, SplitText, Lenis (jsDelivr) | deferred classic scripts, about 55 KB gzipped; the page is complete without them |
 | three.js (jsDelivr `+esm`, about 190 KB gzipped) | on the intro only, once the page is idle, for the 3D figure; the SVG drawing stands in if it never arrives |
 | analysis, pose, consensus, screening, result, report | on idle after first paint |
@@ -397,7 +459,8 @@ whole subtree failing while the network was down; it cannot recover a partial
 failure deeper in the graph, because those modules keep their canonical
 specifiers, so the second failure offers a reload instead.
 
-Not changed: the seven stylesheets. They are about 15 KB gzipped in total and
+Not changed: the seven stylesheets, now eight with `app.css`. They are about 15 KB
+gzipped in total, plus 7 KB for the app layout, and
 HTTP/2 fetches them in one parallel round, so splitting or inlining them would
 trade real complexity for very little. The CSP also forbids the inline `onload`
 handler the usual non-blocking-CSS trick depends on, which would have failed

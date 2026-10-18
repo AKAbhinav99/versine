@@ -8,10 +8,12 @@ const leaveHooks = new Map();
 let active = null;
 
 /* Which bottom tab lights up for each screen, the scan flow keeps "Scan" lit. */
-const TAB_OF = {
+export const TAB_OF = {
   intro: 'capture', capture: 'capture', adjust: 'capture', analyze: 'capture', result: 'capture',
   intake: 'capture', report: 'capture',
   doctors: 'doctors', resources: 'resources', history: 'history',
+  /* The iOS app's home screen (src/app/home.js); the website has none. */
+  home: 'home',
 };
 
 export const onEnter = (screen, fn) => enterHooks.set(screen, fn);

@@ -31,7 +31,7 @@ export function renderHistory() {
     el('div', { class: 'log-list' }, ...scans.map(entryRow)),
     el('div', { style: 'margin-top:var(--space-5)' },
       el('button', {
-        class: 'btn btn--ghost btn--block',
+        class: 'btn btn--ghost btn--block history__clear',
         onClick: () => {
           if (confirm('Delete every logged scan from this device? This cannot be undone.')) {
             clearScans();
