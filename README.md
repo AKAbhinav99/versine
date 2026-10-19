@@ -56,6 +56,14 @@ moves:
   launch is a one-screen welcome instead of the scroll story. It is light
   only, whatever the phone's setting, in Versine's colours: a blue-tinted page,
   navy type, and a colour per card on the home screen.
+- **The level.** A reading is drawn as a spirit level (`src/app/level.js`):
+  a curved vial whose bubble moves toward the higher shoulder, its graduation
+  lines at the 2° level band, the bands' scale beneath, and the reading's
+  spread as a faint stretch of the vial. It is the one large element in the
+  app, on the welcome screen, Home, and the result, and it is always printed
+  beside the number rather than instead of it. Titles and readings are set
+  in Schibsted Grotesk, the brand's display face, shipped with the app
+  (`styles/fonts/`, Open Font License); everything else in the system font.
 - **A home screen.** The app opens on a Home tab (`src/app/home.js`) that the
   website does not have: when the next scan is due (from the rescan advice of
   the last reading's band), the latest reading with its error bar and recent
@@ -393,6 +401,7 @@ src/
   router.js             screen switching with enter/leave hooks
   app/shell.js          app mode: the iOS app's navigation bar, transitions and bridge
   app/home.js           the iOS app's home screen
+  app/level.js          the level the app draws readings on
   lib/tilt-chart.js     the shoulder-tilt chart (app Home and Log, history report)
   lib/
     geometry.js         the asymmetry math (pure, testable)

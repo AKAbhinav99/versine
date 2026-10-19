@@ -25,6 +25,7 @@
 import { $, $$, el } from '../lib/dom.js';
 import { showScreen, onEnter, TAB_OF } from '../router.js';
 import { INTRO_KEY } from '../config.js';
+import { levelGauge } from './level.js';
 
 export const inApp = document.documentElement.dataset.shell === 'app';
 
@@ -44,7 +45,8 @@ const SCREENS = {
   /* The report's own heading is its title, so the bar shows a short one. */
   report: { title: 'Report' },
   doctors: { root: true, title: 'Find Care', large: true },
-  resources: { root: true, title: 'Learn', large: true },
+  /* An article: its own headline is the big title, "Learn" sits in the bar. */
+  resources: { root: true, title: 'Learn' },
   history: { root: true, title: 'Scan Log', large: true },
 };
 
@@ -60,6 +62,7 @@ let backButton = null;
 
 export function initShell() {
   buildBar();
+  addWelcomeLevel();
   addHome();
   addLargeTitles();
   moveCaptureTips();
@@ -189,6 +192,18 @@ function wireEdgeSwipe() {
   };
   document.addEventListener('touchend', release);
   document.addEventListener('touchcancel', release);
+}
+
+/* --------------------------------------------------------------- welcome --- */
+
+/* The first screen opens on the instrument: the level, its bubble coming to
+   rest at centre each time the screen is shown. */
+function addWelcomeLevel() {
+  const intro = $('#screen-intro');
+  if (!intro) return;
+  const holder = el('div', { class: 'welcome-level', 'aria-hidden': 'true' });
+  intro.prepend(holder);
+  onEnter('intro', () => holder.replaceChildren(levelGauge(null, { from: 6, labels: false })));
 }
 
 /* ------------------------------------------------------------------ home --- */

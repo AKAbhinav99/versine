@@ -14,6 +14,7 @@ import { intakeState, openIntake } from './intake.js';
 import { openReport } from './report.js';
 import { prepareCanvas, drawOverlay, OVERLAY_COLOURS } from './overlay.js';
 import { countUp } from '../lib/motion.js';
+import { levelGauge } from '../app/level.js';
 
 const REVEAL_MS = 1200;
 
@@ -159,7 +160,8 @@ function tiltReadout(reading) {
         el('span', { class: 'readout__error' }, ` ±${reading.shoulderSpreadDeg.toFixed(1)}°`)),
       el('div', { class: 'readout__side' },
         reading.higherShoulder === 'level' ? 'Level' : `${reading.higherShoulder === 'left' ? 'Left' : 'Right'} shoulder higher`)),
-    thresholdRuler(reading.shoulderTiltDeg),
+    /* The iOS app draws the reading on its level (src/app/level.js). */
+    document.documentElement.dataset.shell === 'app' ? levelGauge(reading) : thresholdRuler(reading.shoulderTiltDeg),
     el('p', { class: 'readout__note' },
       'The angle between the line joining your shoulder points and horizontal. The ± is the real spread across five framings of the same photo, not a rounding.'));
 }

@@ -1,31 +1,30 @@
-/* The iOS app's home screen, a summary in the manner of Health's.
+/* The iOS app's home screen.
  *
- * Nothing here is new information. Each card is a view of something the app
+ * Nothing here is new information. Each part is a view of something the app
  * already keeps (the scan log, the intake answers) or already says (the band
  * edges, the rescan advice in each band's next steps), gathered where someone
  * lands when they open the app, with the way into each part of it:
  *
  *   - symptoms the intake flagged, first, for the same reason the result
  *     screen puts them above the verdict;
- *   - the latest reading, with its photo, its error bar, and where it sits
- *     against the bands;
- *   - the trend across recent scans, with each reading's error bar as a band
- *     around the line (src/lib/tilt-chart.js, which the Log draws too);
- *   - how far along the wait for the next scan is, and the button to take it;
+ *   - the latest reading, on the level (level.js), beside its photo, with its
+ *     spread, which shoulder is higher, and its band, then the button to scan;
+ *   - the trend across recent scans (src/lib/tilt-chart.js, as the Log draws);
+ *   - how far along the wait for the next scan is;
  *   - the next steps: the intake, the report for a doctor, care, background.
  *
- * The look is data, not decoration: the photo, a band bar like Weather's UV
- * index, a chart like Health's. Drawn fresh on every visit (shell.js), since a
- * scan may have landed since. */
+ * The reading is the one thing drawn large, straight on the page; everything
+ * after it is a plain grouped list. Drawn fresh on every visit (shell.js),
+ * since a scan may have landed since. */
 
 import { $, el, formatDate } from '../lib/dom.js';
-import { THRESHOLDS } from '../config.js';
 import { showScreen } from '../router.js';
 import { listScans } from '../lib/storage.js';
 import { highestUrgency } from '../lib/intake.js';
 import { intakeState, openIntake } from '../screens/intake.js';
 import { openHistoryReport } from '../screens/report.js';
 import { tiltChart } from '../lib/tilt-chart.js';
+import { levelGauge } from './level.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const TREND_POINTS = 12;
@@ -62,86 +61,83 @@ export function renderHome() {
 
   body.replaceChildren(...[
     intake.flags.length ? flagsSection(intake.flags) : null,
-    ...(latest
-      ? [readingCard(latest), scans.length > 1 ? trendCard(scans) : null, nextScanCard(latest)]
-      : [firstScanCard()]),
+    latest ? readingHero(latest) : emptyHero(),
+    latest && scans.length > 1 ? trendSection(scans) : null,
+    latest ? nextScanSection(latest) : null,
     stepsSection(latest, intake),
   ].filter(Boolean));
 }
 
-/* ------------------------------------------------------------------ cards --- */
+/* ------------------------------------------------------------- the reading --- */
 
-/** A Health-style card: a title in the card's own colour (`tone`), something
-    on the right, a chevron when it goes somewhere. A `solid` card is filled
-    with its colour instead, as a widget is: the one that asks for a scan. */
-function card({ title, tone = 'scrub', solid = false, meta = null, onClick = null, label = null }, ...content) {
-  const head = el('span', { class: 'home-card__head' },
-    el('span', { class: 'home-card__title' }, title),
-    meta ? el('span', { class: 'home-card__meta' }, meta) : null,
-    onClick ? el('span', { class: 'ios-row__chevron', 'aria-hidden': 'true' }) : null);
-  return onClick
-    ? el('button', { class: 'home-card', 'data-tone': tone, 'data-solid': solid, type: 'button', onClick, 'aria-label': label }, head, ...content)
-    : el('div', { class: 'home-card', 'data-tone': tone, 'data-solid': solid }, head, ...content);
-}
-
-function readingCard(latest) {
+function readingHero(latest) {
   const spread = latest.shoulderSpreadDeg ?? 0;
-  return card({
-    title: 'Shoulder tilt',
-    tone: latest.level,
-    meta: formatDate(latest.timestamp),
-    onClick: () => showScreen('history'),
-    label: `Shoulder tilt ${latest.shoulderTiltDeg.toFixed(1)} degrees, plus or minus ${spread.toFixed(1)}, ${BAND[latest.level] || ''}, ${formatDate(latest.timestamp)}. Open the scan log.`,
-  },
-  el('span', { class: 'home-reading', 'data-level': latest.level },
-    el('span', { class: 'home-reading__numbers' },
-      el('span', { class: 'home-reading__value' },
-        latest.shoulderTiltDeg.toFixed(1), el('span', { class: 'home-reading__unit' }, '°')),
-      el('span', { class: 'home-reading__error' }, `±${spread.toFixed(1)}° across ${latest.passes ?? 5} framings`),
-      el('span', { class: 'home-reading__band' }, BAND[latest.level] || '')),
-    latest.thumbnail
-      ? el('img', { class: 'home-reading__photo', src: latest.thumbnail, alt: '' })
-      : null),
-  bandBar(latest.shoulderTiltDeg, latest.level));
+  const side = latest.higherShoulder === 'left' ? 'Left shoulder higher'
+    : latest.higherShoulder === 'right' ? 'Right shoulder higher' : 'Shoulders level';
+
+  return el('section', { class: 'home-hero', 'data-level': latest.level, 'aria-label': 'Latest reading' },
+    levelGauge(latest),
+    el('div', { class: 'home-hero__reading' },
+      el('div', { class: 'home-hero__figures' },
+        el('p', { class: 'home-hero__value' },
+          latest.shoulderTiltDeg.toFixed(1), el('span', { class: 'home-hero__deg' }, '°'),
+          el('span', { class: 'home-hero__spread' }, `±${spread.toFixed(1)}°`)),
+        el('p', { class: 'home-hero__side' }, side),
+        el('p', { class: 'home-hero__band' }, BAND[latest.level] || '')),
+      latest.thumbnail
+        ? el('button', { class: 'home-hero__photo', type: 'button', 'aria-label': 'Open the scan log', onClick: () => showScreen('history') },
+          el('img', { src: latest.thumbnail, alt: '' }))
+        : null),
+    el('p', { class: 'home-hero__meta' },
+      `Measured ${formatDate(latest.timestamp)}, at ${latest.passes ?? 5} framings of one photo.`),
+    el('button', { class: 'btn btn--block', type: 'button', onClick: () => showScreen('capture') }, 'Scan again'));
 }
 
-function trendCard(scans) {
+function emptyHero() {
+  return el('section', { class: 'home-hero home-hero--empty', 'aria-label': 'No reading yet' },
+    levelGauge(null, { settle: false }),
+    el('h2', { class: 'home-hero__title' }, 'No reading yet'),
+    el('p', { class: 'home-hero__lede' },
+      'Take one forward-bend photo. Versine measures how far your shoulders sit off level, five times over, and the bubble moves to the higher side.'),
+    el('button', { class: 'btn btn--block', type: 'button', onClick: () => showScreen('capture') }, 'Start a scan'));
+}
+
+/* ---------------------------------------------------------------- sections --- */
+
+function trendSection(scans) {
   const entries = scans.slice(0, TREND_POINTS).reverse();
-  return card({
-    title: 'Trend',
-    meta: `${scans.length} scans`,
-    onClick: () => showScreen('history'),
-    label: `Trend of shoulder tilt across ${entries.length} scans. Open the scan log.`,
-  }, tiltChart(entries));
+  return el('section', { class: 'home-section' },
+    sectionHead('Trend', `${scans.length} scans`, () => showScreen('history')),
+    el('button', {
+      class: 'home-panel', type: 'button', onClick: () => showScreen('history'),
+      'aria-label': `Trend of shoulder tilt across ${entries.length} scans. Open the scan log.`,
+    }, tiltChart(entries)));
 }
 
-function nextScanCard(latest) {
+function nextScanSection(latest) {
   const cadence = RESCAN[latest.level] || RESCAN.clear;
   const due = latest.timestamp + cadence.days * DAY_MS;
   const progress = Math.min(1, Math.max(0, (Date.now() - latest.timestamp) / (due - latest.timestamp)));
   const isDue = progress >= 1;
 
-  return card({ title: 'Next scan', solid: true },
-    el('span', { class: 'home-next__when' }, dueLabel(due)),
-    el('span', { class: `home-next__bar${isDue ? ' is-due' : ''}`, role: 'img',
-      'aria-label': `${Math.round(progress * 100)} percent of the way to the next scan` },
-    el('span', { class: 'home-next__fill', style: `--progress:${progress}` })),
-    el('span', { class: 'home-next__dates' },
-      el('span', {}, formatDate(latest.timestamp)),
-      el('span', {}, formatDate(due))),
-    el('span', { class: 'home-next__advice' }, cadence.advice),
-    el('button', { class: 'btn btn--block home-next__scan', type: 'button', onClick: () => showScreen('capture') },
-      isDue ? 'Scan Now' : 'Scan Again'));
+  return el('section', { class: 'home-section' },
+    sectionHead('Next scan'),
+    el('div', { class: 'home-panel home-next' },
+      el('p', { class: `home-next__when${isDue ? ' is-due' : ''}` }, dueLabel(due)),
+      el('span', { class: `home-next__bar${isDue ? ' is-due' : ''}`, role: 'img',
+        'aria-label': `${Math.round(progress * 100)} percent of the way to the next scan` },
+      el('span', { class: 'home-next__fill', style: `--progress:${progress}` })),
+      el('span', { class: 'home-next__dates' },
+        el('span', {}, formatDate(latest.timestamp)),
+        el('span', {}, formatDate(due)))),
+    el('p', { class: 'ios-group__footer' }, cadence.advice));
 }
 
-function firstScanCard() {
-  return card({ title: 'Your first scan', solid: true },
-    el('span', { class: 'home-next__when' }, 'One forward-bend photo'),
-    el('span', { class: 'home-next__advice' },
-      'Shoulder tilt is measured at five framings of the photo, and the reading lands in one of three bands.'),
-    bandBar(null),
-    el('button', { class: 'btn btn--block home-next__scan', type: 'button', onClick: () => showScreen('capture') },
-      'Start a Scan'));
+/** A section's heading, with an optional link on the right, as Health heads its lists. */
+function sectionHead(title, linkText = null, onClick = null) {
+  return el('div', { class: 'home-section__head' },
+    el('h3', { class: 'home-section__title' }, title),
+    linkText ? el('button', { class: 'home-section__link', type: 'button', onClick }, linkText) : null);
 }
 
 function flagsSection(flags) {
@@ -149,7 +145,7 @@ function flagsSection(flags) {
   return group('Symptoms you reported', [
     el('div', { class: 'ios-row ios-row--text', 'data-urgency': urgent ? 'urgent' : 'prompt' },
       el('span', { class: 'home__flag-title' }, urgent ? 'See a clinician this week' : 'Raise this with a clinician'),
-      el('span', { class: 'home__flag-list' }, flags.map((flag) => flag.label).join(' · '))),
+      el('ul', { class: 'home__flag-list' }, ...flags.map((flag) => el('li', {}, flag.label)))),
     link('Find care nearby', null, () => showScreen('doctors'), true),
   ], `A photo does not screen for ${flags.length === 1 ? 'this' : 'these'}. Whatever a reading says, ${flags.length === 1 ? 'it is' : 'they are'} worth asking a clinician about.`);
 }
@@ -167,39 +163,12 @@ function stepsSection(latest, intake) {
   ], 'Versine measures how level your shoulders and hips look in a photo. It does not diagnose scoliosis; a physician does, from an X-ray.');
 }
 
-/* -------------------------------------------------------------- band bar --- */
-
-/* The three bands as one bar, as Weather draws the UV index: level to 2°,
-   track it to 3.5°, get it looked at beyond, on the result ruler's 0–8° scale.
-   The reading is a dot on it; with no reading the bar explains the bands. */
-function bandBar(deg, level = null) {
-  const max = THRESHOLDS.rulerMaxDeg;
-  const pct = (value) => `${(Math.min(value, max) / max) * 100}%`;
-  const edges = [0, THRESHOLDS.shoulderMonitorDeg, THRESHOLDS.shoulderReferDeg, max];
-
-  return el('span', { class: 'band-bar', 'aria-hidden': 'true' },
-    el('span', { class: 'band-bar__track' },
-      el('span', { class: 'band-bar__zone', 'data-zone': 'clear', style: `flex:${edges[1] - edges[0]}` }),
-      el('span', { class: 'band-bar__zone', 'data-zone': 'monitor', style: `flex:${edges[2] - edges[1]}` }),
-      el('span', { class: 'band-bar__zone', 'data-zone': 'refer', style: `flex:${edges[3] - edges[2]}` }),
-      deg === null ? null : el('span', { class: 'band-bar__dot', 'data-level': level, style: `--at:${pct(deg)}` })),
-    el('span', { class: 'band-bar__labels' },
-      ...edges.map((edge, i) => el('span', { class: 'band-bar__tick', style: `--at:${pct(edge)}` },
-        i === edges.length - 1 ? `${edge}°+` : `${edge}°`))),
-    deg === null
-      ? el('span', { class: 'band-bar__legend' },
-        el('span', { 'data-zone': 'clear' }, BAND.clear),
-        el('span', { 'data-zone': 'monitor' }, BAND.monitor),
-        el('span', { 'data-zone': 'refer' }, BAND.refer))
-      : null);
-}
-
 /* ------------------------------------------------------------- grouped list --- */
 
 /* A titled group of rows with an optional footer, UITableView's inset grouped style. */
 function group(title, rows, footer = null) {
-  return el('section', { class: 'ios-group' },
-    title ? el('h3', { class: 'ios-group__header' }, title) : null,
+  return el('section', { class: 'ios-group home-section' },
+    title ? sectionHead(title) : null,
     el('div', { class: 'ios-group__rows' }, ...rows.filter(Boolean)),
     footer ? el('p', { class: 'ios-group__footer' }, footer) : null);
 }

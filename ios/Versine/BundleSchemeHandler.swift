@@ -77,6 +77,7 @@ final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
         case "jpg", "jpeg": "image/jpeg"
         case "webp": "image/webp"
         case "wasm": "application/wasm"
+        case "woff2": "font/woff2"
         default: "application/octet-stream"
         }
     }

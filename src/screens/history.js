@@ -29,12 +29,13 @@ export function renderHistory() {
   append(body,
     /* The iOS app draws the same chart as its home screen (src/lib/tilt-chart.js). */
     document.documentElement.dataset.shell === 'app' && chronological.length > 1
-      ? el('div', { class: 'trend' },
-        el('div', { class: 'label', style: 'margin-bottom:var(--space-3)' }, 'Shoulder tilt over time'),
-        tiltChart(chronological))
+      ? el('section', { class: 'log-trend' },
+        el('h3', { class: 'home-section__title' }, 'Shoulder tilt over time'),
+        el('div', { class: 'home-panel' }, tiltChart(chronological)))
       : trendChart(chronological),
-    reportRow(scans.length),
-    intakeRow(),
+    /* The iOS app lists these two as rows of one grouped list. */
+    inApp() ? appRows(scans.length) : reportRow(scans.length),
+    inApp() ? null : intakeRow(),
     el('div', { class: 'log-list' }, ...scans.map(entryRow)),
     el('div', { style: 'margin-top:var(--space-5)' },
       el('button', {
@@ -47,6 +48,25 @@ export function renderHistory() {
         },
       }, 'Clear all scans')),
   );
+}
+
+const inApp = () => document.documentElement.dataset.shell === 'app';
+
+/* In the app: the report and the questionnaire as a grouped list. */
+function appRows(count) {
+  const { answered, flags } = intakeState();
+  const row = (title, detail, onClick) => el('button', { class: 'ios-row', type: 'button', onClick },
+    el('span', { class: 'ios-row__text' },
+      el('span', { class: 'ios-row__title' }, title),
+      el('span', { class: 'ios-row__detail' }, detail)),
+    el('span', { class: 'ios-row__chevron', 'aria-hidden': 'true' }));
+
+  return el('div', { class: 'ios-group__rows log-rows' },
+    row('Report for your doctor', `All ${count} scan${count === 1 ? '' : 's'}, the trend and the photos, as a PDF`,
+      () => openHistoryReport({ from: 'history' })),
+    row('About you',
+      flags.length ? `${flags.length} symptom${flags.length > 1 ? 's' : ''} flagged` : answered ? 'Answered' : 'Eight questions a photo cannot answer',
+      () => openIntake('history')));
 }
 
 /* Every scan on one document, for a clinician following the curve: the thing
