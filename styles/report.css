@@ -212,3 +212,78 @@
 @media (min-width: 960px) {
   #screen-report { max-width: 880px; }
 }
+
+/* --- the scan history report --------------------------------------------- */
+
+/* Six columns do not fit a phone, so the table scrolls sideways on screen and
+   lays out flat on paper (print.css). */
+.report__scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 calc(var(--gutter) * -1);
+  padding: 0 var(--gutter);
+}
+.report__table--scans { min-width: 540px; }
+.report__table--scans th,
+.report__table--scans td { white-space: nowrap; }
+.report__band {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+}
+.report__band[data-level='clear'] { color: var(--clear-text); }
+.report__band[data-level='monitor'] { color: var(--amber-text); }
+.report__band[data-level='refer'] { color: var(--marker-text); }
+
+/* The trend chart (src/lib/tilt-chart.js), styled for the page. */
+.report__chart {
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  border: var(--hair);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+}
+.report__chart .tilt-chart { display: block; width: 100%; height: auto; overflow: visible; }
+.report__chart .chart-axis { stroke: var(--rule); stroke-width: 1; }
+.report__chart .chart-edge { stroke-width: 1; stroke-dasharray: 3 4; }
+.report__chart .chart-edge[data-zone='monitor'] { stroke: var(--amber); }
+.report__chart .chart-edge[data-zone='refer'] { stroke: var(--marker); }
+.report__chart .chart-label { font-family: var(--font-ui); font-size: 10px; font-weight: 600; fill: var(--ink-500); }
+.report__chart .chart-label[data-zone='monitor'] { fill: var(--amber-text); }
+.report__chart .chart-label[data-zone='refer'] { fill: var(--marker-text); }
+.report__chart .chart-area { fill: var(--scrub); opacity: 0.08; }
+.report__chart .chart-band { fill: var(--scrub); opacity: 0.2; }
+.report__chart .chart-line { fill: none; stroke: var(--scrub); stroke-width: 2; stroke-linejoin: round; }
+.report__chart .chart-point { fill: var(--scrub); stroke: var(--paper-raised); stroke-width: 1.5; }
+.report__chart .chart-point--last[data-level='clear'] { fill: var(--clear); }
+.report__chart .chart-point--last[data-level='monitor'] { fill: var(--amber); }
+.report__chart .chart-point--last[data-level='refer'] { fill: var(--marker); }
+
+/* The photographs, side by side, each with its date and reading. */
+.report__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.report__photos figure { margin: 0; }
+.report__photos img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border: var(--hair);
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunk);
+}
+.report__photos figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--ink-500);
+}
+.report__photos figcaption .mono { color: var(--ink-900); font-weight: 600; }

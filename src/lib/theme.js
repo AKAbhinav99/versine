@@ -62,6 +62,9 @@ export function initTheme() {
     apply(next, button);
   });
 
+  /* The iOS app is light only (boot.js), so the system setting is not followed there. */
+  if (root.dataset.shell === 'app') return;
+
   const system = window.matchMedia('(prefers-color-scheme: dark)');
   system.addEventListener?.('change', (event) => {
     if (!stored()) apply(event.matches ? 'dark' : 'light', button);

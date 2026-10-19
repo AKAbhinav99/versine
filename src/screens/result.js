@@ -201,7 +201,7 @@ function thresholdRuler(value) {
 }
 
 const legend = (band, text) => el('span', {},
-  el('i', { style: `background:${{ clear: 'rgba(44,122,91,0.45)', monitor: 'rgba(184,117,20,0.5)', refer: 'rgba(214,64,42,0.45)' }[band]}` }), text);
+  el('i', { 'data-band': band, style: `background:${{ clear: 'rgba(44,122,91,0.45)', monitor: 'rgba(184,117,20,0.5)', refer: 'rgba(214,64,42,0.45)' }[band]}` }), text);
 
 /* The second error bar, kept visually separate from the first because it is a
    different kind of thing: measured, reported, and deliberately not gated on. */

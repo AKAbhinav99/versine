@@ -1,7 +1,7 @@
 /* App mode: how the web app behaves inside the iOS app.
  *
  * The iOS app (ios/) is this web app in a native shell, which supplies the tab
- * bar, alerts, the print sheet, location and haptics through
+ * bar, alerts, PDF sharing and printing, location and haptics through
  * window.VersineNative. The website's own chrome is made for a browser window:
  * a masthead with the logo, a floating tab bar, a dot field behind everything,
  * scroll reveals, and an intro told through scroll scenes. Inside an app all of
@@ -14,8 +14,8 @@
  *     tabs, as in any iOS app;
  *   - the capture tips in a sheet, so the camera screen is all camera;
  *   - the route reported to the native shell on every screen change, so its
- *     tab bar shows the right tab, hides on the disclaimer gate and the steps
- *     of a scan, and the status bar goes light over the camera.
+ *     tab bar shows the right tab, and hides on the disclaimer gate and the
+ *     steps of a scan.
  *
  * boot.js decides app mode before first paint (html[data-shell="app"]): when
  * the native shell has injected window.VersineNative, or with ?app in a
@@ -36,12 +36,13 @@ const native = window.VersineNative || null;
 const SCREENS = {
   intro: { root: true, bar: false, tabBar: false },
   home: { root: true, title: 'Home', large: true },
-  capture: { root: true, bar: false, camera: true },
+  capture: { root: true, bar: false },
   adjust: { title: 'Line It Up', tabBar: false },
   analyze: { bar: false, tabBar: false },
   result: { title: 'Result', large: true },
   intake: { title: 'About You', large: true },
-  report: { title: 'Summary', large: true },
+  /* The report's own heading is its title, so the bar shows a short one. */
+  report: { title: 'Report' },
   doctors: { root: true, title: 'Find Care', large: true },
   resources: { root: true, title: 'Learn', large: true },
   history: { root: true, title: 'Scan Log', large: true },
@@ -105,7 +106,6 @@ function onScreen(name) {
        Log belongs to that tab, not to Scan, where it lives on the website. */
     tab: TAB_OF[stack[0]] || TAB_OF[name],
     tabBar: screen.tabBar !== false,
-    camera: Boolean(screen.camera),
   };
   native?.route(route);
 }

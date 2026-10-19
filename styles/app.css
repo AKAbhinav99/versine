@@ -5,10 +5,11 @@
  * only: a printed referral summary looks the same whichever it came from.
  *
  * The idea is to look like iOS rather than like this website on a phone:
- * system surfaces and type (SF, with SF Rounded for readings, as Health draws
- * its numbers), cards without borders or shadows, a navigation bar with a large
- * title, a camera screen that is all camera, and no scroll choreography. The
- * scrub blue stays as the app's tint, and the signal colours keep their meaning. */
+ * grouped surfaces and system type (SF, with SF Rounded for readings, as
+ * Health draws its numbers), cards without borders or shadows, a navigation
+ * bar with a large title, and no scroll choreography. It is light only, in
+ * Versine's colours: the scrub blue as the tint, the signal colours keeping
+ * their meaning, and a little of the blue in the page itself. */
 
 @media screen {
 
@@ -28,22 +29,26 @@
   --text-2xl: 1.75rem;
   --text-readout: 3.5rem;
 
-  /* System grouped backgrounds and labels. */
-  --paper: #F2F2F7;
+  /* Light only (boot.js, and UIUserInterfaceStyle in ios/). Grouped surfaces
+     as iOS lays them out, in Versine's colours rather than the system greys:
+     a page with a little of the scrub blue in it, white cards, and the
+     website's navy inks for text, so even the type carries the brand. */
+  --paper: #E7EFF4;
   --paper-raised: #FFFFFF;
-  --paper-sunk: #E9E9EE;
-  --ink-900: #000000;
-  --ink-700: #1C1C1E;
-  --ink-500: #6C6C70;
-  --ink-400: #6C6C70;
-  --ink-300: #C7C7CC;
-  --rule: rgba(60, 60, 67, 0.16);
-  --rule-soft: rgba(60, 60, 67, 0.08);
-  --rule-control: rgba(60, 60, 67, 0.3);
-  --fill: rgba(118, 118, 128, 0.12);
-  --fill-strong: rgba(118, 118, 128, 0.2);
-  --glass: rgba(242, 242, 247, 0.7);
-  --glass-raised: rgba(255, 255, 255, 0.72);
+  --paper-sunk: #E1E9EE;
+  --ink-900: #0E2230;
+  --ink-700: #1D3445;
+  --ink-500: #566E7E;
+  --ink-400: #566E7E;
+  --ink-300: #B4C3CC;
+  --rule: rgba(14, 34, 48, 0.12);
+  --rule-soft: rgba(14, 34, 48, 0.06);
+  --rule-control: rgba(14, 34, 48, 0.28);
+  /* Control fills (fields, segmented controls) take the tint too. */
+  --fill: rgba(31, 110, 140, 0.08);
+  --fill-strong: rgba(31, 110, 140, 0.16);
+  --glass: rgba(237, 242, 245, 0.72);
+  --glass-raised: rgba(255, 255, 255, 0.75);
   --hover-wash: transparent;
   --dots: none;
 
@@ -51,9 +56,11 @@
   --shadow: none;
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.12);
 
-  --radius-sm: 10px;
-  --radius: 18px;
-  --radius-lg: 22px;
+  /* iOS's own corner sizes: a grouped table's 10pt, a large button's 12pt.
+     Rounder than that reads as a mock-up rather than an app. */
+  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-lg: 12px;
   --gutter: 16px;
   --tap: 50px;
   --nav-h: 0px;
@@ -63,25 +70,6 @@
   --bottom: calc(env(safe-area-inset-bottom) + 28px);
 
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-:root[data-shell='app'][data-theme='dark'] {
-  --paper: #000000;
-  --paper-raised: #1C1C1E;
-  --paper-sunk: #2C2C2E;
-  --ink-900: #FFFFFF;
-  --ink-700: #E5E5EA;
-  --ink-500: #A1A1A6;
-  --ink-400: #A1A1A6;
-  --ink-300: #48484A;
-  --rule: rgba(84, 84, 88, 0.6);
-  --rule-soft: rgba(84, 84, 88, 0.36);
-  --rule-control: rgba(235, 235, 245, 0.3);
-  --fill: rgba(118, 118, 128, 0.24);
-  --fill-strong: rgba(118, 118, 128, 0.36);
-  --glass: rgba(0, 0, 0, 0.6);
-  --glass-raised: rgba(44, 44, 46, 0.7);
-  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 /* ------------------------------------------------------------------ base --- */
@@ -109,9 +97,27 @@
 [data-shell='app'] a { text-decoration: none; }
 
 /* The website's chrome and decoration. */
-[data-shell='app'] :is(.field, .spine-canvas, .masthead__home, .theme-toggle, .read-progress, .tabbar, .step-label) {
+[data-shell='app'] :is(.field, .spine-canvas, .masthead__home, .theme-toggle, .read-progress, .tabbar,
+  .screen > .step-label, .capture__steps .step-label, .adjust__panel .step-label) {
   display: none !important;
 }
+
+/* The website's "01 Capture" eyebrows open each screen, where the large title
+   now is, so those go. Inside a screen the same labels head its sections (the
+   intake's two groups, the result's next steps): there they stay, drawn as an
+   iOS section header, without the number. */
+[data-shell='app'] .step-label {
+  display: block;
+  margin: 28px 16px 8px;
+  font: 600 0.8125rem/1.3 var(--font-ui);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--scrub);
+}
+[data-shell='app'] .step-label__num { display: none; }
+
+/* Taps act at once, without the double-tap-to-zoom wait. */
+[data-shell='app'] :is(button, a, label, input, select, summary) { touch-action: manipulation; }
 [data-shell='app'] .app { max-width: none; min-height: 100dvh; }
 
 /* ------------------------------------------------------- navigation bar --- */
@@ -171,9 +177,6 @@
   backdrop-filter: blur(12px) saturate(1.8);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 14px rgba(0, 0, 0, 0.08), inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
   transition: transform 160ms ease, opacity 160ms ease;
-}
-[data-shell='app'][data-theme='dark'] .appbar__back {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.14);
 }
 [data-shell='app'] .appbar__back[hidden] { display: none; }
 [data-shell='app'] .appbar__back:active { transform: scale(0.92); opacity: 0.7; }
@@ -236,7 +239,7 @@
   min-height: var(--tap);
   padding: 0 22px;
   border: 0;
-  border-radius: var(--radius-pill);
+  border-radius: 12px;
   font-size: var(--text-base);
   font-weight: 600;
   letter-spacing: normal;
@@ -269,7 +272,7 @@
 [data-shell='app'] select {
   min-height: 44px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background-color: var(--fill);
   color: var(--ink-900);
   font-size: var(--text-base);
@@ -354,151 +357,384 @@
 
 /* ------------------------------------------------------------------ home --- */
 
-/* Health's summary, in this app's colours: a date over the large title, cards
-   that press in slightly under a finger, and a grouped list of next steps. */
+/* A plain inset grouped table, as Settings draws one: grey uppercase section
+   headers, white rows with hairline separators, chevrons, grey footers. */
 [data-shell='app'] .home__date {
   margin: 4px 0 -2px;
   font-size: 0.8125rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--ink-500);
+  color: var(--scrub);
 }
+[data-shell='app'] .ios-group { margin: 0 0 24px; }
+[data-shell='app'] .ios-group__header {
+  margin: 0 16px 6px;
+  font: 600 0.8125rem/1.3 var(--font-ui);
+  text-transform: uppercase;
+  color: var(--scrub);
+}
+[data-shell='app'] .ios-group__rows { overflow: hidden; border-radius: var(--radius); background: var(--paper-raised); }
+[data-shell='app'] .ios-group__footer { margin: 6px 16px 0; font-size: 0.8125rem; line-height: 1.35; color: var(--ink-500); }
+
+[data-shell='app'] .ios-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-900);
+  font-size: var(--text-base);
+  line-height: 1.3;
+  text-align: left;
+}
+[data-shell='app'] button.ios-row:active { background: var(--fill); }
+[data-shell='app'] .ios-row + .ios-row::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 16px;
+  border-top: 0.5px solid var(--rule);
+}
+[data-shell='app'] .ios-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+[data-shell='app'] .ios-row__title { flex: 1; }
+[data-shell='app'] .ios-row__detail { font-size: 0.9375rem; color: var(--ink-500); }
+[data-shell='app'] .ios-row__value { color: var(--ink-500); }
+[data-shell='app'] .ios-row__chevron {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+  border-top: 2px solid var(--ink-300);
+  border-right: 2px solid var(--ink-300);
+  transform: rotate(45deg);
+}
+[data-shell='app'] .ios-row--text { flex-direction: column; align-items: stretch; gap: 2px; }
+[data-shell='app'] .ios-row--tinted .ios-row__title { color: var(--scrub); }
+
+/* Symptoms the intake flagged. */
+[data-shell='app'] .home__flag-title { font-weight: 600; color: var(--amber-text); }
+[data-shell='app'] [data-urgency='urgent'] .home__flag-title { color: var(--marker-text); }
+[data-shell='app'] .home__flag-list { font-size: 0.9375rem; color: var(--ink-700); }
+
+/* Cards, as Health draws its summary: a coloured title, the date or count on
+   the right, then the data itself. They highlight under a finger, as a table
+   cell does. */
 [data-shell='app'] .home-card {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   width: 100%;
-  margin: 0 0 14px;
-  padding: 16px 18px 18px;
+  margin: 0 0 12px;
+  padding: 12px 16px 16px;
   border: 0;
   border-radius: var(--radius-lg);
   background: var(--paper-raised);
   color: var(--ink-700);
   text-align: left;
-  transition: transform 160ms ease;
 }
-[data-shell='app'] button.home-card:active { transform: scale(0.98); }
+[data-shell='app'] button.home-card:active { background: color-mix(in srgb, var(--paper-raised) 90%, var(--ink-900)); }
+[data-shell='app'] .home-card__head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+[data-shell='app'] .home-card__title { flex: 1; font-size: 0.9375rem; font-weight: 600; color: var(--tone, var(--scrub)); }
+/* A card takes the colour of what it shows, as Health colours its
+   categories: the reading its band's, everything else the app's blue. No
+   colour here is new; they are the website's (styles/tokens.css). */
+[data-shell='app'] .home-card[data-tone='clear'] { --tone: var(--clear-text); }
+[data-shell='app'] .home-card[data-tone='monitor'] { --tone: var(--amber-text); }
+[data-shell='app'] .home-card[data-tone='refer'] { --tone: var(--marker-text); }
+[data-shell='app'] .home-card__meta { font-size: 0.9375rem; color: var(--ink-500); }
 
-/* When to scan next: the icon's own tile, with its spine faint at the right. */
-[data-shell='app'] .home-scan {
-  position: relative;
-  overflow: hidden;
-  padding-right: 96px;
-  background: linear-gradient(135deg, #2A7FA0, #0E2230);
-  color: #fff;
-}
-[data-shell='app'] .home-scan::after {
-  content: '';
-  position: absolute;
-  top: 14px;
-  right: -6px;
-  width: 96px;
-  height: 120px;
-  opacity: 0.16;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='10 4 12 24'%3E%3Cg fill='%23fff'%3E%3Crect x='-3.5' y='-1.75' width='7' height='3.5' rx='1.75' transform='translate(16 7) rotate(-5.6)'/%3E%3Crect x='-3.8' y='-1.75' width='7.6' height='3.5' rx='1.75' transform='translate(18.2 11.5)'/%3E%3Crect x='-4.1' y='-1.75' width='8.2' height='3.5' rx='1.75' transform='translate(16 16) rotate(5.6)'/%3E%3Crect x='-4.4' y='-1.75' width='8.8' height='3.5' rx='1.75' transform='translate(13.8 20.5)'/%3E%3Crect x='-4.7' y='-1.75' width='9.4' height='3.5' rx='1.75' transform='translate(16 25) rotate(-5.6)'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-  pointer-events: none;
-}
-[data-shell='app'] .home-scan__kicker { font-size: 0.8125rem; font-weight: 600; color: rgba(255, 255, 255, 0.72); }
-[data-shell='app'] .home-scan__headline { margin: 2px 0 6px; font: 700 var(--text-xl)/1.2 var(--font-display); color: #fff; }
-[data-shell='app'] .home-scan__note { font-size: var(--text-sm); color: rgba(255, 255, 255, 0.82); }
-[data-shell='app'] .home-scan__start,
-[data-shell='app'] .home-scan__start:hover {
-  margin-top: 16px;
-  min-height: 44px;
-  background: #fff;
-  color: #12506A;
-}
-
-/* The latest reading, coloured by its band. */
-[data-shell='app'] .home-reading { --band: var(--scrub); --band-text: var(--scrub); }
-[data-shell='app'] .home-reading[data-level='clear'] { --band: var(--clear); --band-text: var(--clear-text); }
-[data-shell='app'] .home-reading[data-level='monitor'] { --band: var(--amber); --band-text: var(--amber-text); }
-[data-shell='app'] .home-reading[data-level='refer'] { --band: var(--marker); --band-text: var(--marker-text); }
-[data-shell='app'] .home-reading__head { display: flex; justify-content: space-between; align-self: stretch; gap: 12px; }
-[data-shell='app'] .home-reading__label { font-size: var(--text-sm); font-weight: 600; color: var(--scrub); }
-[data-shell='app'] .home-reading__date { font-size: 0.8125rem; color: var(--ink-500); }
-[data-shell='app'] .home-reading__row { display: flex; align-items: baseline; justify-content: space-between; align-self: stretch; gap: 12px; margin-top: 4px; }
+/* The latest reading, beside the photo it was measured from. */
+[data-shell='app'] .home-reading { --band-text: var(--ink-500); display: flex; align-items: flex-start; gap: 14px; }
+[data-shell='app'] .home-reading[data-level='clear'] { --band-text: var(--clear-text); }
+[data-shell='app'] .home-reading[data-level='monitor'] { --band-text: var(--amber-text); }
+[data-shell='app'] .home-reading[data-level='refer'] { --band-text: var(--marker-text); }
+[data-shell='app'] .home-reading__numbers { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 [data-shell='app'] .home-reading__value {
-  font: 700 2.5rem/1.1 var(--font-num);
+  font: 600 3.25rem/1 var(--font-num);
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   color: var(--ink-900);
 }
-[data-shell='app'] .home-reading__unit { font-size: 0.6em; vertical-align: 0.5em; }
-[data-shell='app'] .home-reading__error { font-size: var(--text-base); font-weight: 500; color: var(--ink-500); }
-[data-shell='app'] .home-reading__band {
+[data-shell='app'] .home-reading__unit { font-size: 0.55em; vertical-align: 0.65em; margin-left: 1px; }
+[data-shell='app'] .home-reading__error { margin-top: 8px; font-size: 0.8125rem; color: var(--ink-500); }
+[data-shell='app'] .home-reading__band { margin-top: 2px; font-size: var(--text-base); font-weight: 600; color: var(--band-text); }
+[data-shell='app'] .home-reading__photo {
   flex: none;
-  padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--band) 16%, transparent);
-  color: var(--band-text);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  width: 72px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--paper-sunk);
 }
-[data-shell='app'] .home-reading__spark { align-self: stretch; width: 100%; height: 56px; margin-top: 12px; overflow: visible; }
-[data-shell='app'] .spark-edge { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
-[data-shell='app'] .spark-line { fill: none; stroke: var(--scrub); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-[data-shell='app'] .spark-point { fill: var(--scrub); }
-[data-shell='app'] .spark-dot { fill: var(--band); stroke: var(--paper-raised); stroke-width: 2; vector-effect: non-scaling-stroke; }
-[data-shell='app'] .home-reading__foot { margin-top: 10px; font-size: 0.8125rem; color: var(--ink-500); }
 
-/* Symptoms the intake flagged, above everything else. */
-[data-shell='app'] .home-flags { background: var(--amber-wash); }
-[data-shell='app'] .home-flags[data-urgency='urgent'] { background: var(--marker-wash); }
-[data-shell='app'] .home-flags__kicker { font-size: var(--text-sm); font-weight: 700; color: var(--amber-text); }
-[data-shell='app'] .home-flags[data-urgency='urgent'] .home-flags__kicker { color: var(--marker-text); }
-[data-shell='app'] .home-flags__body { margin: 4px 0 10px; font-size: var(--text-sm); color: var(--ink-700); }
-[data-shell='app'] .home-flags__action { font-size: var(--text-sm); font-weight: 600; color: var(--scrub); }
+/* The band bar: three solid zones with a gap between, the reading a white dot
+   cut out of the card's colour. */
+[data-shell='app'] .band-bar { display: block; margin-top: 16px; }
+[data-shell='app'] .band-bar__track { position: relative; display: flex; gap: 3px; height: 8px; }
+[data-shell='app'] .band-bar__zone { display: block; border-radius: 4px; }
+[data-shell='app'] [data-zone='clear'] { --zone: var(--clear); }
+[data-shell='app'] [data-zone='monitor'] { --zone: var(--amber); }
+[data-shell='app'] [data-zone='refer'] { --zone: var(--marker); }
+[data-shell='app'] .band-bar__zone { background: var(--zone); }
+[data-shell='app'] .band-bar__dot {
+  position: absolute;
+  top: 50%;
+  left: var(--at);
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--paper-raised), 0 1px 6px 3px rgba(0, 0, 0, 0.18);
+  animation: band-dot-in 800ms var(--ease-ios) 120ms both;
+}
+@keyframes band-dot-in { from { left: 0; } }
+[data-shell='app'] .band-bar__labels { position: relative; display: block; height: 16px; margin-top: 6px; }
+[data-shell='app'] .band-bar__tick {
+  position: absolute;
+  left: var(--at);
+  transform: translateX(-50%);
+  font: 0.75rem/1 var(--font-num);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--ink-500);
+}
+[data-shell='app'] .band-bar__tick:first-child { transform: none; }
+[data-shell='app'] .band-bar__tick:last-child { transform: translateX(-100%); }
+[data-shell='app'] .band-bar__legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: 0.8125rem; color: var(--ink-500); }
+[data-shell='app'] .band-bar__legend span { display: inline-flex; align-items: center; gap: 6px; }
+[data-shell='app'] .band-bar__legend span::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--zone); }
 
-[data-shell='app'] .home__section { margin: 26px 0 10px; font-size: var(--text-xl); font-weight: 700; color: var(--ink-900); }
+/* The trend chart. Error bars are translucent capsules, as Health draws a range. */
+[data-shell='app'] .tilt-chart { display: block; width: 100%; height: auto; margin-top: 4px; overflow: visible; }
+/* The website's .trend svg rules (a fixed height, its own text size) do not
+   apply to this chart. */
+[data-shell='app'] .trend .tilt-chart { height: auto; }
+[data-shell='app'] .trend { padding: 12px 16px 16px; border: 0; border-radius: var(--radius-lg); }
+[data-shell='app'] .trend > .label { font-size: 0.9375rem; font-weight: 600; color: var(--scrub); }
 
-/* The next steps: a grouped list, a tinted icon tile on each row, as in Settings. */
-[data-shell='app'] .home-list { overflow: hidden; border-radius: var(--radius-lg); background: var(--paper-raised); }
-[data-shell='app'] .home-row {
+/* The log's prompt for the intake: a heading, a line, and a compact button. */
+[data-shell='app'] .intake-prompt { gap: 12px; padding: 14px 16px 16px; border-radius: var(--radius-lg); }
+[data-shell='app'] .intake-prompt .btn { min-height: 40px; padding: 0 18px; font-size: var(--text-sm); }
+[data-shell='app'] .chart-edge { stroke: var(--zone); stroke-width: 1; stroke-dasharray: 3 4; opacity: 0.7; }
+[data-shell='app'] .chart-axis { stroke: var(--rule); }
+[data-shell='app'] .chart-label { font: 600 0.6875rem var(--font-ui); fill: var(--ink-500); }
+[data-shell='app'] .chart-label[data-zone='monitor'] { fill: var(--amber-text); }
+[data-shell='app'] .chart-label[data-zone='refer'] { fill: var(--marker-text); }
+/* The faint area under the line, and the error band around it. */
+[data-shell='app'] .chart-area { fill: var(--scrub); opacity: 0.08; }
+[data-shell='app'] .chart-band { fill: var(--scrub); opacity: 0.2; }
+[data-shell='app'] :is(.chart-area, .chart-band) { animation: chart-fade 700ms ease 250ms both; }
+@keyframes chart-fade { from { opacity: 0; } }
+[data-shell='app'] .chart-line {
+  fill: none;
+  stroke: var(--scrub);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: chart-draw 900ms var(--ease-ios) 100ms forwards;
+}
+@keyframes chart-draw { to { stroke-dashoffset: 0; } }
+[data-shell='app'] .chart-point { fill: var(--scrub); stroke: var(--paper-raised); stroke-width: 1.5; }
+[data-shell='app'] .chart-point--last { stroke-width: 2.5; }
+[data-shell='app'] .chart-point--last[data-level='clear'] { fill: var(--clear); }
+[data-shell='app'] .chart-point--last[data-level='monitor'] { fill: var(--amber); }
+[data-shell='app'] .chart-point--last[data-level='refer'] { fill: var(--marker); }
+
+/* The next scan: how far along the wait is. */
+[data-shell='app'] .home-next__when { font: 700 var(--text-xl)/1.2 var(--font-display); color: var(--ink-900); }
+[data-shell='app'] .home-next__bar { display: block; height: 6px; margin-top: 12px; overflow: hidden; border-radius: 3px; background: var(--fill-strong); }
+[data-shell='app'] .home-next__fill {
+  display: block;
+  /* A sliver even on the day of a scan, so the bar reads as started. */
+  width: max(6px, calc(var(--progress) * 100%));
+  height: 100%;
+  border-radius: 3px;
+  background: var(--scrub);
+  animation: next-fill 900ms var(--ease-ios) both;
+}
+@keyframes next-fill { from { width: 0; } }
+[data-shell='app'] .home-next__bar.is-due .home-next__fill { background: var(--amber); }
+[data-shell='app'] .home-next__dates { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: var(--ink-500); }
+[data-shell='app'] .home-next__advice { display: block; margin-top: 10px; font-size: var(--text-sm); color: var(--ink-500); }
+[data-shell='app'] .home-next__scan { margin-top: 16px; }
+[data-shell='app'] .home-card + .ios-group { margin-top: 24px; }
+
+/* The solid card, filled with its colour and set in white: a progress bar in
+   white on a paler track, and the button turned round, white with the colour
+   as its text. */
+[data-shell='app'] .home-card[data-solid] { --solid: var(--tone, var(--scrub)); background: var(--solid); color: #fff; }
+[data-shell='app'] button.home-card[data-solid]:active { background: color-mix(in srgb, var(--solid) 88%, #000); }
+[data-shell='app'] .home-card[data-solid] .home-card__title { color: rgba(255, 255, 255, 0.85); }
+[data-shell='app'] .home-card[data-solid] :is(.home-next__when, .band-bar__legend) { color: #fff; }
+/* 88% white, the least that clears 4.5:1 on the blue at this size. */
+[data-shell='app'] .home-card[data-solid] :is(.home-next__dates, .home-next__advice, .band-bar__tick) { color: rgba(255, 255, 255, 0.88); }
+[data-shell='app'] .home-card[data-solid] .home-next__bar { background: rgba(255, 255, 255, 0.28); }
+[data-shell='app'] .home-card[data-solid] .home-next__fill { background: #fff; }
+/* Due: the brand's amber, in the lighter version its dark theme uses, which
+   holds up on the blue. */
+[data-shell='app'] .home-card[data-solid] .home-next__bar.is-due .home-next__fill { background: #DDA24A; }
+[data-shell='app'] .home-card[data-solid] .home-next__scan,
+[data-shell='app'] .home-card[data-solid] .home-next__scan:hover { background: #fff; color: var(--solid); }
+[data-shell='app'] .home-card[data-solid] .band-bar__legend span::before { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9); }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-shell='app'] :is(.band-bar__dot, .chart-line, .home-next__fill) { animation: none; stroke-dashoffset: 0; }
+}
+
+/* ---------------------------------------------------------------- result --- */
+
+/* The ruler under the reading, drawn as Home's band bar: three solid zones
+   with gaps, and the reading as a white dot rather than a needle. */
+[data-shell='app'] .ruler__track { height: 8px; margin-top: 18px; border-bottom: 0; }
+[data-shell='app'] .ruler__band { top: 0; bottom: 0; border-radius: 4px; background-clip: padding-box; }
+[data-shell='app'] .ruler__band + .ruler__band { border-left: 3px solid transparent; }
+[data-shell='app'] .ruler__band[data-band='clear'] { background-color: var(--clear); }
+[data-shell='app'] .ruler__band[data-band='monitor'] { background-color: var(--amber); }
+[data-shell='app'] .ruler__band[data-band='refer'] { background-color: var(--marker); }
+[data-shell='app'] .ruler__tick { width: 0; height: 0; bottom: 0; background: none; }
+[data-shell='app'] .ruler__tick span { bottom: -22px; font-size: 0.75rem; color: var(--ink-500); }
+[data-shell='app'] .ruler__needle {
+  top: 50%;
+  bottom: auto;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--paper-raised), 0 1px 6px 3px rgba(14, 34, 48, 0.18);
+  transition: left 900ms var(--ease-ios);
+}
+[data-shell='app'] .ruler__needle::after { display: none; }
+[data-shell='app'] .ruler__legend { margin-top: 34px; gap: 6px 16px; }
+[data-shell='app'] .ruler__legend span { font-family: var(--font-ui); font-size: 0.8125rem; }
+[data-shell='app'] .ruler__legend i { width: 8px; height: 8px; border-radius: 50%; }
+/* Solid, to match the bar above (the website's pale swatches are set inline). */
+[data-shell='app'] .ruler__legend i[data-band='clear'] { background: var(--clear) !important; }
+[data-shell='app'] .ruler__legend i[data-band='monitor'] { background: var(--amber) !important; }
+[data-shell='app'] .ruler__legend i[data-band='refer'] { background: var(--marker) !important; }
+
+/* What to do next: numbered rows in one card, the numbers in filled circles. */
+[data-shell='app'] .next-steps {
+  overflow: hidden;
+  margin: 0 0 24px;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  background: var(--paper-raised);
+}
+[data-shell='app'] .next-steps li {
   position: relative;
-  display: flex;
-  align-items: center;
+  grid-template-columns: 26px 1fr;
   gap: 14px;
-  width: 100%;
-  min-height: 62px;
-  padding: 10px 16px;
-  border: 0;
-  background: none;
-  text-align: left;
+  align-items: start;
+  padding: 14px 16px;
+  border-top: 0;
+  font-size: var(--text-base);
+  line-height: 1.4;
+  color: var(--ink-700);
 }
-[data-shell='app'] .home-row:active { background: var(--fill); }
-[data-shell='app'] .home-row + .home-row::before {
+[data-shell='app'] .next-steps li + li::after {
   content: '';
   position: absolute;
-  inset: 0 0 auto 60px;
+  inset: 0 0 auto 56px;
   border-top: 0.5px solid var(--rule);
 }
-[data-shell='app'] .home-row__icon {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
+[data-shell='app'] .next-steps li::before {
+  content: counter(step);
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 50%;
   background: var(--scrub);
+  color: #fff;
+  font: 600 0.875rem/26px var(--font-num);
+  text-align: center;
 }
-[data-shell='app'] .home-row__icon[data-tint='amber'] { background: var(--amber); }
-[data-shell='app'] .home-row__icon[data-tint='marker'] { background: var(--marker); }
-[data-shell='app'] .home-row__icon[data-tint='clear'] { background: var(--clear); }
-[data-shell='app'] .home-row__icon svg { width: 19px; height: 19px; fill: none; stroke: #fff; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-[data-shell='app'] .home-row__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-[data-shell='app'] .home-row__title { font-size: var(--text-base); color: var(--ink-900); }
-[data-shell='app'] .home-row__detail { font-size: 0.8125rem; color: var(--ink-500); }
-[data-shell='app'] .home-row__chevron {
-  flex: none;
+[data-shell='app'] .quality-note { margin: 0 16px 24px; padding: 0; background: none; font-size: 0.8125rem; color: var(--ink-500); }
+
+/* ------------------------------------------------------------------- log --- */
+
+/* The scans as one grouped list: photo, date, reading, and the band as a dot. */
+[data-shell='app'] .log-list { overflow: hidden; margin-top: 16px; border-radius: var(--radius-lg); background: var(--paper-raised); }
+[data-shell='app'] .log-entry {
+  position: relative;
+  grid-template-columns: 52px 1fr auto;
+  gap: 14px;
+  margin: 0;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+[data-shell='app'] .log-entry + .log-entry::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 82px;
+  border-top: 0.5px solid var(--rule);
+}
+[data-shell='app'] .log-entry__thumb { width: 52px; height: 68px; border: 0; border-radius: var(--radius-sm); filter: none; }
+[data-shell='app'] .log-entry__date { font-family: var(--font-ui); font-size: 0.8125rem; color: var(--ink-500); }
+[data-shell='app'] .log-entry__value { font: 600 1.375rem/1.2 var(--font-num); color: var(--ink-900); }
+[data-shell='app'] .log-entry__error { font-size: 0.8125rem; font-weight: 400; color: var(--ink-500); }
+[data-shell='app'] .log-entry__links { gap: 20px; padding-top: 2px; }
+[data-shell='app'] .log-entry__link { min-height: 32px; font-family: var(--font-ui); font-size: var(--text-sm); color: var(--scrub); }
+[data-shell='app'] .log-entry__link:last-child { color: var(--marker-text); }
+[data-shell='app'] .log-entry__flag { width: 10px; height: 10px; align-self: start; margin-top: 6px; border-radius: 50%; }
+
+/* ----------------------------------------------------------------- learn --- */
+
+/* A white reading page, as an article is in Health or News: longer lines get
+   more leading, and the table and links become grouped lists on a tint. */
+:root[data-shell='app'][data-screen='resources'] { --paper: #FFFFFF; --card-tint: #EEF3F6; }
+[data-shell='app'] .article > h1 { margin-top: 4px; font-size: var(--text-2xl); }
+[data-shell='app'] .article > p,
+[data-shell='app'] .article li { line-height: 1.55; }
+[data-shell='app'] .article > h2 { margin-top: 32px; }
+[data-shell='app'] .figure-cobb { padding: 16px; border: 0; border-radius: var(--radius-lg); background: var(--card-tint); box-shadow: none; }
+[data-shell='app'] .path-table { margin: 16px 0; border: 0; border-radius: var(--radius-lg); background: var(--card-tint); }
+[data-shell='app'] .path-table :is(th, td) { padding: 12px 14px; border-bottom: 0.5px solid var(--rule); font-size: var(--text-sm); line-height: 1.45; }
+[data-shell='app'] .path-table th { font: 600 0.8125rem var(--font-ui); text-transform: uppercase; letter-spacing: 0.02em; color: var(--scrub); }
+[data-shell='app'] .path-table td:first-child { font-weight: 600; color: var(--scrub); }
+[data-shell='app'] .article .link-list { gap: 0; padding: 0; overflow: hidden; border-radius: var(--radius-lg); background: var(--card-tint); }
+[data-shell='app'] .article .link-list li { position: relative; margin: 0; line-height: 1.35; }
+[data-shell='app'] .link-list li + li::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 16px;
+  border-top: 0.5px solid var(--rule);
+}
+[data-shell='app'] .link-list a {
+  position: relative;
+  padding: 12px 44px 12px 16px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  transform: none;
+}
+[data-shell='app'] .link-list a:active { background: var(--fill); }
+[data-shell='app'] .link-list a::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 18px;
   width: 8px;
   height: 8px;
+  margin-top: -4px;
   border-top: 2px solid var(--ink-300);
   border-right: 2px solid var(--ink-300);
   transform: rotate(45deg);
 }
-
-[data-shell='app'] .home__footnote { margin: 22px 8px 0; font-size: 0.8125rem; color: var(--ink-500); text-align: center; }
+[data-shell='app'] .link-list__name { margin-bottom: 2px; font-size: var(--text-base); color: var(--ink-900); }
+[data-shell='app'] .link-list__desc { display: block; font-size: 0.8125rem; line-height: 1.4; }
+[data-shell='app'] .article .disclaimer { background: var(--card-tint); }
 
 /* ------------------------------------------------- intro: the welcome --- */
 
@@ -617,18 +853,17 @@
 
 /* --------------------------------------------------- capture: the camera --- */
 
-/* Black whatever the appearance, as every iOS camera is, with the shutter
-   row above the tab bar and nothing to scroll. */
-[data-shell='app'][data-screen='capture'],
-[data-shell='app'][data-screen='capture'] body { background-color: #000; }
+/* The viewfinder fills the screen between the coaching line and the shutter
+   row, above the tab bar, with nothing to scroll. Light like the rest of the
+   app; only the preview itself is the camera's. */
 [data-shell='app'] .capture[data-active] {
   display: flex;
   flex-direction: column;
   gap: 0;
   height: 100dvh;
   padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
-  background: #000;
-  color: #fff;
+  background: var(--paper);
+  color: var(--ink-700);
   overflow: hidden;
 }
 [data-shell='app'] .capture__top {
@@ -644,24 +879,34 @@
   border: 0;
   background: none;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--ink-500);
   font-size: 0.8125rem;
   line-height: 1.3;
   text-align: left;
 }
-[data-shell='app'] .capture__hint b { color: #fff; }
+[data-shell='app'] .capture__hint b { color: var(--ink-900); }
+/* 44pt to touch, as iOS asks, with the 32pt circle drawn inside it. */
 [data-shell='app'] .capture__info {
   flex: none;
+  position: relative;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  margin: -6px -6px -6px 0;
   padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
+  background: none;
+  color: var(--scrub);
   font: italic 700 1rem/1 Georgia, 'Times New Roman', serif;
+}
+[data-shell='app'] .capture__info::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--paper-raised);
 }
 [data-shell='app'] .capture__info:active { opacity: 0.6; }
 
@@ -669,18 +914,18 @@
   flex: 1;
   min-height: 0;
   margin: 0 8px;
-  border-radius: 24px;
-  background: #1C1C1E;
+  border-radius: var(--radius-lg);
+  background: var(--paper-sunk);
   box-shadow: none;
 }
 [data-shell='app'] .capture__error {
   border: 0;
   box-shadow: none;
   padding-left: var(--space-4);
-  background: rgba(28, 28, 30, 0.86);
-  color: #fff;
+  background: var(--paper-raised);
+  color: var(--ink-700);
 }
-[data-shell='app'] .capture__error b { color: #fff; }
+[data-shell='app'] .capture__error b { color: var(--ink-900); }
 
 /* No camera at all (the Simulator): a quiet panel with the explanation in the
    middle, and none of the overlays meant to sit on a live image. */
@@ -693,25 +938,26 @@
   margin: auto 0;
   padding: 0;
   background: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--ink-500);
   font-size: var(--text-base);
   text-align: center;
   animation: none;
 }
 [data-shell='app'] .capture__stage[data-camera='none'] .capture__error b { display: block; margin-bottom: 6px; font-size: var(--text-lg); }
 
-/* Overlay controls on the viewfinder: small glass capsules. */
+/* Overlay controls on the viewfinder: small dark glass capsules, which read
+   over any picture. */
 [data-shell='app'] :is(.capture__guide-btn, .capture__ghost-btn, .capture__flip, .capture__poses) {
   border: 0;
-  background: rgba(0, 0, 0, 0.42);
+  background: rgba(14, 34, 48, 0.45);
   color: #fff;
   box-shadow: none;
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
-[data-shell='app'] .capture__poses .pose-switch__thumb { background: rgba(255, 255, 255, 0.9); box-shadow: none; }
-[data-shell='app'] .capture__poses button { color: rgba(255, 255, 255, 0.85); }
-[data-shell='app'] .capture__poses button[aria-pressed='true'] { color: #000; }
+[data-shell='app'] .capture__poses .pose-switch__thumb { background: rgba(255, 255, 255, 0.92); box-shadow: none; }
+[data-shell='app'] .capture__poses button { color: rgba(255, 255, 255, 0.88); }
+[data-shell='app'] .capture__poses button[aria-pressed='true'] { color: var(--ink-900); }
 [data-shell='app'] .capture__guide-btn[aria-pressed='false'] { color: rgba(255, 255, 255, 0.6); }
 
 [data-shell='app'] .capture__controls {
@@ -721,27 +967,28 @@
   background: none;
   box-shadow: none;
 }
+/* The shutter in the app's blue: a ring, a gap, a disc. */
 [data-shell='app'] .shutter {
   width: 76px;
   height: 76px;
-  border: 4px solid #fff;
-  background: transparent;
+  border: 4px solid var(--scrub);
+  background: var(--paper);
   box-shadow: none;
   transform: none;
 }
 [data-shell='app'] .shutter:hover { box-shadow: none; }
-[data-shell='app'] .shutter__core { width: 62px; height: 62px; background: #fff; }
+[data-shell='app'] .shutter__core { width: 60px; height: 60px; background: var(--scrub); }
 [data-shell='app'] .shutter[data-armed='true'] .shutter__core { background: var(--marker); }
 [data-shell='app'] .capture__aux {
   min-height: 40px;
   padding: 0 14px;
   border: 0;
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  background: var(--paper-raised);
+  color: var(--ink-900);
   font-size: 0.8125rem;
 }
-[data-shell='app'] .capture__aux:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
-[data-shell='app'] .capture__aux[aria-pressed='true'] { background: rgba(255, 255, 255, 0.14); color: #FFD60A; }
+[data-shell='app'] .capture__aux:hover { background: var(--paper-raised); color: var(--ink-900); }
+[data-shell='app'] .capture__aux[aria-pressed='true'] { background: var(--fill-strong); color: var(--scrub); }
 
 /* The self-timer: big white digits over a dimmed preview, as the Camera app counts. */
 [data-shell='app'] .capture__timer {
@@ -806,7 +1053,7 @@
 
 /* ---------------------------------------------------- intake: about you --- */
 
-/* Each question's answers as an iOS segmented control: one capsule track, the
+/* Each question's answers as an iOS segmented control: one grey track, the
    chosen answer on a raised thumb. A flagged answer still turns red. */
 [data-shell='app'] .intake__q[data-flagged] { background: var(--marker-wash); box-shadow: none; }
 [data-shell='app'] .intake__options { gap: 0; flex-wrap: wrap; }
@@ -816,15 +1063,15 @@
   padding: 2px 0;
   background: var(--fill);
 }
-[data-shell='app'] .intake__option:first-child { padding-left: 2px; border-radius: 999px 0 0 999px; }
-[data-shell='app'] .intake__option:nth-last-child(1 of .intake__option) { padding-right: 2px; border-radius: 0 999px 999px 0; }
+[data-shell='app'] .intake__option:first-child { padding-left: 2px; border-radius: 9px 0 0 9px; }
+[data-shell='app'] .intake__option:nth-last-child(1 of .intake__option) { padding-right: 2px; border-radius: 0 9px 9px 0; }
 [data-shell='app'] .intake__options label {
   justify-content: center;
   width: 100%;
-  min-height: 34px;
+  min-height: 32px;
   padding: 0 6px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 7px;
   background: none;
   color: var(--ink-900);
   font-size: 0.875rem;
@@ -837,7 +1084,6 @@
   color: var(--ink-900);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
 }
-[data-shell='app'][data-theme='dark'] .intake__options input:checked + label { background: #636366; }
 [data-shell='app'] .intake__options input:checked + label[data-flag] { background: var(--marker); color: #fff; }
 [data-shell='app'] .intake__clear {
   flex-basis: 100%;
@@ -852,13 +1098,24 @@
 [data-shell='app'] .redflag,
 [data-shell='app'] .redflag[data-urgency='urgent'] { box-shadow: none; padding-left: var(--space-4); }
 
+/* Map zoom buttons: 44pt, as iOS asks of a control. */
+[data-shell='app'] .maplibregl-ctrl-group button { width: 44px; height: 44px; }
+
 /* Care: the resolved place is a plain callout, and the clinic buttons are
    the compact size a card's actions take. */
 [data-shell='app'] .loc-resolved { box-shadow: none; border: 0; padding-left: var(--space-4); }
 [data-shell='app'] .clinic .btn { min-height: 44px; }
 
-/* The summary's own Back button repeats the navigation bar's. */
-[data-shell='app'] .report__actions .btn--ghost { display: none; }
+/* Learn: the article's section headings in the app's blue. */
+[data-shell='app'] .article > h2 { color: var(--scrub); }
+
+/* The report's own Back button repeats the navigation bar's. Share and
+   Print sit side by side. */
+[data-shell='app'] .report__back { display: none; }
+[data-shell='app'] .report__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+[data-shell='app'] .report__actions .btn { flex: 1 1 0; }
+[data-shell='app'] .report__actions p { flex-basis: 100%; }
+[data-shell='app'] .report__scroll { margin: 0 -16px; padding: 0 16px; }
 
 /* A destructive action reads in red, as in iOS. */
 [data-shell='app'] .btn.history__clear,

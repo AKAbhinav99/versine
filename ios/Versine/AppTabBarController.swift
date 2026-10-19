@@ -51,7 +51,6 @@ enum AppTab: Int, CaseIterable {
 /// change there selects the tab here (`WebRoute`).
 final class AppTabBarController: UITabBarController, UITabBarControllerDelegate {
     private let shell = WebShell()
-    private var cameraIsUp = false
 
     private lazy var hosts: [UIViewController] = AppTab.allCases.map { tab in
         let host = UIViewController()
@@ -74,11 +73,6 @@ final class AppTabBarController: UITabBarController, UITabBarControllerDelegate 
         shell.start()
     }
 
-    // The camera screen is black whatever the system appearance, so the status
-    // bar goes light over it.
-    override var childForStatusBarStyle: UIViewController? { nil }
-    override var preferredStatusBarStyle: UIStatusBarStyle { cameraIsUp ? .lightContent : .default }
-
     // Also called when the selected tab is tapped again, which takes the web
     // app back to that tab's first screen, as a second tap does in any iOS app.
     func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
@@ -95,10 +89,6 @@ final class AppTabBarController: UITabBarController, UITabBarControllerDelegate 
         }
         if isTabBarHidden == route.showsTabBar {
             setTabBarHidden(!route.showsTabBar, animated: true)
-        }
-        if cameraIsUp != route.isCamera {
-            cameraIsUp = route.isCamera
-            setNeedsStatusBarAppearanceUpdate()
         }
     }
 

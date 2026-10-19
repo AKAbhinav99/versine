@@ -86,8 +86,13 @@ html, body {
 .report__method p,
 .report__not ul { color: #333; }
 
-.report__fields { border: 0.75pt solid #000; }
-.report__rule { background: none; border-bottom: 0.5pt solid #000; height: 0; }
+/* Write-in fields: two columns, each a label over a line with room to write
+   on it, and the expected unit at the line's end. */
+.report__fields { border: 0.75pt solid #000; grid-template-columns: 1fr 1fr; gap: 5mm 8mm; }
+.report__field { grid-template-columns: 1fr auto; align-items: end; gap: 0 2mm; }
+.report__field > .label { grid-column: 1 / -1; color: #000; }
+.report__rule { height: 7mm; margin: 0; background: none; border-bottom: 0.75pt solid #000; }
+.report__hint { padding-bottom: 1mm; border-bottom: 0.75pt solid #000; color: #333; }
 
 /* Keep the pieces a clinician reads as a unit on one page. */
 .report__section,
@@ -105,3 +110,22 @@ html, body {
 
 /* A URL after every link is noise here, there is exactly one, and it is us. */
 a { color: #000; text-decoration: none; }
+
+/* The scan history report. On paper the table has the page's width, so it no
+   longer scrolls, and the photographs sit six to a row. */
+.report__scroll { overflow: visible; margin: 0; padding: 0; }
+.report__table--scans { min-width: 0; }
+.report__table--scans th,
+.report__table--scans td { white-space: normal; }
+/* At full page width the chart's lettering would print at twice body size. */
+.report__chart { max-width: 125mm; border: 0.75pt solid #000; break-inside: avoid; }
+.report__photos { grid-template-columns: repeat(6, 1fr); gap: 3mm; }
+.report__photos figure { break-inside: avoid; }
+.report__photos img { border: 0.5pt solid #000; }
+.report__band,
+.report__photos figcaption { color: #333; }
+
+/* Only while the iOS app renders a PDF (ios/, WebShell.exportPDF): room at the
+   end for WebKit's page count, which runs short when sections are pushed onto
+   new pages. The app trims the blank pages this leaves. */
+.pdf-export #screen-report::after { content: ''; display: block; height: 560mm; }

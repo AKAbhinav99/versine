@@ -32,10 +32,11 @@
 
   var theme = null;
   try { theme = window.localStorage.getItem('versine.theme'); } catch (e) { /* storage blocked */ }
-  /* An app follows the system appearance; it has no theme toggle of its own. */
-  if (app || (theme !== 'light' && theme !== 'dark')) {
+  if (theme !== 'light' && theme !== 'dark') {
     theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   }
+  /* The app is light only, as its native parts are (ios/, UIUserInterfaceStyle). */
+  if (app) theme = 'light';
   root.setAttribute('data-theme', theme);
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'dark' ? '#0B161D' : '#F2F5F6');

@@ -43,8 +43,8 @@ before first paint), which keeps every feature and changes how it looks and
 moves:
 
 - **Native where it matters.** The tab bar is UIKit's (Liquid Glass on iOS 26),
-  `alert`/`confirm` are iOS alerts, the referral summary prints through the iOS
-  print sheet (which also saves and shares it as a PDF), location comes from
+  `alert`/`confirm` are iOS alerts, reports for a clinician share as a PDF
+  through the share sheet or print through the print sheet, location comes from
   Core Location so the prompt names Versine instead of "localhost", directions
   open in Apple Maps, other links in an in-app Safari sheet, and the shutter
   has a haptic.
@@ -53,8 +53,9 @@ moves:
   into the navigation bar, a back button and edge swipe on the steps of a scan,
   push transitions between them, segmented controls for the intake answers, and
   a camera screen that is all camera, with its tips in a sheet. The first
-  launch is a one-screen welcome instead of the scroll story. It follows the
-  system appearance.
+  launch is a one-screen welcome instead of the scroll story. It is light
+  only, whatever the phone's setting, in Versine's colours: a blue-tinted page,
+  navy type, and a colour per card on the home screen.
 - **A home screen.** The app opens on a Home tab (`src/app/home.js`) that the
   website does not have: when the next scan is due (from the rescan advice of
   the last reading's band), the latest reading with its error bar and recent
@@ -213,6 +214,38 @@ The limitations are not a disclaimer at the end; they are what makes the page
 usable. A summary claiming less gets read. One announcing a finding gets
 dismissed, correctly.
 
+### The scan history report
+
+The referral summary is one scan, for a first appointment. A clinician who is
+following a curve wants the run of them, so **Report for your doctor** (on the
+Log, and on the iOS app's Home) puts every logged scan on one document:
+
+- **At a glance**: the latest reading with its error bar, the first one, the
+  change between them, the highest, how the scans fall across the bands, and
+  the typical interval between scans. A change is only called a change when it
+  is larger than the two readings' spreads combined, and is flagged as not
+  like-for-like when the two photographs were rotated by different amounts.
+- **The trend**, drawn with each reading's spread as a band around the line
+  (`src/lib/tilt-chart.js`, the same chart as the app's Home and Log).
+- **Every logged scan** in a table: shoulder tilt ± spread and band, hip tilt,
+  framings in agreement, movement between frames, and rotation, with the same
+  comparability warning as the summary when rotations differ. Withheld
+  readings are never logged, and the page says so.
+- **The photographs** side by side (the latest twelve), since stance, distance
+  and camera height are the largest source of difference between readings.
+- Then the same blocks as the summary: reported symptoms first if any, the
+  self-reported history, what is not measured, blank fields for the examining
+  clinician, the method and its calibration.
+
+In the iOS app, **Share PDF** renders the report's print layout to a PDF file
+on the phone (US Letter or A4 by region) and opens the share sheet, so it goes
+by Mail, Messages or AirDrop, or into Files. WebKit counts a document's pages
+before `break-inside: avoid` pushes sections onto the next page, so a report
+with several such breaks came out a page short and lost its end, in the print
+sheet too. While rendering, the app pads the end of the report
+(`html.pdf-export` in `print.css`) and then drops the blank pages that leaves;
+the app's Print button prints that same PDF.
+
 Printing goes through `window.print()` and [`styles/print.css`](styles/print.css):
 no PDF library, no bundle cost, and "Save as PDF" is already in every print
 dialog including iOS Safari's. Nothing is uploaded to produce it.
@@ -360,6 +393,7 @@ src/
   router.js             screen switching with enter/leave hooks
   app/shell.js          app mode: the iOS app's navigation bar, transitions and bridge
   app/home.js           the iOS app's home screen
+  lib/tilt-chart.js     the shoulder-tilt chart (app Home and Log, history report)
   lib/
     geometry.js         the asymmetry math (pure, testable)
     screening.js        quality checks, banding, next steps
@@ -374,7 +408,7 @@ src/
     overlay.js          landmark/measurement drawing on the photo
     result.js           verdict, readouts, threshold ruler
     intake.js           growth, family history, and symptom questions
-    report.js           the one-page referral summary, built for print
+    report.js           the one-scan referral summary and the scan history report, built for print
     doctors.js          map, filters, clinic cards
     history.js          trend chart and scan log
     consensus.js        multi-framing measurement and the reliability gate
@@ -508,7 +542,8 @@ remembers that choice (`versine.theme` in localStorage). The theme is set in
 light; [`src/lib/theme.js`](src/lib/theme.js) handles the toggle and fires a
 `themechange` event that the dot field, the 3D figure's floor shadow and the
 map (an Apple-style dark palette, repainted in place without refetching tiles)
-listen for. Printing always uses the light palette.
+listen for. Printing always uses the light palette, and the iOS app is light
+only (see The iOS app).
 
 That board is the page itself: one fixed canvas behind every screen
 ([`src/lib/field.js`](src/lib/field.js)). Each dot sits on a slightly

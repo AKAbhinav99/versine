@@ -5,8 +5,9 @@ import { el, $, append, formatDate } from '../lib/dom.js';
 import { THRESHOLDS } from '../config.js';
 import { listScans, clearScans, deleteScan } from '../lib/storage.js';
 import { intakeState, openIntake } from './intake.js';
-import { openReport } from './report.js';
+import { openReport, openHistoryReport } from './report.js';
 import { showScreen } from '../router.js';
+import { tiltChart } from '../lib/tilt-chart.js';
 
 const TREND_POINTS = 12;
 
@@ -26,7 +27,13 @@ export function renderHistory() {
 
   const chronological = [...scans].reverse().slice(-TREND_POINTS);
   append(body,
-    trendChart(chronological),
+    /* The iOS app draws the same chart as its home screen (src/lib/tilt-chart.js). */
+    document.documentElement.dataset.shell === 'app' && chronological.length > 1
+      ? el('div', { class: 'trend' },
+        el('div', { class: 'label', style: 'margin-bottom:var(--space-3)' }, 'Shoulder tilt over time'),
+        tiltChart(chronological))
+      : trendChart(chronological),
+    reportRow(scans.length),
     intakeRow(),
     el('div', { class: 'log-list' }, ...scans.map(entryRow)),
     el('div', { style: 'margin-top:var(--space-5)' },
@@ -40,6 +47,16 @@ export function renderHistory() {
         },
       }, 'Clear all scans')),
   );
+}
+
+/* Every scan on one document, for a clinician following the curve: the thing
+   this log exists to produce. */
+function reportRow(count) {
+  return el('div', { class: 'intake-prompt history__report' },
+    el('div', { class: 'intake-prompt__text' },
+      el('b', {}, 'Report for your doctor'),
+      el('span', {}, `All ${count} scan${count === 1 ? '' : 's'} on one page: the trend, every reading with its error bar, the photos, and your answers.`)),
+    el('button', { class: 'btn', onClick: () => openHistoryReport({ from: 'history' }) }, 'Create report'));
 }
 
 /* The intake belongs on the log rather than only in the scan flow: it is

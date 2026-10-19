@@ -7,13 +7,11 @@ struct WebRoute {
     let screen: String
     let tab: AppTab?
     let showsTabBar: Bool
-    let isCamera: Bool
 
     init(_ body: [String: Any]) {
         screen = body["screen"] as? String ?? ""
         tab = (body["tab"] as? String).flatMap(AppTab.init(webName:))
         showsTabBar = body["tabBar"] as? Bool ?? true
-        isCamera = body["camera"] as? Bool ?? false
     }
 }
 
@@ -168,11 +166,12 @@ final class WebShell: NSObject {
         haptic: (style) => post({ type: 'haptic', style }),
         open: (url) => post({ type: 'open', url: String(url) }),
         print: () => post({ type: 'print' }),
+        sharePDF: (name) => post({ type: 'sharePDF', name: String(name || 'Versine report') }),
         _located: settle,
       };
 
-      // The referral summary prints through the iOS print sheet, which also
-      // saves and shares it as a PDF.
+      // Reports print through the iOS print sheet, from the same PDF Share
+      // PDF produces (exportPDF), so the end of a long report is never lost.
       window.print = () => window.VersineNative.print();
 
       // Location through Core Location, so the permission prompt is the app's
@@ -207,6 +206,8 @@ extension WebShell: WKScriptMessageHandler {
             if let text = body["url"] as? String, let url = URL(string: text) { open(url) }
         case "print":
             printPage()
+        case "sharePDF":
+            sharePDF(named: body["name"] as? String ?? "Versine report")
         case "locate":
             locate(id: body["id"] as? Int ?? 0)
         #if DEBUG
@@ -232,14 +233,55 @@ extension WebShell: WKScriptMessageHandler {
         }
     }
 
+    /// The page's print layout (styles/print.css) as a finished PDF.
+    ///
+    /// WebKit counts a document's pages before the breaks that keep a section
+    /// together push it onto the next page, so a report with several such
+    /// breaks comes out a page or more short and loses its end, in the print
+    /// sheet too. While rendering, html.pdf-export pads the end of the report
+    /// (print.css) so the count has room; PDFRenderer drops the blank pages
+    /// the padding leaves. Print and Share both go through here.
+    private func exportPDF(_ done: @escaping (Data) -> Void) {
+        webView.evaluateJavaScript("document.documentElement.classList.add('pdf-export')") { [weak self] _, _ in
+            guard let self else { return }
+            let data = PDFRenderer.render(self.webView.viewPrintFormatter())
+            self.webView.evaluateJavaScript("document.documentElement.classList.remove('pdf-export')")
+            done(data)
+        }
+    }
+
     private func printPage() {
-        let info = UIPrintInfo.printInfo()
-        info.jobName = "Versine referral summary"
-        info.outputType = .general
-        let controller = UIPrintInteractionController.shared
-        controller.printInfo = info
-        controller.printFormatter = webView.viewPrintFormatter()
-        controller.present(animated: true)
+        exportPDF { data in
+            let info = UIPrintInfo.printInfo()
+            info.jobName = "Versine report"
+            info.outputType = .general
+            let controller = UIPrintInteractionController.shared
+            controller.printInfo = info
+            controller.printingItem = data
+            controller.present(animated: true)
+        }
+    }
+
+    /// The report as a PDF file, through the share sheet: Mail, Messages,
+    /// AirDrop, Files. It is the page's print layout (styles/print.css), the
+    /// same PDF the Print button prints, laid out on the paper size the phone's
+    /// region uses, and written to the app's temporary folder only.
+    private func sharePDF(named name: String) {
+        exportPDF { [weak self] data in
+            guard let self else { return }
+            let safeName = name.components(separatedBy: CharacterSet(charactersIn: "/\\:")).joined(separator: "-")
+            let file = FileManager.default.temporaryDirectory.appendingPathComponent("\(safeName).pdf")
+            do {
+                try data.write(to: file, options: .atomic)
+            } catch {
+                return self.printPage()   // the print sheet can still save a PDF
+            }
+            let sheet = UIActivityViewController(activityItems: [file], applicationActivities: nil)
+            sheet.completionWithItemsHandler = { _, _, _, _ in try? FileManager.default.removeItem(at: file) }
+            sheet.popoverPresentationController?.sourceView = self.webView
+            self.presenter?.present(sheet, animated: true)
+            Haptics.play("light")
+        }
     }
 
     /// Web pages open in an in-app Safari sheet; anything else (phone numbers,
@@ -257,6 +299,7 @@ extension WebShell: WKScriptMessageHandler {
         safari.preferredControlTintColor = UIColor(named: "AccentColor")
         presenter?.present(safari, animated: true)
     }
+
 
     /// The web app's directions links are Google Maps routes to a coordinate
     /// (src/lib/clinics.js). On an iPhone, directions belong in Maps.
