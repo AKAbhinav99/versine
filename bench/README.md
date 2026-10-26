@@ -50,7 +50,8 @@ in an artifact.
 Caveat that limits everything below: the positives are **standing** posterior
 views, not forward-bend views. The forward bend is where trunk asymmetry shows
 most, so these numbers do not tell us how the app behaves on the pose it actually
-asks for. Getting labelled forward-bend photographs is the obvious next step.
+asks for. Section 9 records the search for labelled forward-bend photographs
+and what the three paired subjects showed.
 
 ## What the benchmark found
 

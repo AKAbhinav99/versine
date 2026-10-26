@@ -9,12 +9,20 @@ Scoliosis is diagnosed by a licensed physician from a standing spine X-ray, meas
 as a Cobb angle. The UI says so in the onboarding gate, on every result, and in the
 resources section.
 
+It runs at [versine.vercel.app](https://versine.vercel.app). The iPhone app is on
+the [`versine_app`](https://github.com/AKAbhinav99/versine/tree/versine_app) branch:
+a native Swift shell around this web app, with an app layout, a home screen, and a
+scan history report for the doctor.
+
 ## Running it
 
-No build step, no dependencies to install. It is static files plus two CDN libraries.
+No build step, no dependencies to install. It is static files; the libraries it
+uses (MediaPipe for pose detection, three.js, GSAP and Lenis for the intro,
+MapLibre for the map) load from CDNs when they are needed.
 
 ```bash
-cd ~/spinecheck && python3 -m http.server 4321
+git clone https://github.com/AKAbhinav99/versine.git
+cd versine && python3 -m http.server 4321
 ```
 
 Then open `http://localhost:4321`. A few notes:
@@ -167,10 +175,13 @@ premium tier, Yelp) or has almost no data (Mangrove, the open OSM-linked
 review set, had no reviews for London, Berlin or Pune when checked). So every
 practice without a rating gets a free "See ratings and reviews on Google
 Maps" link: a plain Maps search for its name and address, no key involved.
-The option below stays available if a billed key is ever wanted. Ratings come from Google Places, through this site's own function
-([`api/places.mjs`](api/places.mjs)) so no visitor needs a key. To switch them
-on, create a Google Maps Platform key with only "Places API (New)" enabled,
-set a daily quota on it in the Cloud console, and add it to the Vercel project:
+
+Ratings appear only when Google Places is switched on, and there are two ways to
+do that. A visitor can enter their own key in the Care tab, or the site can hold
+one in its own function ([`api/places.mjs`](api/places.mjs)) so no visitor needs
+a key. versine.vercel.app has no key set, so it runs on OpenStreetMap. To set
+one, create a Google Maps Platform key with only "Places API (New)" enabled, set
+a daily quota on it in the Cloud console, and add it to the Vercel project:
 
 ```bash
 vercel env add GOOGLE_PLACES_API_KEY production
@@ -186,13 +197,17 @@ tiers, so check its current pricing before relying on the free allowance.
 Two provider chains, each trying the next when one fails. Everything is optional:
 with no keys at all the app runs entirely on OpenStreetMap's keyless services.
 
-**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)), local first, then richest:
+**Clinics** ([`src/lib/clinics.js`](src/lib/clinics.js)), local first, then richest.
+The one exception is a key held by the site: Google Places then goes first, since
+it is the only source with ratings and the local index would otherwise answer
+first in the areas it covers.
 
 | | key | gives |
 |---|---|---|
+| Google Places, through the site's function | held by the site, not set on versine.vercel.app | ratings, review counts, opening hours |
 | Local index | none | instant, offline, cannot fail, see below |
-| Google Places | required | ratings, review counts, opening hours |
-| OpenStreetMap / Photon | none | the same OpenStreetMap data from a search index: under a second, rarely down |
+| Google Places, with your own key | entered in the Care tab | the same, when the site has no key |
+| OpenStreetMap / Photon and Nominatim | none | OpenStreetMap data from search indexes, asked together: under a second, rarely down |
 | OpenStreetMap / Overpass | none | the same data again, plus phone numbers; slow and often overloaded |
 | Geoapify Places | required | general clinics and hospitals, as a last resort |
 
@@ -231,18 +246,19 @@ The map draws every clinic the index knows about in the current viewport as you
 pan, so it is populated before anyone searches. "Search this area for more" forces
 a live lookup for wherever the map is and folds the answer in.
 
-**`data/clinics/` ships empty.** Build it with:
+**`data/clinics/` ships Boston and New York**, 231 clinics in 28 KB, built from
+OpenStreetMap. The rest of the configured regions are yours to build:
 
 ```bash
-GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs
+node tools/build-clinic-index.mjs                   # every region, via Overpass
+GEOAPIFY_KEY=xxx node tools/build-clinic-index.mjs  # via Geoapify instead
 ```
 
 Geoapify answers in about a second per region, but bear the coverage caveat above
 in mind, an index built from it will be hospitals rather than physiotherapists.
 Overpass gives better data for this purpose and is the default, but it is slow and
 will start refusing connections if pushed, which is why it runs one request at a
-time with pauses. `data/clinics/` currently ships Boston and New York (231
-clinics, 28 KB); the rest of the configured regions are yours to build.
+time with pauses.
 
 Each provider's key can be checked in place from the Care tab, the **Test**
 button calls the endpoint Versine actually uses it for, since provider dashboards
@@ -253,7 +269,8 @@ quota is spent while the free services are healthy: Nominatim → Photon → Geo
 → MapTiler → Geocode.maps.co.
 
 Overpass now sits behind Photon, komoot's OpenStreetMap search engine, which
-answers the same questions from a prebuilt index in about 0.6 s per request.
+answers the same questions from a prebuilt index in about 0.6 s per request, and
+is asked alongside Nominatim.
 Overpass is the backstop, and its retries alternate between overpass-api.de and
 the maps.mail.ru mirror, because overpass-api.de is a load balancer and retrying
 it tends to land on the same overloaded backend. Overpass is deliberately last
@@ -298,14 +315,30 @@ picking a pin highlights its card.
 index.html              app shell, all screens, resources copy
 styles/                 tokens, base, capture, result, care, intake, report, print
 src/
+  boot.js               runs before first paint: picks the theme
+  main.js               app entry: wires the screens together, lazy-loads the rest
   config.js             model URLs, thresholds, places config
   router.js             screen switching with enter/leave hooks
   lib/
     geometry.js         the asymmetry math (pure, testable)
+    consensus.js        multi-framing measurement, the burst, the reliability gate
     screening.js        quality checks, banding, next steps
     pose.js             MediaPipe Pose wrapper
     storage.js          scan history in localStorage
     intake.js           the questions a photo cannot ask, and what they mean
+    net.js              shared fetch, cancellation, and the provider chain
+    keys.js             optional API keys, stored per device
+    geocoding.js        place lookup across five providers
+    clinics.js          clinician search: local index, Google Places, OpenStreetMap, Geoapify
+    clinic-index.js     the local clinic index, bundled and learned
+    countries.js        country codes, so a bare postal code is not ambiguous
+    geolocation.js      browser position, with failures that explain themselves
+    field.js            the dot-field canvas behind every screen, and the spine hero
+    figure3d.js         the three.js figure for "how a reading is made"
+    poseswitch.js       the Standing / Forward bend switch
+    scenes.js           scroll scenes (GSAP, ScrollTrigger, Lenis)
+    motion.js           reveals, spotlights, and the other small motion
+    theme.js            the light/dark toggle
     dom.js              small DOM helpers
   screens/
     capture.js          camera, framing guide, self-timer, camera switch, ghost, upload
@@ -317,15 +350,12 @@ src/
     report.js           the one-page referral summary, built for print
     doctors.js          map, filters, clinic cards
     history.js          trend chart and scan log
-    consensus.js        multi-framing measurement and the reliability gate
-    net.js              shared fetch, cancellation, and the provider chain
-    keys.js             optional API keys, stored per device
-    geocoding.js        place lookup across four providers
-    clinics.js          clinician search across three providers
-    geolocation.js      browser position, with failures that explain themselves
   dev/demo.js           ?demo fixture, never used in a real scan
+api/places.mjs          the optional Google Places function
+data/clinics/           the bundled clinic index
+tools/                  the script that builds it
 bench/                  labelled-image benchmark for the detector
-tests/                  unit tests for the math and the consensus
+tests/                  unit tests for the math, the consensus, the burst and the intake
 ```
 
 ## Accessibility
@@ -359,16 +389,16 @@ ES modules resolve their imports only after each file is fetched and parsed, so
 a module graph costs one round trip per level of depth, not one for the whole
 thing. The graph was 26 modules and four levels deep, every one of them blocking
 the first screen, on a high-latency connection that alone is over a second of
-nothing happening. It is now ten modules (the seven of the capture flow plus the
-three that run the page's motion), all named in `<link rel="modulepreload">` so
-they fetch in parallel as a single round.
+nothing happening. It is now eleven modules (the seven of the capture flow plus
+the four that run the page's motion and theme), all named in
+`<link rel="modulepreload">` so they fetch in parallel as a single round.
 
 Everything else arrives when it is wanted:
 
 | cluster | when |
 |---|---|
-| capture flow, router, capture, adjust, storage | at load, 7 modules |
-| motion: motion, field, scenes | at load, 3 modules |
+| capture flow: main, config, router, dom, storage, capture, adjust | at load, 7 modules |
+| motion and theme: motion, field, scenes, theme | at load, 4 modules |
 | GSAP, ScrollTrigger, SplitText, Lenis (jsDelivr) | deferred classic scripts, about 55 KB gzipped; the page is complete without them |
 | three.js (jsDelivr `+esm`, about 190 KB gzipped) | on the intro only, once the page is idle, for the 3D figure; the SVG drawing stands in if it never arrives |
 | analysis, pose, consensus, screening, result, report | on idle after first paint |
@@ -382,9 +412,8 @@ fails to load the list still works. MapLibre, which replaced Leaflet, is heavier
 (about 275 KB gzipped) and is loaded the same way, so it still costs nothing
 until the Care tab opens. It is pinned to 5.x because 6.x ships ES modules only.
 
-Measured on a cold load: 20 requests before the app is interactive, no contact
-with unpkg at all, and four font files rather than five, `Archivo 500` was
-declared and used by nothing.
+Measured on a cold load when the loading was reworked in August 2026: 20 requests
+before the app was interactive, and no contact with unpkg at all.
 
 One thing worth knowing if you touch the lazy loading: **a failed dynamic import
 is cached by the browser itself.** Clearing your own promise is not enough. The
@@ -397,7 +426,8 @@ whole subtree failing while the network was down; it cannot recover a partial
 failure deeper in the graph, because those modules keep their canonical
 specifiers, so the second failure offers a reload instead.
 
-Not changed: the seven stylesheets. They are about 15 KB gzipped in total and
+Not changed: the eight stylesheets (seven for the screen, plus `print.css`). They
+are about 30 KB gzipped in total and
 HTTP/2 fetches them in one parallel round, so splitting or inlining them would
 trade real complexity for very little. The CSP also forbids the inline `onload`
 handler the usual non-blocking-CSS trick depends on, which would have failed
@@ -406,7 +436,7 @@ silently in production.
 ## Tests
 
 ```bash
-cd ~/spinecheck && node --test tests/*.mjs
+node --test tests/*.mjs
 ```
 
 (Newer Node versions treat a bare `tests/` as a file path and fail before running
@@ -522,10 +552,14 @@ produces the frames the pose model measures and the benchmark ran with it.
 - **The bands are calibrated on nine reported cases.** That is a demonstration, not
   a validation. Sensitivity 0.83 and specificity 1.00 on that set mean very little
   statistically, and the app's copy is hedged accordingly.
-- **The benchmark's positives are standing photographs, not forward-bend ones.**
-  The app asks for the forward bend, where asymmetry shows most, but the labelled
-  images available were standing posterior views. Labelled forward-bend photographs
-  are the obvious next thing to test against.
+- **The bands come from standing photographs, and the app asks for a forward
+  bend.** The labelled images behind the bands are standing posterior views.
+  Three subjects photographed both ways show why that matters: two of the three
+  bend photographs gave no reading, and for the one subject measured both ways,
+  shoulder tilt fell from about 17° standing to 2° bent, because bending lets the
+  shoulders hang level. No public photographs of healthy people in the bend could
+  be found, so specificity on the bend is unmeasured. See
+  [bench/README.md](bench/README.md), section 9.
 - **It measures surface tilt, not rotation.** Shoulder and hip level are real
   screening signs but they are not the whole exam. A curve can exist with level
   shoulders, so a clear reading is not an all-clear.
